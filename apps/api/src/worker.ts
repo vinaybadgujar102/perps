@@ -17,5 +17,5 @@ while (true) {
   const message = res[0]?.messages?.[0];
   if (!message) continue;
   lastId = message.id;
-  const parsedData = message.message.data;
+  const parsedData = JSON.parse(message.message.data);
 }

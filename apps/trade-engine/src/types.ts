@@ -23,3 +23,31 @@ export const BinanceMarkPriceResponseSchema = z.object({
 export type BinanceMarkPriceResponse = z.infer<
   typeof BinanceMarkPriceResponseSchema
 >;
+
+export type PriceLevel = {
+  price: number;
+  availableQty: number;
+  orders: Order[];
+};
+
+export type Order = {
+  id: string;
+  market: string;
+  qty: number;
+  filledQty: number;
+  margin: number;
+  price: number;
+  userId: number;
+  type: "LONG" | "SHORT";
+  timestamp: number;
+};
+
+export type Fill = {
+  id: string;
+  market: string;
+  makerId: number;
+  takerId: number;
+  price: number;
+  orderId: string;
+  timestamp: number;
+};

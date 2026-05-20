@@ -5,7 +5,11 @@ import {
   TICK_KINDS,
 } from "@repo/sharedtypes";
 import { createClient } from "redis";
-import { createUserHandle, handleIncomingTickPrice } from "./handlers";
+import {
+  createOrder,
+  createUserHandle,
+  handleIncomingTickPrice,
+} from "./handlers";
 import { pricePoller } from "./pricePoller";
 
 await pricePoller();
@@ -32,6 +36,8 @@ while (true) {
     const data = eventSchema.parse(parsedData);
     if (data.kind === EVENT_KINDS.CREATE_USER) {
       createUserHandle(data.payload.userId);
+    } else if (data.kind === EVENT_KINDS.CREATE_ORDER) {
+      createOrder(data.payload);
     }
   } catch (error) {
     continue;
