@@ -156,6 +156,44 @@ function matchOrder(order: Order): Fill[] {
   return fills;
 }
 
+function matchOrder2(order: Order): Fill[] {
+  const fills: Fill[] = [];
+
+  if (order.side === "BUY") {
+    for (let i = 0; i < btcUsdOrderbook.bids.length; i++) {
+      const priceLevel = btcUsdOrderbook.bids[i];
+      if (!priceLevel) return fills;
+
+      if (order.price < priceLevel.price || order.qty === order.filledQty) {
+        return fills;
+      }
+
+      for (const makerOrder of priceLevel.orders) {
+        const filledQty = Math.min(
+          makerOrder.qty - makerOrder.filledQty,
+          order.qty - order.filledQty,
+        );
+        makerOrder.filledQty += filledQty;
+        order.filledQty += filledQty;
+        fills.push({
+          filledQty,
+          id: crypto.randomUUID(),
+          takerId: order.userId,
+          makerId: makerOrder.userId,
+          price: priceLevel.price,
+          orderId: order.id,
+          asset: order.asset,
+        });
+      }
+      priceLevel.orders.filter((o) => o.filledQty !== o.qty);
+      if (priceLevel.orders.length === 0) {
+        btcUsdOrderbook.asks.splice(i, 1);
+        i--;
+      }
+    }
+  }
+}
+
 function cancelOrder(order: Order) {
   let orderBookSide =
     order.side === "BUY" ? btcUsdOrderbook.bids : btcUsdOrderbook.asks;

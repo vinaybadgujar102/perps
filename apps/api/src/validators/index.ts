@@ -8,8 +8,8 @@ export const schemaValidator = (schema: ZodType) => {
     try {
       schema.parse(req.body);
       next();
-    } catch (e) {
-      return errorResponse(res, StatusCodes.UNAUTHORIZED, "UNAUTHORIZED");
+    } catch (error: any) {
+      return errorResponse(res, StatusCodes.BAD_REQUEST, "INVALID_REQUEST");
     }
   };
 };
