@@ -2,7 +2,7 @@ import crypto from "crypto";
 
 type Order = {
   id: string; // unique order identity
-  userId: string; // who placed the order
+  userId: number; // who placed the order
   price: number; // price at which the order was placed,
   qty: number; // how much qty to execute for the order,
   asset: string; // which asset we are trading
@@ -29,8 +29,8 @@ type Fill = {
   orderId: string;
   filledQty: number;
   price: number;
-  makerId: string;
-  takerId: string;
+  makerId: number;
+  takerId: number;
   asset: string;
 };
 
@@ -235,7 +235,7 @@ const sellOrder: Order = {
   qty: 10,
   price: 100,
   asset: "BTC/USD",
-  userId: "vinay",
+  userId: 1,
   timestamp: Date.now(),
   filledQty: 0,
 };
@@ -246,7 +246,7 @@ const buyOrder: Order = {
   qty: 5,
   price: 110,
   asset: "BTC/USD",
-  userId: "om",
+  userId: 2,
   timestamp: Date.now() + 100,
   filledQty: 0,
 };
@@ -254,8 +254,8 @@ const buyOrder: Order = {
 // const fill: Fill = {
 //   id: crypto.randomUUID(),
 //   asset: "BTC/USD",
-//   makerId: "vinay",
-//   takerId: "om",
+//   makerId: 1,
+//   takerId: 2,
 //   price: 100,
 //   filledQty: 5,
 //   orderId: buyOrder.id
@@ -268,7 +268,7 @@ const sell1: Order = {
   qty: 10,
   price: 100,
   asset: "BTC/USD",
-  userId: "vinay",
+  userId: 1,
   timestamp: Date.now(),
   filledQty: 0,
 };
@@ -278,7 +278,7 @@ const sell2: Order = {
   qty: 5,
   price: 102,
   asset: "BTC/USD",
-  userId: "raj",
+  userId: 3,
   timestamp: Date.now(),
   filledQty: 0,
 };
@@ -288,7 +288,7 @@ const sell3: Order = {
   qty: 8,
   price: 105,
   asset: "BTC/USD",
-  userId: "sara",
+  userId: 4,
   timestamp: Date.now(),
   filledQty: 0,
 };
@@ -307,7 +307,7 @@ const buy1: Order = {
   qty: 6,
   price: 101,
   asset: "BTC/USD",
-  userId: "om",
+  userId: 2,
   timestamp: Date.now(),
   filledQty: 0,
 };
@@ -324,7 +324,7 @@ const buy2: Order = {
   qty: 20,
   price: 106,
   asset: "BTC/USD",
-  userId: "om",
+  userId: 2,
   timestamp: Date.now(),
   filledQty: 0,
 };

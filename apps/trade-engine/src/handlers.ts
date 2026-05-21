@@ -4,7 +4,7 @@ import type { Fill, Order, PriceLevel } from "./types";
 
 export const createUserHandle = (userId: number) => {
   USERS.set(userId, {
-    userId: userId,
+    userId,
     balance: 0,
     lockedBalance: 0,
   });
@@ -14,18 +14,46 @@ const getOrderbook = (market: string) => {
   return orderbooks[market];
 };
 
-export const createOrder = (order: Order): Fill[] => {
+type TradeEngingResponse<T> = {
+  success: boolean;
+  data: T | null;
+  message: string | null;
+};
+
+export const createOrder = (order: Order): TradeEngingResponse<Fill[]> => {
+  console.log("[createOrder] Handler: start", { orderId: order.id, order });
   const orderbook = getOrderbook(order.market);
 
   if (!orderbook) {
-    console.log("market not present");
-    return [];
+    console.log("[createOrder] Handler: orderbook not found", {
+      market: order.market,
+    });
+    return {
+      success: false,
+      data: [],
+      message: "Orderbook not found",
+    };
   }
 
   const fills = matchOrder(order) ?? [];
+  console.log("[createOrder] Handler: matchOrder complete", {
+    orderId: order.id,
+    fillCount: fills.length,
+    filledQty: order.filledQty,
+    fills,
+  });
 
   const availableQty = order.qty - order.filledQty;
-  if (availableQty === 0) return fills;
+  if (availableQty === 0) {
+    console.log("[createOrder] Handler: order fully executed", {
+      orderId: order.id,
+    });
+    return {
+      success: true,
+      data: fills,
+      message: "Order fully executed",
+    };
+  }
 
   const side = order.type === "LONG" ? orderbook.bids : orderbook.asks;
 
@@ -66,7 +94,17 @@ export const createOrder = (order: Order): Fill[] => {
     priceLevel.orders.push(order);
   }
 
-  return fills;
+  console.log("[createOrder] Handler: remaining qty placed on book", {
+    orderId: order.id,
+    availableQty,
+    price: order.price,
+    type: order.type,
+  });
+  return {
+    success: true,
+    data: fills,
+    message: "order placed in orderbook",
+  };
 };
 
 const matchOrder = (order: Order): Fill[] | null => {

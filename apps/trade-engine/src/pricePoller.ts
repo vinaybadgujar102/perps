@@ -30,6 +30,5 @@ export async function pricePoller() {
     if (!assetConfig) return;
 
     symbolOrderbook.indexPrice = Number(data.p) * 10 ** assetConfig.priceScale;
-    console.log(orderbooks);
   });
 }

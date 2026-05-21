@@ -9,6 +9,9 @@
   "peerDependencies": {
     "typescript": "^5"
   },
+  "scripts": {
+    "dev": "bun run src/index.ts"
+  },
   "dependencies": {
     "@repo/database": "workspace:*",
     "@repo/sharedtypes": "workspace:*",

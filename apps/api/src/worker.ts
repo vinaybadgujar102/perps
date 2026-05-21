@@ -1,21 +1,53 @@
-import { QUEUES } from "@repo/sharedtypes";
-import { redis } from "./routes";
+import { eventSchema, QUEUES, RESPONSE_KINDS } from "@repo/sharedtypes";
+import { createClient } from "redis";
+import { requestMap } from ".";
 
-let lastId = ")";
+const consumerRedis = await createClient().connect();
 
-while (true) {
-  const res = await redis.XREAD(
-    { key: QUEUES.RESPONSE_QUEUE, id: lastId },
-    {
-      COUNT: 1,
-      BLOCK: 0,
-    },
-  );
+export async function listenForRequestId() {
+  let lastId = "$";
 
-  if (!res || Array.isArray(res)) continue;
+  while (true) {
+    try {
+      const res = await consumerRedis.xRead(
+        { key: QUEUES.RESPONSE_QUEUE, id: lastId },
+        { COUNT: 1, BLOCK: 0 },
+      );
 
-  const message = res[0]?.messages?.[0];
-  if (!message) continue;
-  lastId = message.id;
-  const parsedData = JSON.parse(message.message.data);
+      if (!res || !Array.isArray(res)) continue;
+
+      const message = res[0]?.messages?.[0];
+      if (!message) continue;
+      lastId = message.id;
+      const parsedData = JSON.parse(message.message.data);
+      console.log(parsedData);
+      const payload = eventSchema.parse(parsedData);
+
+      if (payload.kind === RESPONSE_KINDS.CREATE_ORDER_RESPONSE) {
+        console.log("[createOrder] Worker: received CREATE_ORDER_RESPONSE", {
+          requestId: payload.requestId,
+          data: payload.data,
+        });
+        if (payload.requestId) {
+          const pendingRequest = requestMap.get(payload.requestId);
+          if (!pendingRequest) {
+            console.log(
+              "[createOrder] Worker: no pending request for requestId",
+              { requestId: payload.requestId },
+            );
+            continue;
+          }
+          clearTimeout(pendingRequest.timeoutId);
+          requestMap.delete(payload.requestId);
+          console.log("[createOrder] Worker: resolving pending request", {
+            requestId: payload.requestId,
+          });
+          pendingRequest.resolve(payload.data);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      continue;
+    }
+  }
 }
