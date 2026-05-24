@@ -122,6 +122,7 @@ const matchOrder = (order: Order): Fill[] | null => {
       if (priceLevel.price > order.price || order.qty === order.filledQty)
         return fills;
 
+      let totalFilledQty = 0;
       for (const makerOrder of priceLevel.orders) {
         if (order.qty === order.filledQty) break;
 
@@ -131,6 +132,7 @@ const matchOrder = (order: Order): Fill[] | null => {
         );
         makerOrder.filledQty += filledQty;
         order.filledQty += filledQty;
+        totalFilledQty += filledQty;
         fills.push({
           id: crypto.randomUUID(),
           makerId: makerOrder.userId,
@@ -148,6 +150,8 @@ const matchOrder = (order: Order): Fill[] | null => {
       if (priceLevel.orders.length === 0) {
         orderbook.asks.splice(i, 1);
         i--;
+      } else {
+        priceLevel.availableQty -= totalFilledQty;
       }
     }
   } else {
@@ -158,6 +162,7 @@ const matchOrder = (order: Order): Fill[] | null => {
       if (priceLevel.price < order.price || order.qty === order.filledQty)
         return fills;
 
+      let totalFilledQty = 0;
       for (const makerOrder of priceLevel.orders) {
         if (order.qty === order.filledQty) break;
 
@@ -167,6 +172,7 @@ const matchOrder = (order: Order): Fill[] | null => {
         );
         makerOrder.filledQty += filledQty;
         order.filledQty += filledQty;
+        totalFilledQty += filledQty;
         fills.push({
           id: crypto.randomUUID(),
           makerId: makerOrder.userId,
@@ -184,6 +190,8 @@ const matchOrder = (order: Order): Fill[] | null => {
       if (priceLevel.orders.length === 0) {
         orderbook.bids.splice(i, 1);
         i--;
+      } else {
+        priceLevel.availableQty -= totalFilledQty;
       }
     }
   }

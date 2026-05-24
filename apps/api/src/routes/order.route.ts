@@ -38,14 +38,13 @@ orderRouter.post(
         queue: QUEUES.SEND_QUEUE,
       });
 
-      const response = await new Promise((resolve, reject) => {
-        const timeoutId = setTimeout(() => {
-          console.log("[createOrder] API: request timed out", { requestId });
-          requestMap.delete(requestId);
-          reject(new Error("Request timed out"));
-        }, 10000);
+      const promise = new Promise((resolve, reject) => {
+        // const timeoutId = setTimeout(() => {
+        //   requestMap.delete(requestId);
+        //   reject(new Error("Request timed out"));
+        // }, 10000);
         requestMap.set(requestId, {
-          timeoutId,
+          // timeoutId,
           resolve,
           reject,
         });
@@ -54,10 +53,9 @@ orderRouter.post(
           pendingCount: requestMap.size,
         });
       });
-      console.log("[createOrder] API: received response from worker", {
-        requestId,
-        response,
-      });
+
+      const res = await promise;
+
       return successResponse(res, StatusCodes.OK, response);
     } catch (error) {
       console.error("[createOrder] API: failed", { requestId, error });

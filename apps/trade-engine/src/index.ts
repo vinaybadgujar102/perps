@@ -35,11 +35,6 @@ while (true) {
     if (data.kind === EVENT_KINDS.CREATE_USER) {
       createUserHandle(data.payload.userId);
     } else if (data.kind === EVENT_KINDS.CREATE_ORDER) {
-      console.log("[createOrder] TradeEngine: received CREATE_ORDER event", {
-        requestId: data.requestId,
-        userId: data.userId,
-        payload: data.payload,
-      });
       const normalizeOrder = (
         payload: z.infer<typeof createOrderPayloadSchema.shape.payload>,
         userId: number,

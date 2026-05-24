@@ -31,10 +31,6 @@ export async function listenForRequestId() {
         if (payload.requestId) {
           const pendingRequest = requestMap.get(payload.requestId);
           if (!pendingRequest) {
-            console.log(
-              "[createOrder] Worker: no pending request for requestId",
-              { requestId: payload.requestId },
-            );
             continue;
           }
           clearTimeout(pendingRequest.timeoutId);

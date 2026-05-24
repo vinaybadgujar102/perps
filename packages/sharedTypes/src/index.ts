@@ -89,3 +89,10 @@ export const AssetConfig: Record<
     quantityScale: 2,
   },
 };
+
+type Position = {
+  id: string;
+  orderId: string;
+  market: string;
+  type: "LONG" | "SHORT";
+};
