@@ -38,13 +38,13 @@ orderRouter.post(
         queue: QUEUES.SEND_QUEUE,
       });
 
-      const promise = new Promise((resolve, reject) => {
-        // const timeoutId = setTimeout(() => {
-        //   requestMap.delete(requestId);
-        //   reject(new Error("Request timed out"));
-        // }, 10000);
+      const response = await new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          requestMap.delete(requestId);
+          reject(new Error("Request timed out"));
+        }, 10000);
         requestMap.set(requestId, {
-          // timeoutId,
+          timeoutId,
           resolve,
           reject,
         });
@@ -53,8 +53,6 @@ orderRouter.post(
           pendingCount: requestMap.size,
         });
       });
-
-      const res = await promise;
 
       return successResponse(res, StatusCodes.OK, response);
     } catch (error) {
