@@ -36,7 +36,6 @@ export type Order = {
   market: string;
   qty: number;
   filledQty: number;
-  margin: number;
   price: number;
   userId: number;
   orderType: ORDER_TYPE;

@@ -1,4 +1,5 @@
 import {
+  AssetConfig,
   createOrderPayloadSchema,
   EVENT_KINDS,
   eventSchema,
@@ -10,7 +11,7 @@ import { createClient } from "redis";
 import { createOrder, createUserHandle } from "./handlers";
 import type { Order } from "./types";
 import { z } from "zod";
-import { orderbooks } from "./inMemoryStates";
+import { orderbooks, USERS } from "./inMemoryStates";
 
 const redis = createClient();
 await redis.connect();
@@ -32,13 +33,31 @@ while (true) {
     if (data.kind === EVENT_KINDS.CREATE_USER) {
       createUserHandle(data.payload.userId);
     } else if (data.kind === EVENT_KINDS.CREATE_ORDER) {
+      const { price, qty } = data.payload;
+      const assetConfig = AssetConfig[data.payload.market]!;
+      const maxLeverage = assetConfig.maxLeverage;
+      const positionalValue = price * qty;
+      const requiredCollateral = positionalValue / maxLeverage;
+
+      const user = USERS.get(data.userId);
+      if (!user) {
+        console.log("User not found");
+        continue;
+      }
+
+      if (user.balance - user.lockedBalance < requiredCollateral) {
+        console.log("No margin available for this trade");
+        continue;
+      }
+
+      user.lockedBalance += requiredCollateral;
+
       const normalizeOrder = (
         payload: z.infer<typeof createOrderPayloadSchema.shape.payload>,
         userId: number,
       ): Order => {
         return {
           id: payload.id,
-          margin: payload.margin,
           market: payload.market,
           qty: payload.qty,
           filledQty: 0,

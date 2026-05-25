@@ -1,4 +1,4 @@
-import { ORDER_TYPE, SYMBOLS } from "@repo/sharedtypes";
+import { ORDER_TYPE } from "@repo/sharedtypes";
 import { orderbooks, USERS } from "./inMemoryStates";
 import type { Fill, Order, PriceLevel } from "./types";
 

@@ -46,7 +46,6 @@ export const createOrderPayloadSchema = z.object({
     market: z.string(),
     type: z.enum(["SHORT", "LONG"]),
     qty: z.number(),
-    margin: z.number(),
     orderType: z.enum(ORDER_TYPE),
     price: z.number(),
   }),
@@ -86,12 +85,18 @@ export const eventSchema = z.discriminatedUnion("kind", [
 
 export const AssetConfig: Record<
   string,
-  { symbol: string; priceScale: number; quantityScale: number }
+  {
+    symbol: string;
+    priceScale: number;
+    quantityScale: number;
+    maxLeverage: number;
+  }
 > = {
   BTC: {
     symbol: "BTC",
     priceScale: 2,
     quantityScale: 2,
+    maxLeverage: 20,
   },
 };
 
