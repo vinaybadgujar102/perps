@@ -49,7 +49,7 @@ export const createOrderPayloadSchema = z.object({
 
 export const markPriceTickSchema = z.object({
   kind: z.literal(TICK_KINDS.MARK_PRICE),
-  payload: z.record(z.enum(SYMBOLS), z.number()),
+  payload: z.record(z.string(), z.number()),
 });
 
 export const fillSchema = z.object({

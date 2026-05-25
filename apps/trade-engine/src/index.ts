@@ -8,12 +8,9 @@ import {
 } from "@repo/sharedtypes";
 import { createClient } from "redis";
 import { createOrder, createUserHandle } from "./handlers";
-import { pricePoller } from "./pricePoller";
 import type { Order } from "./types";
 import { z } from "zod";
 import { orderbooks } from "./inMemoryStates";
-
-await pricePoller();
 
 const redis = createClient();
 await redis.connect();
@@ -67,8 +64,17 @@ while (true) {
         requestId: data.requestId,
         queue: QUEUES.RESPONSE_QUEUE,
       });
-
-      console.log(orderbooks.BTC);
+    } else if (data.kind === TICK_KINDS.MARK_PRICE) {
+      for (const [key, data1] of Object.entries(orderbooks)) {
+        const market = orderbooks[key];
+        if (!market) continue;
+        if (market.indexPrice === data.payload[key]) {
+          continue;
+        }
+        // update price
+        market.indexPrice = data.payload[key]!;
+        // call liquidations
+      }
     }
   } catch (error) {
     console.log(error);
