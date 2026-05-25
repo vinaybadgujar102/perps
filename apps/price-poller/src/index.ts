@@ -32,7 +32,6 @@ export async function pricePoller() {
     const res = JSON.parse(incomingData.toString());
     const { data } = BinanceMarkPriceResponseSchema.parse(res);
     const symbol = data.s.split("_")[0] as string;
-    console.log(symbol);
     const assetConfig = AssetConfig[symbol];
     if (!assetConfig) return;
 
@@ -47,9 +46,16 @@ setInterval(() => {
     payload: marketPriceState,
   };
 
-  redis.xAdd(QUEUES.SEND_QUEUE, "*", {
-    data: JSON.stringify(payload),
-  });
+  redis
+    .xAdd(QUEUES.SEND_QUEUE, "*", {
+      data: JSON.stringify(payload),
+    })
+    .then(() => {
+      console.log(
+        "price update successfully pushed to the send stream",
+        payload,
+      );
+    });
 }, 5000);
 
 await pricePoller();

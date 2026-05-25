@@ -22,6 +22,11 @@ export enum TICK_KINDS {
   MARK_PRICE = "mark_price",
 }
 
+export enum ORDER_TYPE {
+  MARKET_ORDER = "market_order",
+  LIMIT_ORDER = "LIMIT_ORDER",
+}
+
 //------------------------------------------------//
 
 export const createUserPayloadSchema = z.object({
@@ -42,7 +47,7 @@ export const createOrderPayloadSchema = z.object({
     type: z.enum(["SHORT", "LONG"]),
     qty: z.number(),
     margin: z.number(),
-    orderType: z.enum(["LIMIT", "MARKET"]),
+    orderType: z.enum(ORDER_TYPE),
     price: z.number(),
   }),
 });

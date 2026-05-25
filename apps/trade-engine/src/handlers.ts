@@ -1,4 +1,4 @@
-import { SYMBOLS } from "@repo/sharedtypes";
+import { ORDER_TYPE, SYMBOLS } from "@repo/sharedtypes";
 import { orderbooks, USERS } from "./inMemoryStates";
 import type { Fill, Order, PriceLevel } from "./types";
 
@@ -36,6 +36,24 @@ export const createOrder = (order: Order): TradeEngingResponse<Fill[]> => {
   }
 
   const fills = matchOrder(order) ?? [];
+
+  const availableQty = order.qty - order.filledQty;
+
+  // handle market order
+  if (order.orderType === ORDER_TYPE.MARKET_ORDER) {
+    let responseMsg = "";
+    if (availableQty === order.qty) {
+      responseMsg = "Order not matched at all";
+    } else {
+      responseMsg = "Order fully/partially filled";
+    }
+    return {
+      success: true,
+      data: fills,
+      message: responseMsg,
+    };
+  }
+
   console.log("[createOrder] Handler: matchOrder complete", {
     orderId: order.id,
     fillCount: fills.length,
@@ -43,7 +61,7 @@ export const createOrder = (order: Order): TradeEngingResponse<Fill[]> => {
     fills,
   });
 
-  const availableQty = order.qty - order.filledQty;
+  // handle limit order
   if (availableQty === 0) {
     console.log("[createOrder] Handler: order fully executed", {
       orderId: order.id,

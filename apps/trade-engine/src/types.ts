@@ -1,3 +1,4 @@
+import type { ORDER_TYPE } from "@repo/sharedtypes";
 import { z } from "zod";
 
 export type User = {
@@ -38,6 +39,7 @@ export type Order = {
   margin: number;
   price: number;
   userId: number;
+  orderType: ORDER_TYPE;
   type: "LONG" | "SHORT";
   timestamp: number;
 };

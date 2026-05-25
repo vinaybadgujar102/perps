@@ -1,3 +1,4 @@
+import { ORDER_TYPE } from "@repo/sharedtypes";
 import { number, z } from "zod";
 
 export const createOrderSchema = z.object({
@@ -5,6 +6,6 @@ export const createOrderSchema = z.object({
   type: z.enum(["SHORT", "LONG"]),
   qty: z.number(),
   margin: z.number(),
-  orderType: z.enum(["LIMIT", "MARKET"]),
+  orderType: z.enum(ORDER_TYPE),
   price: z.number(),
 });

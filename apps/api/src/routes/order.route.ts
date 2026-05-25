@@ -3,7 +3,11 @@ import { schemaValidator } from "../validators";
 import { createOrderSchema } from "../validators/order.validators";
 import type z from "zod";
 import { redis } from ".";
-import { EVENT_KINDS, QUEUES } from "@repo/sharedtypes";
+import {
+  createOrderPayloadSchema,
+  EVENT_KINDS,
+  QUEUES,
+} from "@repo/sharedtypes";
 import { requestMap } from "..";
 import { errorResponse, successResponse } from "../utils/responseUtils";
 import { StatusCodes } from "http-status-codes";
@@ -18,7 +22,7 @@ orderRouter.post(
     console.log("[createOrder] API: received request", { body: data });
 
     const requestId = crypto.randomUUID();
-    const payload = {
+    const payload: z.infer<typeof createOrderPayloadSchema> = {
       requestId,
       kind: EVENT_KINDS.CREATE_ORDER,
       userId: 1,

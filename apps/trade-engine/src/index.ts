@@ -45,6 +45,7 @@ while (true) {
           price: payload.price,
           userId: userId,
           type: payload.type,
+          orderType: payload.orderType,
           timestamp: Date.now(),
         };
       };
@@ -74,6 +75,7 @@ while (true) {
         // update price
         market.indexPrice = data.payload[key]!;
         // call liquidations
+        console.log(orderbooks);
       }
     }
   } catch (error) {
