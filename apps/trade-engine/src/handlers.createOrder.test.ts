@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
+import { ORDER_TYPE } from "@repo/sharedtypes";
 import { createOrder } from "./handlers";
 import { orderbooks } from "./inMemoryStates";
 import type { Order } from "./types";
@@ -16,10 +17,10 @@ function makeOrder(
     market: "BTC",
     qty: overrides.qty,
     filledQty: 0,
-    margin: 100,
     price: overrides.price,
     userId: overrides.userId ?? 1,
     type: overrides.type,
+    orderType: ORDER_TYPE.LIMIT_ORDER,
     timestamp: Date.now(),
     ...overrides,
   };

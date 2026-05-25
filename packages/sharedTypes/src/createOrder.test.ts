@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  AssetConfig,
   createOrderPayloadSchema,
   createOrderResponseSchema,
   EVENT_KINDS,
@@ -7,7 +8,7 @@ import {
 } from "./index";
 
 describe("createOrderPayloadSchema", () => {
-  test("accepts valid CREATE_ORDER payload", () => {
+  test("accepts valid CREATE_ORDER payload without client-supplied margin", () => {
     const payload = {
       requestId: "req-1",
       kind: EVENT_KINDS.CREATE_ORDER,
@@ -17,8 +18,7 @@ describe("createOrderPayloadSchema", () => {
         market: "BTC",
         type: "LONG" as const,
         qty: 10,
-        margin: 100,
-        orderType: "LIMIT" as const,
+        orderType: "LIMIT_ORDER" as const,
         price: 50_000,
       },
     };
@@ -27,6 +27,26 @@ describe("createOrderPayloadSchema", () => {
     expect(parsed.requestId).toBe("req-1");
     expect(parsed.payload.market).toBe("BTC");
     expect(parsed.payload.type).toBe("LONG");
+    expect("margin" in parsed.payload).toBe(false);
+  });
+
+  test("strips legacy margin field instead of rejecting it", () => {
+    const parsed = createOrderPayloadSchema.parse({
+      requestId: "req-legacy",
+      kind: EVENT_KINDS.CREATE_ORDER,
+      userId: 1,
+      payload: {
+        id: "order-legacy",
+        market: "BTC",
+        type: "LONG",
+        qty: 1,
+        margin: 999,
+        orderType: "LIMIT_ORDER",
+        price: 50_000,
+      },
+    });
+
+    expect("margin" in parsed.payload).toBe(false);
   });
 
   test("rejects invalid order type", () => {
@@ -40,8 +60,7 @@ describe("createOrderPayloadSchema", () => {
           market: "BTC",
           type: "BUY",
           qty: 10,
-          margin: 100,
-          orderType: "LIMIT",
+          orderType: "LIMIT_ORDER",
           price: 50_000,
         },
       }),
@@ -74,5 +93,11 @@ describe("createOrderResponseSchema", () => {
     const parsed = createOrderResponseSchema.parse(response);
     expect(parsed.data.success).toBe(true);
     expect(parsed.data.data).toHaveLength(1);
+  });
+});
+
+describe("AssetConfig", () => {
+  test("defines max leverage for supported markets", () => {
+    expect(AssetConfig.BTC.maxLeverage).toBe(20);
   });
 });
