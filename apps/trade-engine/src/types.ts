@@ -1,10 +1,11 @@
-import type { ORDER_TYPE } from "@repo/sharedtypes";
+import type { ORDER_TYPE, Position } from "@repo/sharedtypes";
 import { z } from "zod";
 
 export type User = {
   userId: number;
   balance: number;
   lockedBalance: number;
+  activePositions: Position[];
 };
 
 export const BinanceMarkPriceResponseSchema = z.object({

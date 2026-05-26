@@ -100,9 +100,14 @@ export const AssetConfig: Record<
   },
 };
 
-type Position = {
+export type Position = {
   id: string;
   orderId: string;
+  userId: number;
   market: string;
-  type: "LONG" | "SHORT";
+  size: number;
+  estimatedLiquidationPrice: number;
+  averageEntryPrice: number;
+  collateralUser: number;
+  createdAt: Date;
 };

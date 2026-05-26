@@ -1,6 +1,4 @@
-import type { PriceLevel, User } from "./types";
-
-export const USERS: Map<number, User> = new Map();
+import type { PriceLevel } from "./types";
 
 export const orderbooks: Record<
   string,

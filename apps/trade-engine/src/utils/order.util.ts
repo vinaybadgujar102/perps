@@ -1,14 +1,6 @@
 import { ORDER_TYPE } from "@repo/sharedtypes";
-import { orderbooks, USERS } from "./inMemoryStates";
-import type { Fill, Order, PriceLevel } from "./types";
-
-export const createUserHandle = (userId: number) => {
-  USERS.set(userId, {
-    userId,
-    balance: 0,
-    lockedBalance: 0,
-  });
-};
+import { orderbooks } from "../inMemoryStates";
+import type { Fill, Order, PriceLevel } from "../types";
 
 const getOrderbook = (market: string) => {
   return orderbooks[market];
