@@ -14,6 +14,7 @@ function getPositionsSnapshot() {
     averageEntryPrice: value.averageEntryPrice,
     collateralUser: value.collateralUser,
     orderId: value.orderId,
+    liquidationPrice: value.estimatedLiquidationPrice,
   }));
 }
 
@@ -144,7 +145,10 @@ function submitOrder(order: Order, label: string) {
 function runE2ESeed() {
   logStep("E2E seed start");
   resetState();
-  logStep("State reset", { positions: POSITIONS.size, orderbook: getOrderbookSnapshot() });
+  logStep("State reset", {
+    positions: POSITIONS.size,
+    orderbook: getOrderbookSnapshot(),
+  });
 
   ensureUsers();
   logStep(
