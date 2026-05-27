@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { ORDER_TYPE } from "@repo/sharedtypes";
-import { createOrder } from "./handlers";
+import { createOrder } from "./utils/order.util";
 import { orderbooks } from "./inMemoryStates";
 import type { Order } from "./types";
 

@@ -11,7 +11,8 @@
   },
   "scripts": {
     "dev": "bun run src/index.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "seed:e2e": "bun run src/seeds/e2e.seed.ts"
   },
   "dependencies": {
     "@repo/sharedtypes": "workspace:*",

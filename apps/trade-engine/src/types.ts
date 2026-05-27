@@ -5,7 +5,7 @@ export type User = {
   userId: number;
   balance: number;
   lockedBalance: number;
-  activePositions: Position[];
+  activePositions: Map<string, Position>;
 };
 
 export const BinanceMarkPriceResponseSchema = z.object({
@@ -50,6 +50,10 @@ export type Fill = {
   makerId: number;
   takerId: number;
   price: number;
-  orderId: string;
+  makerOrderId: string;
+  takerOrderId: string;
+  filledQty: number;
+  makerOrderType: "LONG" | "SHORT";
+  takerOrderType: "LONG" | "SHORT";
   timestamp: number;
 };

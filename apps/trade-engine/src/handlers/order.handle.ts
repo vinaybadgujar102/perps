@@ -1,12 +1,19 @@
-import { AssetConfig, QUEUES, RESPONSE_KINDS, type createOrderPayloadSchema } from "@repo/sharedtypes";
+import {
+  AssetConfig,
+  QUEUES,
+  RESPONSE_KINDS,
+  type createOrderPayloadSchema,
+} from "@repo/sharedtypes";
 import type z from "zod";
 import { USERS } from "../utils/user.util";
-import { positionFactory } from "../utils/position.util";
+import { createPosition } from "../utils/position.util";
 import type { Order } from "../types";
 import { publisherRedis } from ".";
 import { createOrder } from "../utils/order.util";
 
-export const handleCreateOrderEvent = (data: z.infer<typeof createOrderPayloadSchema>) => {
+export const handleCreateOrderEvent = async (
+  data: z.infer<typeof createOrderPayloadSchema>,
+) => {
   const { price, qty } = data.payload;
 
   const assetConfig = AssetConfig[data.payload.market]!;
@@ -22,7 +29,7 @@ export const handleCreateOrderEvent = (data: z.infer<typeof createOrderPayloadSc
 
   if (user.balance - user.lockedBalance < requiredCollateral) {
     console.log("No margin available for this trade");
-    continue;
+    return;
   }
 
   user.lockedBalance += requiredCollateral;
@@ -54,22 +61,35 @@ export const handleCreateOrderEvent = (data: z.infer<typeof createOrderPayloadSc
     }),
   });
 
-  if (res.data && res.data.length === 0) {
-    continue;
+  const fills = res.data;
+
+  if (!fills || (fills && fills.length === 0)) {
+    return;
   }
 
-  const totalCost = res.data!.reduce((acc, fill) => {
-    return acc + fill.price * fill.;
-  }, 0);
+  for (const fill of fills) {
+    // taker position
+    createPosition({
+      userId: fill.takerId,
+      orderId: fill.takerOrderId,
+      market: fill.market,
 
-  const totalQty = res.data!.reduce((acc, fill) => {
-    return acc + fill.qty;
-  }, 0);
+      orderType: fill.takerOrderType,
 
-  const averageEntryPrice = totalCost / totalQty;
+      filledQty: fill.filledQty,
+      fillPrice: fill.price,
+    });
 
-  // create position
- const newPosition = positionFactory(order, requiredCollateral, averageEntryPrice)
-  USERS.addPosition(user.userId, newPosition)
+    // maker position
+    createPosition({
+      userId: fill.makerId,
+      orderId: fill.makerOrderId,
+      market: fill.market,
 
-}
+      orderType: fill.makerOrderType,
+
+      filledQty: fill.filledQty,
+      fillPrice: fill.price,
+    });
+  }
+};

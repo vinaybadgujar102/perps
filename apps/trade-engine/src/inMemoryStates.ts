@@ -1,3 +1,4 @@
+import type { Position } from "@repo/sharedtypes";
 import type { PriceLevel } from "./types";
 
 export const orderbooks: Record<
@@ -7,3 +8,5 @@ export const orderbooks: Record<
   BTC: { bids: [], asks: [], indexPrice: 0 },
   SOL: { bids: [], asks: [], indexPrice: 0 },
 };
+
+export const POSITIONS: Map<string, Position> = new Map();

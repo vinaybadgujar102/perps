@@ -9,7 +9,7 @@ export function createUserManager() {
       userId,
       balance: 0,
       lockedBalance: 0,
-      activePositions: [],
+      activePositions: new Map(),
     };
   }
 
@@ -29,10 +29,23 @@ export function createUserManager() {
       return users.get(userId);
     },
 
+    getPosition(userId: number, orderId: string) {
+      const user = users.get(userId);
+      if (!user) return null;
+
+      return user.activePositions.get(orderId);
+    },
+
     addPosition(userId: number, position: Position) {
       const user = users.get(userId);
       if (!user) return null;
-      user.activePositions.push(position);
+
+      const userPosition = user.activePositions.get(position.orderId);
+      if (userPosition) {
+        return userPosition;
+      }
+      const newPosition = user.activePositions.set(position.orderId, position);
+      return newPosition;
     },
   };
 }

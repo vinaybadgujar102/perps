@@ -63,6 +63,9 @@ export const fillSchema = z.object({
   takerId: z.number(),
   price: z.number(),
   orderId: z.string(),
+  filledQty: z.number(),
+  takerOrderType: z.enum(["LONG", "SHORT"]),
+  makerOrderType: z.enum(["LONG", "SHORT"]),
   timestamp: z.number(),
 });
 

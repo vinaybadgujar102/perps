@@ -148,8 +148,12 @@ const matchOrder = (order: Order): Fill[] | null => {
           makerId: makerOrder.userId,
           takerId: order.userId,
           market: order.market,
+          takerOrderType: order.type,
+          makerOrderType: makerOrder.type,
           timestamp: Date.now(),
-          orderId: order.id,
+          takerOrderId: order.id,
+          makerOrderId: makerOrder.id,
+          filledQty: filledQty,
           price: priceLevel.price,
         });
       }
