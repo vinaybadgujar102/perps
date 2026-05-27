@@ -1,9 +1,9 @@
-type LiquidationInput = {
+import { MMR } from "../constants";
+
+export type LiquidationInput = {
   qty: number;
   averageEntryPrice: number;
   collateral: number;
-  // maintenance margin rate as a decimal (e.g. 0.005 for 0.5%).
-  mmr: number;
 };
 
 /**
@@ -11,9 +11,9 @@ type LiquidationInput = {
  * LiqPrice = (EntryPrice * Qty - InitialMargin) / (Qty * (1 - MMR))
  */
 export function calculateLongLiquidationPrice(input: LiquidationInput): number {
-  const { qty, averageEntryPrice, collateral, mmr } = input;
+  const { qty, averageEntryPrice, collateral } = input;
 
-  return (averageEntryPrice * qty - collateral) / (qty * (1 - mmr));
+  return (averageEntryPrice * qty - collateral) / (qty * (1 - MMR));
 }
 
 /**
@@ -23,7 +23,16 @@ export function calculateLongLiquidationPrice(input: LiquidationInput): number {
 export function calculateShortLiquidationPrice(
   input: LiquidationInput,
 ): number {
-  const { qty, averageEntryPrice, collateral, mmr } = input;
+  const { qty, averageEntryPrice, collateral } = input;
 
-  return (averageEntryPrice * qty + collateral) / (qty * (1 + mmr));
+  return (averageEntryPrice * qty + collateral) / (qty * (1 + MMR));
+}
+
+export function calculateLiquidationPrice(
+  orderType: "LONG" | "SHORT",
+  input: LiquidationInput,
+): number {
+  return orderType === "LONG"
+    ? calculateLongLiquidationPrice(input)
+    : calculateShortLiquidationPrice(input);
 }

@@ -1,6 +1,7 @@
 import { AssetConfig, type Position } from "@repo/sharedtypes";
-import type { Fill, Order } from "../types";
+import type { Order } from "../types";
 import { POSITIONS } from "../inMemoryStates";
+import { calculateLiquidationPrice } from "./liquidation.util";
 
 export const positionFactory = (
   order: Order,
@@ -34,6 +35,22 @@ type CreatePositionParams = {
   fillPrice: number;
 };
 
+function positionSideFromSize(size: number): "LONG" | "SHORT" {
+  return size > 0 ? "LONG" : "SHORT";
+}
+
+function estimatedLiquidationPrice(
+  size: number,
+  averageEntryPrice: number,
+  collateral: number,
+): number {
+  return calculateLiquidationPrice(positionSideFromSize(size), {
+    qty: Math.abs(size),
+    averageEntryPrice,
+    collateral,
+  });
+}
+
 export const createPosition = ({
   userId,
   orderId,
@@ -66,7 +83,11 @@ export const createPosition = ({
       size: signedFilledSize,
       collateralUser: fillMargin,
       averageEntryPrice: fillPrice,
-      estimatedLiquidationPrice: 0,
+      estimatedLiquidationPrice: estimatedLiquidationPrice(
+        signedFilledSize,
+        fillPrice,
+        fillMargin,
+      ),
     };
 
     POSITIONS.set(positionMapKey, newPosition);
@@ -86,14 +107,21 @@ export const createPosition = ({
         fillPrice * Math.abs(signedFilledSize)) /
       Math.abs(updatedSize);
 
+    const updatedCollateral = currentPosition.collateralUser + fillMargin;
+
     const updatedPosition: Position = {
       ...currentPosition,
 
       size: updatedSize,
 
-      collateralUser: currentPosition.collateralUser + fillMargin,
+      collateralUser: updatedCollateral,
 
       averageEntryPrice: weightedEntryPrice,
+      estimatedLiquidationPrice: estimatedLiquidationPrice(
+        updatedSize,
+        weightedEntryPrice,
+        updatedCollateral,
+      ),
     };
 
     POSITIONS.set(positionMapKey, updatedPosition);
@@ -102,13 +130,20 @@ export const createPosition = ({
   }
 
   if (Math.abs(signedFilledSize) < Math.abs(oldSize)) {
+    const updatedCollateral =
+      currentPosition.collateralUser *
+      (Math.abs(updatedSize) / Math.abs(oldSize));
+
     const updatedPosition: Position = {
       ...currentPosition,
-
+      estimatedLiquidationPrice: estimatedLiquidationPrice(
+        updatedSize,
+        currentPosition.averageEntryPrice,
+        updatedCollateral,
+      ),
       size: updatedSize,
-      collateralUser:
-        currentPosition.collateralUser *
-        (Math.abs(updatedSize) / Math.abs(oldSize)),
+      collateralUser: updatedCollateral,
+
       averageEntryPrice: currentPosition.averageEntryPrice,
     };
 
@@ -121,14 +156,22 @@ export const createPosition = ({
 
     return;
   }
+
+  const updatedCollateral = (Math.abs(updatedSize) * fillPrice) / maxLeverage;
+
   const updatedPosition: Position = {
     ...currentPosition,
 
     size: updatedSize,
 
-    collateralUser: (Math.abs(updatedSize) * fillPrice) / maxLeverage,
+    collateralUser: updatedCollateral,
 
     averageEntryPrice: fillPrice,
+    estimatedLiquidationPrice: estimatedLiquidationPrice(
+      updatedSize,
+      fillPrice,
+      updatedCollateral,
+    ),
   };
 
   POSITIONS.set(positionMapKey, updatedPosition);
