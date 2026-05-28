@@ -1,9 +1,9 @@
-import { ORDER_TYPE } from "@repo/sharedtypes";
-import { number, z } from "zod";
+import { ORDER_TYPE, SIDE } from "@repo/sharedtypes";
+import { z } from "zod";
 
 export const createOrderSchema = z.object({
   market: z.string(),
-  type: z.enum(["SHORT", "LONG"]),
+  side: z.nativeEnum(SIDE),
   qty: z.number(),
   orderType: z.enum(ORDER_TYPE),
   price: z.number(),

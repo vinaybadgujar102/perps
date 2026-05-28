@@ -34,7 +34,7 @@ describe("createPosition", () => {
       userId: 1,
       orderId: "order-1",
       market: "BTC",
-      orderType: "LONG",
+      side: "LONG",
       filledQty: 2,
       fillPrice: 50_000,
     });
@@ -53,7 +53,7 @@ describe("createPosition", () => {
       userId: 10,
       orderId: "order-short",
       market: "BTC",
-      orderType: "SHORT",
+      side: "SHORT",
       filledQty: 2,
       fillPrice: 50_000,
     });
@@ -69,7 +69,7 @@ describe("createPosition", () => {
       userId: 2,
       orderId: "order-a",
       market: "BTC",
-      orderType: "LONG",
+      side: "LONG",
       filledQty: 2,
       fillPrice: 50_000,
     });
@@ -77,7 +77,7 @@ describe("createPosition", () => {
       userId: 2,
       orderId: "order-b",
       market: "BTC",
-      orderType: "LONG",
+      side: "LONG",
       filledQty: 1,
       fillPrice: 51_000,
     });
@@ -103,7 +103,7 @@ describe("createPosition", () => {
       userId: 3,
       orderId: "order-long",
       market: "BTC",
-      orderType: "LONG",
+      side: "LONG",
       filledQty: 4,
       fillPrice: 50_000,
     });
@@ -111,7 +111,7 @@ describe("createPosition", () => {
       userId: 3,
       orderId: "order-short-close",
       market: "BTC",
-      orderType: "SHORT",
+      side: "SHORT",
       filledQty: 1.5,
       fillPrice: 52_000,
     });
@@ -140,7 +140,7 @@ describe("createPosition", () => {
       userId: 6,
       orderId: "open-short",
       market: "BTC",
-      orderType: "SHORT",
+      side: "SHORT",
       filledQty: 4,
       fillPrice: 50_000,
     });
@@ -148,7 +148,7 @@ describe("createPosition", () => {
       userId: 6,
       orderId: "close-partial-long",
       market: "BTC",
-      orderType: "LONG",
+      side: "LONG",
       filledQty: 1.5,
       fillPrice: 48_000,
     });
@@ -177,7 +177,7 @@ describe("createPosition", () => {
       userId: 4,
       orderId: "open-short",
       market: "BTC",
-      orderType: "SHORT",
+      side: "SHORT",
       filledQty: 3,
       fillPrice: 50_000,
     });
@@ -185,7 +185,7 @@ describe("createPosition", () => {
       userId: 4,
       orderId: "close-short",
       market: "BTC",
-      orderType: "LONG",
+      side: "LONG",
       filledQty: 3,
       fillPrice: 49_000,
     });
@@ -198,7 +198,7 @@ describe("createPosition", () => {
       userId: 5,
       orderId: "open-long",
       market: "BTC",
-      orderType: "LONG",
+      side: "LONG",
       filledQty: 2,
       fillPrice: 50_000,
     });
@@ -206,7 +206,7 @@ describe("createPosition", () => {
       userId: 5,
       orderId: "flip-to-short",
       market: "BTC",
-      orderType: "SHORT",
+      side: "SHORT",
       filledQty: 3,
       fillPrice: 51_000,
     });

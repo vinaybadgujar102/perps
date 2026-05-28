@@ -1,4 +1,4 @@
-import type { ORDER_TYPE, Position } from "@repo/sharedtypes";
+import type { ORDER_TYPE, Position, Side } from "@repo/sharedtypes";
 import { z } from "zod";
 
 export type User = {
@@ -40,7 +40,7 @@ export type Order = {
   price: number;
   userId: number;
   orderType: ORDER_TYPE;
-  type: "LONG" | "SHORT";
+  side: Side;
   timestamp: number;
 };
 
@@ -53,7 +53,7 @@ export type Fill = {
   makerOrderId: string;
   takerOrderId: string;
   filledQty: number;
-  makerOrderType: "LONG" | "SHORT";
-  takerOrderType: "LONG" | "SHORT";
+  makerSide: Side;
+  takerSide: Side;
   timestamp: number;
 };

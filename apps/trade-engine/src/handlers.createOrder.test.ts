@@ -10,7 +10,7 @@ function resetOrderbooks() {
 }
 
 function makeOrder(
-  overrides: Partial<Order> & Pick<Order, "type" | "price" | "qty">,
+  overrides: Partial<Order> & Pick<Order, "side" | "price" | "qty">,
 ): Order {
   return {
     id: crypto.randomUUID(),
@@ -19,7 +19,7 @@ function makeOrder(
     filledQty: 0,
     price: overrides.price,
     userId: overrides.userId ?? 1,
-    type: overrides.type,
+    side: overrides.side,
     orderType: ORDER_TYPE.LIMIT_ORDER,
     timestamp: Date.now(),
     ...overrides,
@@ -33,7 +33,7 @@ describe("createOrder", () => {
 
   test("returns failure when orderbook does not exist", () => {
     const result = createOrder(
-      makeOrder({ market: "ETH", type: "LONG", price: 100, qty: 1 }),
+      makeOrder({ market: "ETH", side: "LONG", price: 100, qty: 1 }),
     );
 
     expect(result.success).toBe(false);
@@ -42,7 +42,7 @@ describe("createOrder", () => {
   });
 
   test("places LONG limit on bids when book is empty", () => {
-    const result = createOrder(makeOrder({ type: "LONG", price: 50_000, qty: 2 }));
+    const result = createOrder(makeOrder({ side: "LONG", price: 50_000, qty: 2 }));
 
     expect(result.success).toBe(true);
     expect(result.message).toBe("order placed in orderbook");
@@ -54,7 +54,7 @@ describe("createOrder", () => {
   });
 
   test("places SHORT limit on asks when book is empty", () => {
-    const result = createOrder(makeOrder({ type: "SHORT", price: 51_000, qty: 3 }));
+    const result = createOrder(makeOrder({ side: "SHORT", price: 51_000, qty: 3 }));
 
     expect(result.success).toBe(true);
     expect(result.message).toBe("order placed in orderbook");
@@ -67,11 +67,11 @@ describe("createOrder", () => {
 
   test("fully fills LONG taker against resting SHORT ask", () => {
     createOrder(
-      makeOrder({ type: "SHORT", price: 100, qty: 10, userId: 1 }),
+      makeOrder({ side: "SHORT", price: 100, qty: 10, userId: 1 }),
     );
 
     const result = createOrder(
-      makeOrder({ type: "LONG", price: 100, qty: 5, userId: 2 }),
+      makeOrder({ side: "LONG", price: 100, qty: 5, userId: 2 }),
     );
 
     expect(result.success).toBe(true);
@@ -88,10 +88,10 @@ describe("createOrder", () => {
 
   test("decrements ask availableQty when maker is partially filled", () => {
     createOrder(
-      makeOrder({ type: "SHORT", price: 100, qty: 10, userId: 1 }),
+      makeOrder({ side: "SHORT", price: 100, qty: 10, userId: 1 }),
     );
 
-    createOrder(makeOrder({ type: "LONG", price: 100, qty: 3, userId: 2 }));
+    createOrder(makeOrder({ side: "LONG", price: 100, qty: 3, userId: 2 }));
 
     expect(orderbooks.BTC.asks[0]?.availableQty).toBe(7);
     expect(orderbooks.BTC.asks[0]?.orders[0]?.filledQty).toBe(3);
@@ -99,11 +99,11 @@ describe("createOrder", () => {
 
   test("partially fills taker and places remainder on bids", () => {
     createOrder(
-      makeOrder({ type: "SHORT", price: 100, qty: 4, userId: 1 }),
+      makeOrder({ side: "SHORT", price: 100, qty: 4, userId: 1 }),
     );
 
     const result = createOrder(
-      makeOrder({ type: "LONG", price: 101, qty: 10, userId: 2 }),
+      makeOrder({ side: "LONG", price: 101, qty: 10, userId: 2 }),
     );
 
     expect(result.success).toBe(true);
@@ -119,17 +119,17 @@ describe("createOrder", () => {
 
   test("sweeps multiple ask levels and rests remainder on bids", () => {
     createOrder(
-      makeOrder({ type: "SHORT", price: 100, qty: 10, userId: 1 }),
+      makeOrder({ side: "SHORT", price: 100, qty: 10, userId: 1 }),
     );
     createOrder(
-      makeOrder({ type: "SHORT", price: 102, qty: 5, userId: 3 }),
+      makeOrder({ side: "SHORT", price: 102, qty: 5, userId: 3 }),
     );
     createOrder(
-      makeOrder({ type: "SHORT", price: 105, qty: 8, userId: 4 }),
+      makeOrder({ side: "SHORT", price: 105, qty: 8, userId: 4 }),
     );
 
     const result = createOrder(
-      makeOrder({ type: "LONG", price: 106, qty: 25, userId: 2 }),
+      makeOrder({ side: "LONG", price: 106, qty: 25, userId: 2 }),
     );
 
     expect(result.success).toBe(true);
@@ -145,17 +145,17 @@ describe("createOrder", () => {
 
   test("fully sweeps asks and leaves no bid when taker qty equals total liquidity", () => {
     createOrder(
-      makeOrder({ type: "SHORT", price: 100, qty: 10, userId: 1 }),
+      makeOrder({ side: "SHORT", price: 100, qty: 10, userId: 1 }),
     );
     createOrder(
-      makeOrder({ type: "SHORT", price: 102, qty: 5, userId: 3 }),
+      makeOrder({ side: "SHORT", price: 102, qty: 5, userId: 3 }),
     );
     createOrder(
-      makeOrder({ type: "SHORT", price: 105, qty: 8, userId: 4 }),
+      makeOrder({ side: "SHORT", price: 105, qty: 8, userId: 4 }),
     );
 
     const result = createOrder(
-      makeOrder({ type: "LONG", price: 106, qty: 20, userId: 2 }),
+      makeOrder({ side: "LONG", price: 106, qty: 20, userId: 2 }),
     );
 
     expect(result.message).toBe("Order fully executed");
@@ -168,11 +168,11 @@ describe("createOrder", () => {
 
   test("fully fills SHORT taker against resting LONG bid", () => {
     createOrder(
-      makeOrder({ type: "LONG", price: 200, qty: 7, userId: 1 }),
+      makeOrder({ side: "LONG", price: 200, qty: 7, userId: 1 }),
     );
 
     const result = createOrder(
-      makeOrder({ type: "SHORT", price: 200, qty: 3, userId: 2 }),
+      makeOrder({ side: "SHORT", price: 200, qty: 3, userId: 2 }),
     );
 
     expect(result.success).toBe(true);
@@ -189,10 +189,10 @@ describe("createOrder", () => {
 
   test("decrements bid availableQty when maker is partially filled", () => {
     createOrder(
-      makeOrder({ type: "LONG", price: 200, qty: 8, userId: 1 }),
+      makeOrder({ side: "LONG", price: 200, qty: 8, userId: 1 }),
     );
 
-    createOrder(makeOrder({ type: "SHORT", price: 200, qty: 2, userId: 2 }));
+    createOrder(makeOrder({ side: "SHORT", price: 200, qty: 2, userId: 2 }));
 
     expect(orderbooks.BTC.bids[0]?.availableQty).toBe(6);
     expect(orderbooks.BTC.bids[0]?.orders[0]?.filledQty).toBe(2);
@@ -200,11 +200,11 @@ describe("createOrder", () => {
 
   test("does not match when LONG price is below best ask", () => {
     createOrder(
-      makeOrder({ type: "SHORT", price: 100, qty: 5, userId: 1 }),
+      makeOrder({ side: "SHORT", price: 100, qty: 5, userId: 1 }),
     );
 
     const result = createOrder(
-      makeOrder({ type: "LONG", price: 99, qty: 2, userId: 2 }),
+      makeOrder({ side: "LONG", price: 99, qty: 2, userId: 2 }),
     );
 
     expect(result.success).toBe(true);

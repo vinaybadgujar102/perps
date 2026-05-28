@@ -1,3 +1,5 @@
+import type { Side } from "@repo/sharedtypes";
+import { SIDE } from "@repo/sharedtypes";
 import { MMR } from "../constants";
 
 export type LiquidationInput = {
@@ -29,10 +31,10 @@ export function calculateShortLiquidationPrice(
 }
 
 export function calculateLiquidationPrice(
-  orderType: "LONG" | "SHORT",
+  side: Side,
   input: LiquidationInput,
 ): number {
-  return orderType === "LONG"
+  return side === SIDE.LONG
     ? calculateLongLiquidationPrice(input)
     : calculateShortLiquidationPrice(input);
 }

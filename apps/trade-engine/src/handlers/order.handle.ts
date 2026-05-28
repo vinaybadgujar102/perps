@@ -45,7 +45,7 @@ export const handleCreateOrderEvent = async (
       filledQty: 0,
       price: payload.price,
       userId: userId,
-      type: payload.type,
+      side: payload.side,
       orderType: payload.orderType,
       timestamp: Date.now(),
     };
@@ -74,7 +74,7 @@ export const handleCreateOrderEvent = async (
       orderId: fill.takerOrderId,
       market: fill.market,
 
-      orderType: fill.takerOrderType,
+      side: fill.takerSide,
 
       filledQty: fill.filledQty,
       fillPrice: fill.price,
@@ -86,7 +86,7 @@ export const handleCreateOrderEvent = async (
       orderId: fill.makerOrderId,
       market: fill.market,
 
-      orderType: fill.makerOrderType,
+      side: fill.makerSide,
 
       filledQty: fill.filledQty,
       fillPrice: fill.price,

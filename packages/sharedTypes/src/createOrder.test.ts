@@ -16,7 +16,7 @@ describe("createOrderPayloadSchema", () => {
       payload: {
         id: "order-1",
         market: "BTC",
-        type: "LONG" as const,
+        side: "LONG" as const,
         qty: 10,
         orderType: "LIMIT_ORDER" as const,
         price: 50_000,
@@ -26,7 +26,7 @@ describe("createOrderPayloadSchema", () => {
     const parsed = createOrderPayloadSchema.parse(payload);
     expect(parsed.requestId).toBe("req-1");
     expect(parsed.payload.market).toBe("BTC");
-    expect(parsed.payload.type).toBe("LONG");
+    expect(parsed.payload.side).toBe("LONG");
     expect("margin" in parsed.payload).toBe(false);
   });
 
@@ -38,7 +38,7 @@ describe("createOrderPayloadSchema", () => {
       payload: {
         id: "order-legacy",
         market: "BTC",
-        type: "LONG",
+        side: "LONG",
         qty: 1,
         margin: 999,
         orderType: "LIMIT_ORDER",
@@ -49,7 +49,7 @@ describe("createOrderPayloadSchema", () => {
     expect("margin" in parsed.payload).toBe(false);
   });
 
-  test("rejects invalid order type", () => {
+  test("rejects invalid side", () => {
     expect(() =>
       createOrderPayloadSchema.parse({
         requestId: "req-1",
@@ -58,7 +58,7 @@ describe("createOrderPayloadSchema", () => {
         payload: {
           id: "order-1",
           market: "BTC",
-          type: "BUY",
+          side: "BUY",
           qty: 10,
           orderType: "LIMIT_ORDER",
           price: 50_000,
@@ -84,6 +84,9 @@ describe("createOrderResponseSchema", () => {
             takerId: 2,
             price: 100,
             orderId: "order-1",
+            filledQty: 1,
+            takerSide: "LONG" as const,
+            makerSide: "SHORT" as const,
             timestamp: Date.now(),
           },
         ],

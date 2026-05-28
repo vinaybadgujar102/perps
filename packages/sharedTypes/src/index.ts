@@ -27,6 +27,13 @@ export enum ORDER_TYPE {
   LIMIT_ORDER = "LIMIT_ORDER",
 }
 
+export enum SIDE {
+  LONG = "LONG",
+  SHORT = "SHORT",
+}
+
+export type Side = SIDE;
+
 //------------------------------------------------//
 
 export const createUserPayloadSchema = z.object({
@@ -44,7 +51,7 @@ export const createOrderPayloadSchema = z.object({
   payload: z.object({
     id: z.string(),
     market: z.string(),
-    type: z.enum(["SHORT", "LONG"]),
+    side: z.nativeEnum(SIDE),
     qty: z.number(),
     orderType: z.enum(ORDER_TYPE),
     price: z.number(),
@@ -64,8 +71,8 @@ export const fillSchema = z.object({
   price: z.number(),
   orderId: z.string(),
   filledQty: z.number(),
-  takerOrderType: z.enum(["LONG", "SHORT"]),
-  makerOrderType: z.enum(["LONG", "SHORT"]),
+  takerSide: z.nativeEnum(SIDE),
+  makerSide: z.nativeEnum(SIDE),
   timestamp: z.number(),
 });
 
@@ -112,5 +119,6 @@ export type Position = {
   estimatedLiquidationPrice: number;
   averageEntryPrice: number;
   collateralUser: number;
+  unrealizedPnl: number;
   createdAt: Date;
 };

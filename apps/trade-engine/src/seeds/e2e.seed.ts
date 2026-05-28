@@ -29,7 +29,7 @@ function getOrderbookSnapshot() {
           userId: order.userId,
           qty: order.qty,
           filledQty: order.filledQty,
-          type: order.type,
+          side: order.side,
         })),
       })),
       asks: orderbooks.BTC.asks.map((level) => ({
@@ -40,7 +40,7 @@ function getOrderbookSnapshot() {
           userId: order.userId,
           qty: order.qty,
           filledQty: order.filledQty,
-          type: order.type,
+          side: order.side,
         })),
       })),
       indexPrice: orderbooks.BTC.indexPrice,
@@ -78,14 +78,14 @@ function ensureUsers() {
 function makeOrder({
   id,
   userId,
-  type,
+  side,
   qty,
   price,
   market = "BTC",
 }: {
   id: string;
   userId: number;
-  type: "LONG" | "SHORT";
+  side: Order["side"];
   qty: number;
   price: number;
   market?: string;
@@ -97,7 +97,7 @@ function makeOrder({
     qty,
     filledQty: 0,
     price,
-    type,
+    side,
     orderType: ORDER_TYPE.LIMIT_ORDER,
     timestamp: Date.now(),
   };
@@ -116,7 +116,7 @@ function applyFillsToPositions(fills: ReturnType<typeof createOrder>["data"]) {
       userId: fill.takerId,
       orderId: fill.takerOrderId,
       market: fill.market,
-      orderType: fill.takerOrderType,
+      side: fill.takerSide,
       filledQty: fill.filledQty,
       fillPrice: fill.price,
     });
@@ -125,7 +125,7 @@ function applyFillsToPositions(fills: ReturnType<typeof createOrder>["data"]) {
       userId: fill.makerId,
       orderId: fill.makerOrderId,
       market: fill.market,
-      orderType: fill.makerOrderType,
+      side: fill.makerSide,
       filledQty: fill.filledQty,
       fillPrice: fill.price,
     });
@@ -161,7 +161,7 @@ function runE2ESeed() {
     makeOrder({
       id: "maker-short-1",
       userId: 101,
-      type: "SHORT",
+      side: "SHORT",
       qty: 2,
       price: 50_000,
     }),
@@ -171,7 +171,7 @@ function runE2ESeed() {
     makeOrder({
       id: "maker-short-2",
       userId: 303,
-      type: "SHORT",
+      side: "SHORT",
       qty: 1.5,
       price: 50_100,
     }),
@@ -183,7 +183,7 @@ function runE2ESeed() {
     makeOrder({
       id: "taker-long-1",
       userId: 202,
-      type: "LONG",
+      side: "LONG",
       qty: 3,
       price: 50_200,
     }),
@@ -196,7 +196,7 @@ function runE2ESeed() {
     makeOrder({
       id: "maker-short-3",
       userId: 101,
-      type: "SHORT",
+      side: "SHORT",
       qty: 1,
       price: 50_300,
     }),
@@ -206,7 +206,7 @@ function runE2ESeed() {
     makeOrder({
       id: "taker-long-2",
       userId: 202,
-      type: "LONG",
+      side: "LONG",
       qty: 1,
       price: 50_300,
     }),

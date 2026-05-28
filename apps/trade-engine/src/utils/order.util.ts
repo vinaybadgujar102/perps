@@ -1,4 +1,4 @@
-import { ORDER_TYPE } from "@repo/sharedtypes";
+import { ORDER_TYPE, SIDE } from "@repo/sharedtypes";
 import { orderbooks } from "../inMemoryStates";
 import type { Fill, Order, PriceLevel } from "../types";
 
@@ -65,9 +65,9 @@ export const createOrder = (order: Order): TradeEngingResponse<Fill[]> => {
     };
   }
 
-  const side = order.type === "LONG" ? orderbook.bids : orderbook.asks;
+  const bookSide = order.side === SIDE.LONG ? orderbook.bids : orderbook.asks;
 
-  const priceLevel = side.find(
+  const priceLevel = bookSide.find(
     (priceLevel) => priceLevel.price === order.price,
   );
   if (!priceLevel) {
@@ -78,7 +78,7 @@ export const createOrder = (order: Order): TradeEngingResponse<Fill[]> => {
     };
     newPriceLevel.orders.push(order);
 
-    if (order.type === "LONG") {
+    if (order.side === SIDE.LONG) {
       const index = orderbook.bids.findIndex(
         (priceLevel) => order.price > priceLevel.price,
       );
@@ -108,7 +108,7 @@ export const createOrder = (order: Order): TradeEngingResponse<Fill[]> => {
     orderId: order.id,
     availableQty,
     price: order.price,
-    type: order.type,
+    side: order.side,
   });
   return {
     success: true,
@@ -124,7 +124,7 @@ const matchOrder = (order: Order): Fill[] | null => {
   }
   const fills: Fill[] = [];
 
-  if (order.type === "LONG") {
+  if (order.side === SIDE.LONG) {
     for (let i = 0; i < orderbook.asks.length; i++) {
       const priceLevel = orderbook.asks[i];
       if (!priceLevel) return fills;
@@ -148,8 +148,8 @@ const matchOrder = (order: Order): Fill[] | null => {
           makerId: makerOrder.userId,
           takerId: order.userId,
           market: order.market,
-          takerOrderType: order.type,
-          makerOrderType: makerOrder.type,
+          takerSide: order.side,
+          makerSide: makerOrder.side,
           timestamp: Date.now(),
           takerOrderId: order.id,
           makerOrderId: makerOrder.id,
@@ -192,8 +192,12 @@ const matchOrder = (order: Order): Fill[] | null => {
           makerId: makerOrder.userId,
           takerId: order.userId,
           market: order.market,
+          takerSide: order.side,
+          makerSide: makerOrder.side,
           timestamp: Date.now(),
-          orderId: order.id,
+          takerOrderId: order.id,
+          makerOrderId: makerOrder.id,
+          filledQty: filledQty,
           price: priceLevel.price,
         });
       }

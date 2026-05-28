@@ -5,7 +5,7 @@ describe("createOrderSchema", () => {
   test("accepts valid API create order body without margin", () => {
     const body = {
       market: "BTC",
-      type: "LONG" as const,
+      side: "LONG" as const,
       qty: 5,
       orderType: "LIMIT_ORDER" as const,
       price: 50_000,
@@ -18,7 +18,7 @@ describe("createOrderSchema", () => {
     expect(() =>
       createOrderSchema.parse({
         market: "BTC",
-        type: "LONG",
+        side: "LONG",
         qty: 5,
       }),
     ).toThrow();
@@ -28,7 +28,7 @@ describe("createOrderSchema", () => {
     expect(() =>
       createOrderSchema.parse({
         market: "BTC",
-        type: "LONG",
+        side: "LONG",
         qty: 5,
         orderType: "STOP",
         price: 50_000,

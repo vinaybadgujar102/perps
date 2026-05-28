@@ -79,6 +79,7 @@ export const createPosition = ({
       userId,
       market,
       createdAt: new Date(),
+      unrealizedPnl: 0,
 
       size: signedFilledSize,
       collateralUser: fillMargin,
@@ -99,9 +100,9 @@ export const createPosition = ({
 
   const updatedSize = signedFilledSize + oldSize;
 
-  const sameDiredtion = Math.sign(oldSize) === Math.sign(signedFilledSize);
+  const sameDirection = Math.sign(oldSize) === Math.sign(signedFilledSize);
 
-  if (sameDiredtion) {
+  if (sameDirection) {
     const weightedEntryPrice =
       (currentPosition.averageEntryPrice * Math.abs(oldSize) +
         fillPrice * Math.abs(signedFilledSize)) /
