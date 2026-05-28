@@ -1,14 +1,19 @@
 import type { NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { z, ZodAny, ZodError, ZodType } from "zod";
+import type { ZodType } from "zod";
 import { errorResponse } from "../utils/responseUtils";
 
-export const schemaValidator = (schema: ZodType) => {
+
+export const schemaValidator = (
+  schema: ZodType,
+  target = "body" | "params" | "query",
+) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      schema.parse(req.body);
+      const parsed = schema.parse(req[target]);
+      (req as any)[target] = parsed;
       next();
-    } catch (error: any) {
+    } catch {
       return errorResponse(res, StatusCodes.BAD_REQUEST, "INVALID_REQUEST");
     }
   };
