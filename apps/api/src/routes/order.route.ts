@@ -11,21 +11,29 @@ import {
 import { requestMap } from "..";
 import { errorResponse, successResponse } from "../utils/responseUtils";
 import { StatusCodes } from "http-status-codes";
+import { isUser } from "../middlewares/user.middleware";
 
 const orderRouter = Router();
 
 orderRouter.post(
   "/",
+  isUser,
   schemaValidator(createOrderSchema),
   async (req: Request, res: Response) => {
     const data = req.body as z.infer<typeof createOrderSchema>;
+    const authUser = (res as Response & { user?: { userId: number } }).user;
+
+    if (!authUser?.userId) {
+      return errorResponse(res, StatusCodes.UNAUTHORIZED, "UNAUTHORIZED_USER");
+    }
+
     console.log("[createOrder] API: received request", { body: data });
 
     const requestId = crypto.randomUUID();
     const payload: z.infer<typeof createOrderPayloadSchema> = {
       requestId,
       kind: EVENT_KINDS.CREATE_ORDER,
-      userId: 1,
+      userId: authUser.userId,
       payload: {
         id: crypto.randomUUID(),
         ...data,

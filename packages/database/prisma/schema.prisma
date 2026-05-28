@@ -18,3 +18,14 @@ model User {
   email    String
   password String
 }
+
+model Market {
+  id            Int      @id @default(autoincrement())
+  symbol        String   @unique
+  priceScale    Int
+  quantityScale Int
+  maxLeverage   Int
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
