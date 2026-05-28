@@ -11,10 +11,10 @@ type OrderbookPanelProps = {
 };
 
 const renderRow = (price: number, qty: number, side: "bid" | "ask", priceScale: number, qtyScale: number) => (
-  <div className={`orderbook-row ${side}`} key={`${side}-${price}-${qty}`}>
+  <div className={`orderbook-row ${side}`} key={`${side}-${price}-${qty}`} role="row">
     <span>{formatNumber(price, priceScale)}</span>
     <span>{formatNumber(qty, qtyScale)}</span>
-    <span>{formatNumber(price * qty, 2)}</span>
+    <span>{formatNumber(price * qty, 2)}k</span>
   </div>
 );
 
@@ -45,8 +45,8 @@ export const OrderbookPanel = ({
       </div>
       <div className="orderbook-head">
         <span>Price</span>
-        <span>Size</span>
-        <span>Total</span>
+        <span>Amount</span>
+        <span className="align-right">Depth</span>
       </div>
       {isLoading ? (
         <div className="orderbook-loading" aria-live="polite">
@@ -68,9 +68,9 @@ export const OrderbookPanel = ({
           )}
         </div>
         <div className="spread-row">
-          Spread:{" "}
+          Mid:{" "}
           {safeOrderbook.bestAsk && safeOrderbook.bestBid
-            ? formatNumber(safeOrderbook.bestAsk.price - safeOrderbook.bestBid.price, priceScale)
+            ? formatNumber((safeOrderbook.bestAsk.price + safeOrderbook.bestBid.price) / 2, priceScale)
             : "--"}
         </div>
         <div className="bids-list">

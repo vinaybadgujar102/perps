@@ -8,11 +8,14 @@ type MarketsSidebarProps = {
 
 export const MarketsSidebar = ({ markets, activeSymbol }: MarketsSidebarProps) => {
   return (
-    <aside className="panel markets-sidebar">
-      <div className="panel-title-row">
-        <h2>Markets</h2>
+    <aside className="markets-sidebar">
+      <div className="search-wrap">
+        <input placeholder="Search Coin" aria-label="Search coin" />
       </div>
-      <div className="market-list" role="list">
+      <div className="panel-title-row">
+        <h2>USDT Markets</h2>
+      </div>
+      <div className="market-list" role="list" aria-label="Markets list">
         {markets.map((market) => (
           <Link
             key={market.symbol}
@@ -20,8 +23,11 @@ export const MarketsSidebar = ({ markets, activeSymbol }: MarketsSidebarProps) =
             params={{ symbol: market.symbol }}
             className={`market-link ${activeSymbol === market.symbol ? "market-link-active" : ""}`}
           >
-            <span>{market.symbol}-PERP</span>
-            <span>{market.maxLeverage}x</span>
+            <div>
+              <strong>{market.symbol}/USDT</strong>
+              <span>Perp</span>
+            </div>
+            <span className="positive">{market.maxLeverage}x</span>
           </Link>
         ))}
       </div>
