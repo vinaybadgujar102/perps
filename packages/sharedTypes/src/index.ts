@@ -12,10 +12,12 @@ export enum QUEUES {
 export enum EVENT_KINDS {
   CREATE_ORDER = "create_order",
   CREATE_USER = "create_user",
+  GET_ACCOUNT_STATE = "get_account_state",
 }
 
 export enum RESPONSE_KINDS {
   CREATE_ORDER_RESPONSE = "create_order_response",
+  GET_ACCOUNT_STATE_RESPONSE = "get_account_state_response",
 }
 
 export enum TICK_KINDS {
@@ -86,11 +88,37 @@ export const createOrderResponseSchema = z.object({
   }),
 });
 
+export const getAccountStatePayloadSchema = z.object({
+  requestId: z.string(),
+  kind: z.literal(EVENT_KINDS.GET_ACCOUNT_STATE),
+  payload: z.object({
+    userId: z.number().int().positive(),
+  }),
+});
+
+export const getAccountStateResponseSchema = z.object({
+  kind: z.literal(RESPONSE_KINDS.GET_ACCOUNT_STATE_RESPONSE),
+  requestId: z.string(),
+  data: z.object({
+    success: z.boolean(),
+    message: z.string().nullable(),
+    data: z
+      .object({
+        balanceUsd: z.number(),
+        lockedMarginUsd: z.number(),
+        availableMarginUsd: z.number(),
+      })
+      .nullable(),
+  }),
+});
+
 export const eventSchema = z.discriminatedUnion("kind", [
   createUserPayloadSchema,
   markPriceTickSchema,
   createOrderPayloadSchema,
   createOrderResponseSchema,
+  getAccountStatePayloadSchema,
+  getAccountStateResponseSchema,
 ]);
 
 export const AssetConfig: Record<
