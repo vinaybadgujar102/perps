@@ -14,12 +14,14 @@ export enum EVENT_KINDS {
   CREATE_USER = "create_user",
   GET_ACCOUNT_STATE = "get_account_state",
   GET_OPEN_POSITIONS = "get_open_positions",
+  GET_ORDERBOOK = "get_orderbook",
 }
 
 export enum RESPONSE_KINDS {
   CREATE_ORDER_RESPONSE = "create_order_response",
   GET_ACCOUNT_STATE_RESPONSE = "get_account_state_response",
   GET_OPEN_POSITIONS_RESPONSE = "get_open_positions_response",
+  GET_ORDERBOOK_RESPONSE = "get_orderbook_response",
 }
 
 export enum TICK_KINDS {
@@ -142,6 +144,36 @@ export const getOpenPositionsResponseSchema = z.object({
   }),
 });
 
+export const getOrderbookPayloadSchema = z.object({
+  requestId: z.string(),
+  kind: z.literal(EVENT_KINDS.GET_ORDERBOOK),
+  payload: z.object({
+    market: z.string().trim().min(1).transform((value) => value.toUpperCase()),
+  }),
+});
+
+export const orderbookLevelSchema = z.object({
+  price: z.number(),
+  qty: z.number(),
+});
+
+export const getOrderbookResponseSchema = z.object({
+  kind: z.literal(RESPONSE_KINDS.GET_ORDERBOOK_RESPONSE),
+  requestId: z.string(),
+  data: z.object({
+    success: z.boolean(),
+    message: z.string().nullable(),
+    data: z
+      .object({
+        bids: z.array(orderbookLevelSchema),
+        asks: z.array(orderbookLevelSchema),
+        bestBid: orderbookLevelSchema.nullable(),
+        bestAsk: orderbookLevelSchema.nullable(),
+      })
+      .nullable(),
+  }),
+});
+
 export const eventSchema = z.discriminatedUnion("kind", [
   createUserPayloadSchema,
   markPriceTickSchema,
@@ -151,6 +183,8 @@ export const eventSchema = z.discriminatedUnion("kind", [
   getAccountStateResponseSchema,
   getOpenPositionsPayloadSchema,
   getOpenPositionsResponseSchema,
+  getOrderbookPayloadSchema,
+  getOrderbookResponseSchema,
 ]);
 
 export const AssetConfig: Record<
