@@ -1,6 +1,7 @@
-import { ORDER_TYPE } from "@repo/sharedtypes";
+import { ORDER_TYPE, SIDE } from "@repo/sharedtypes";
 import { POSITIONS, orderbooks } from "../inMemoryStates";
 import { createOrder } from "../utils/order.util";
+import { liquidatePositions } from "../utils/liquidation.util";
 import { createPosition, generatePositionKey } from "../utils/position.util";
 import { USERS } from "../utils/user.util";
 import type { Order } from "../types";
@@ -164,9 +165,86 @@ export type E2ESeedResult = {
   positions: ReturnType<typeof getPositionsSnapshot>;
   users: ReturnType<typeof getUsersSnapshot>;
   taker202: ReturnType<typeof getPositionsSnapshot>[number] | undefined;
+  liquidationEvents?: {
+    indexPrice: number;
+    taker202PositionExists: boolean;
+  }[];
 };
 
-export function runE2ESeed(markPrice = E2E_MARK_PRICE): E2ESeedResult {
+type RunE2ESeedOptions = {
+  simulateLiquidationFlow?: boolean;
+  randomPriceSteps?: number;
+  maxRandomMoveBps?: number;
+};
+
+function randomizePrice(
+  price: number,
+  maxMoveBps: number,
+  minPrice = 100,
+): number {
+  const moveBps = (Math.random() * 2 - 1) * maxMoveBps;
+  const moved = price * (1 + moveBps / 10_000);
+  return Number(Math.max(minPrice, moved).toFixed(2));
+}
+
+function runRandomLiquidationFlow(
+  startPrice: number,
+  stepCount: number,
+  maxMoveBps: number,
+) {
+  const events: { indexPrice: number; taker202PositionExists: boolean }[] = [];
+
+  // Keep deep bid liquidity so any liquidation SHORT market order can match.
+  submitOrder(
+    makeOrder({
+      id: "liq-liquidity-bid",
+      userId: 101,
+      side: SIDE.LONG,
+      qty: 50,
+      price: 1_000_000,
+    }),
+    "Step 7a",
+  );
+
+  let indexPrice = startPrice;
+  for (let step = 1; step <= stepCount; step++) {
+    indexPrice = randomizePrice(indexPrice, maxMoveBps);
+    orderbooks.BTC.indexPrice = indexPrice;
+    liquidatePositions(indexPrice);
+
+    events.push({
+      indexPrice,
+      taker202PositionExists: Boolean(getPosition(202)),
+    });
+  }
+
+  // Ensure the flow demonstrates liquidation even if random walk did not cross.
+  const taker202 = getPosition(202);
+  if (taker202) {
+    const forcedLiqPrice = Number(
+      (taker202.estimatedLiquidationPrice - 1).toFixed(2),
+    );
+    orderbooks.BTC.indexPrice = forcedLiqPrice;
+    liquidatePositions(forcedLiqPrice);
+    events.push({
+      indexPrice: forcedLiqPrice,
+      taker202PositionExists: Boolean(getPosition(202)),
+    });
+  }
+
+  logStep("Random index-price liquidation flow", events);
+  return events;
+}
+
+export function runE2ESeed(
+  markPrice = E2E_MARK_PRICE,
+  options: RunE2ESeedOptions = {},
+): E2ESeedResult {
+  const {
+    simulateLiquidationFlow = false,
+    randomPriceSteps = 8,
+    maxRandomMoveBps = 120,
+  } = options;
   logStep("E2E seed start");
   resetE2EState(markPrice);
   logStep("State reset", {
@@ -260,6 +338,9 @@ export function runE2ESeed(markPrice = E2E_MARK_PRICE): E2ESeedResult {
 
   const positions = getPositionsSnapshot();
   const taker202 = positions.find((p) => p.userId === 202);
+  const liquidationEvents = simulateLiquidationFlow
+    ? runRandomLiquidationFlow(markPrice, randomPriceSteps, maxRandomMoveBps)
+    : undefined;
 
   logStep("E2E seed complete", {
     positions,
@@ -276,6 +357,7 @@ export function runE2ESeed(markPrice = E2E_MARK_PRICE): E2ESeedResult {
     positions,
     users: getUsersSnapshot(),
     taker202,
+    liquidationEvents,
   };
 }
 
@@ -286,7 +368,7 @@ function getPosition(userId: number, market = "BTC") {
 export { getPosition, E2E_MARK_PRICE };
 
 if (import.meta.main) {
-  const result = runE2ESeed();
+  const result = runE2ESeed(E2E_MARK_PRICE, { simulateLiquidationFlow: true });
   console.log("=== E2E Seed Complete ===");
   console.log(JSON.stringify(result, null, 2));
 }
