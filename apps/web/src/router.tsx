@@ -4,9 +4,13 @@ import {
   createRoute,
   createRouter,
   redirect,
+  useRouterState,
 } from "@tanstack/react-router";
 import type { QueryClient } from "@tanstack/react-query";
+import { z } from "zod";
 import { TopNav } from "./components/top-nav";
+import { LoginScreen } from "./screens/login-screen";
+import { SignupScreen } from "./screens/signup-screen";
 import { TradeRouteView } from "./screens/trade-screen";
 import { MarketsRouteView } from "./screens/markets-screen";
 
@@ -14,13 +18,24 @@ type RouterContext = {
   queryClient: QueryClient;
 };
 
-const rootRoute = createRootRouteWithContext<RouterContext>()({
-  component: () => (
+const RootLayout = () => {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const isAuthRoute = pathname === "/login" || pathname === "/signup";
+
+  if (isAuthRoute) {
+    return <Outlet />;
+  }
+
+  return (
     <div className="app-shell">
       <TopNav />
       <Outlet />
     </div>
-  ),
+  );
+};
+
+const rootRoute = createRootRouteWithContext<RouterContext>()({
+  component: RootLayout,
   errorComponent: ({ error, reset }) => (
     <main className="screen-state error">
       <div className="panel error-panel">
@@ -71,7 +86,28 @@ const marketsRoute = createRoute({
   component: MarketsRouteView.Component,
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, tradeRoute, marketsRoute]);
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login",
+  validateSearch: z.object({
+    registered: z.string().optional(),
+  }),
+  component: LoginScreen,
+});
+
+const signupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/signup",
+  component: SignupScreen,
+});
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  tradeRoute,
+  marketsRoute,
+  loginRoute,
+  signupRoute,
+]);
 
 export const router = createRouter({
   routeTree,

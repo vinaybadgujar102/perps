@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { apiEnvelopeSchema, get } from "./api-envelope";
+import { loadSession } from "./auth-storage";
 
 const marketSchema = z.object({
   symbol: z.string(),
@@ -12,13 +14,6 @@ const orderbookLevelSchema = z.object({
   price: z.number(),
   qty: z.number(),
 });
-
-const apiEnvelopeSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
-  z.object({
-    success: z.boolean(),
-    data: dataSchema.nullable(),
-    error: z.string().nullable(),
-  });
 
 const marketsResponseSchema = apiEnvelopeSchema(
   z.object({
@@ -56,24 +51,11 @@ export type OrderbookData = NonNullable<
   z.infer<typeof orderbookResponseSchema>["data"]
 >["data"]["data"];
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
+export { apiEnvelopeSchema } from "./api-envelope";
 
-const get = async <T extends z.ZodTypeAny>(path: string, schema: T): Promise<z.infer<T>> => {
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}${path}`);
-  } catch {
-    throw new Error(
-      "Unable to reach backend API. Start the API server and check VITE_API_BASE_URL.",
-    );
-  }
-
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-
-  const json = await response.json();
-  return schema.parse(json);
+export const getAuthHeaders = (): HeadersInit => {
+  const session = loadSession();
+  return session ? { Authorization: `Bearer ${session.token}` } : {};
 };
 
 export const fetchMarkets = async (): Promise<Market[]> => {
