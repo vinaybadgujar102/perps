@@ -1,19 +1,18 @@
 import {
   AssetConfig,
-  QUEUES,
   RESPONSE_KINDS,
   type createOrderPayloadSchema,
+  type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type z from "zod";
 import { USERS } from "../utils/user.util";
 import { createPosition } from "../utils/position.util";
 import type { Order } from "../types";
-import { publisherRedis } from ".";
 import { createOrder } from "../utils/order.util";
 
-export const handleCreateOrderEvent = async (
+export const handleCreateOrderEvent = (
   data: z.infer<typeof createOrderPayloadSchema>,
-) => {
+): TradeEngineResponse | undefined => {
   const { price, qty } = data.payload;
 
   const assetConfig = AssetConfig[data.payload.market]!;
@@ -51,18 +50,16 @@ export const handleCreateOrderEvent = async (
   const order = normalizeOrder(data.payload, data.userId);
   const res = createOrder(order);
 
-  await publisherRedis.xAdd(QUEUES.RESPONSE_QUEUE, "*", {
-    data: JSON.stringify({
-      requestId: data.requestId,
-      kind: RESPONSE_KINDS.CREATE_ORDER_RESPONSE,
-      data: res,
-    }),
-  });
+  const response: TradeEngineResponse = {
+    requestId: data.requestId,
+    kind: RESPONSE_KINDS.CREATE_ORDER_RESPONSE,
+    data: res,
+  };
 
   const fills = res.data;
 
-  if (!fills || (fills && fills.length === 0)) {
-    return;
+  if (!fills || fills.length === 0) {
+    return response;
   }
 
   for (const fill of fills) {
@@ -84,4 +81,6 @@ export const handleCreateOrderEvent = async (
       fillPrice: fill.price,
     });
   }
+
+  return response;
 };

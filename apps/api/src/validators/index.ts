@@ -3,10 +3,9 @@ import { StatusCodes } from "http-status-codes";
 import type { ZodType } from "zod";
 import { errorResponse } from "../utils/responseUtils";
 
-
 export const schemaValidator = (
   schema: ZodType,
-  target = "body" | "params" | "query",
+  target: "body" | "params" | "query" = "body",
 ) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {

@@ -1,4 +1,10 @@
-import { EVENT_KINDS, TICK_KINDS, type eventSchema } from "@repo/sharedtypes";
+import {
+  EVENT_KINDS,
+  QUEUES,
+  TICK_KINDS,
+  type eventSchema,
+  type TradeEngineResponse,
+} from "@repo/sharedtypes";
 import type z from "zod";
 import { handleCreateUserEvent } from "./user.handler";
 import { handleCreateOrderEvent } from "./order.handle";
@@ -10,18 +16,32 @@ import { handleGetOrderbookEvent } from "./orderbook.handler";
 
 export const publisherRedis = await createClient().connect();
 
-export const handleIncomingEvents = (data: z.infer<typeof eventSchema>) => {
+const publishResponse = async (response: TradeEngineResponse) => {
+  await publisherRedis.xAdd(QUEUES.RESPONSE_QUEUE, "*", {
+    data: JSON.stringify(response),
+  });
+};
+
+export const handleIncomingEvents = async (
+  data: z.infer<typeof eventSchema>,
+) => {
+  let response: TradeEngineResponse | undefined;
+
   if (data.kind === EVENT_KINDS.CREATE_USER) {
-    handleCreateUserEvent(data.payload.userId);
+    response = handleCreateUserEvent(data);
   } else if (data.kind === EVENT_KINDS.CREATE_ORDER) {
-    handleCreateOrderEvent(data);
+    response = handleCreateOrderEvent(data);
   } else if (data.kind === EVENT_KINDS.GET_ACCOUNT_STATE) {
-    handleGetAccountStateEvent(data);
+    response = handleGetAccountStateEvent(data);
   } else if (data.kind === EVENT_KINDS.GET_OPEN_POSITIONS) {
-    handleGetOpenPositionsEvent(data);
+    response = handleGetOpenPositionsEvent(data);
   } else if (data.kind === EVENT_KINDS.GET_ORDERBOOK) {
-    handleGetOrderbookEvent(data);
+    response = handleGetOrderbookEvent(data);
   } else if (data.kind === TICK_KINDS.MARK_PRICE) {
     handleMarkPriceUpdateEvent(data);
+  }
+
+  if (response) {
+    await publishResponse(response);
   }
 };

@@ -1,17 +1,16 @@
 import {
-  QUEUES,
   RESPONSE_KINDS,
   type getOrderbookPayloadSchema,
+  type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type z from "zod";
 import { orderbooks } from "../inMemoryStates";
-import { publisherRedis } from ".";
 
 const TOP_LEVELS_LIMIT = 10;
 
-export const handleGetOrderbookEvent = async (
+export const handleGetOrderbookEvent = (
   data: z.infer<typeof getOrderbookPayloadSchema>,
-) => {
+): TradeEngineResponse => {
   const marketBook = orderbooks[data.payload.market];
   let responseData;
 
@@ -41,11 +40,9 @@ export const handleGetOrderbookEvent = async (
     };
   }
 
-  await publisherRedis.xAdd(QUEUES.RESPONSE_QUEUE, "*", {
-    data: JSON.stringify({
-      requestId: data.requestId,
-      kind: RESPONSE_KINDS.GET_ORDERBOOK_RESPONSE,
-      data: responseData,
-    }),
-  });
+  return {
+    requestId: data.requestId,
+    kind: RESPONSE_KINDS.GET_ORDERBOOK_RESPONSE,
+    data: responseData,
+  };
 };

@@ -1,16 +1,15 @@
 import {
-  QUEUES,
   RESPONSE_KINDS,
   SIDE,
   type getOpenPositionsPayloadSchema,
+  type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type z from "zod";
 import { POSITIONS } from "../inMemoryStates";
-import { publisherRedis } from ".";
 
-export const handleGetOpenPositionsEvent = async (
+export const handleGetOpenPositionsEvent = (
   data: z.infer<typeof getOpenPositionsPayloadSchema>,
-) => {
+): TradeEngineResponse => {
   const openPositions = Array.from(POSITIONS.values())
     .filter((position) => position.userId === data.payload.userId)
     .map((position) => ({
@@ -23,15 +22,13 @@ export const handleGetOpenPositionsEvent = async (
       realizedPnl: position.realizedPnl,
     }));
 
-  await publisherRedis.xAdd(QUEUES.RESPONSE_QUEUE, "*", {
-    data: JSON.stringify({
-      requestId: data.requestId,
-      kind: RESPONSE_KINDS.GET_OPEN_POSITIONS_RESPONSE,
-      data: {
-        success: true,
-        message: null,
-        data: openPositions,
-      },
-    }),
-  });
+  return {
+    requestId: data.requestId,
+    kind: RESPONSE_KINDS.GET_OPEN_POSITIONS_RESPONSE,
+    data: {
+      success: true,
+      message: null,
+      data: openPositions,
+    },
+  };
 };

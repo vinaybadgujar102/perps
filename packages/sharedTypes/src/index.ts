@@ -18,6 +18,7 @@ export enum EVENT_KINDS {
 }
 
 export enum RESPONSE_KINDS {
+  CREATE_USER_RESPONSE = "create_user_response",
   CREATE_ORDER_RESPONSE = "create_order_response",
   GET_ACCOUNT_STATE_RESPONSE = "get_account_state_response",
   GET_OPEN_POSITIONS_RESPONSE = "get_open_positions_response",
@@ -47,6 +48,20 @@ export const createUserPayloadSchema = z.object({
   kind: z.literal(EVENT_KINDS.CREATE_USER),
   payload: z.object({
     userId: z.number(),
+  }),
+});
+
+export const createUserResponseSchema = z.object({
+  kind: z.literal(RESPONSE_KINDS.CREATE_USER_RESPONSE),
+  requestId: z.string(),
+  data: z.object({
+    success: z.boolean(),
+    message: z.string().nullable(),
+    data: z
+      .object({
+        userId: z.number().int().positive(),
+      })
+      .nullable(),
   }),
 });
 
@@ -174,8 +189,19 @@ export const getOrderbookResponseSchema = z.object({
   }),
 });
 
+export const tradeEngineResponseSchema = z.discriminatedUnion("kind", [
+  createUserResponseSchema,
+  createOrderResponseSchema,
+  getAccountStateResponseSchema,
+  getOpenPositionsResponseSchema,
+  getOrderbookResponseSchema,
+]);
+
+export type TradeEngineResponse = z.infer<typeof tradeEngineResponseSchema>;
+
 export const eventSchema = z.discriminatedUnion("kind", [
   createUserPayloadSchema,
+  createUserResponseSchema,
   markPriceTickSchema,
   createOrderPayloadSchema,
   createOrderResponseSchema,

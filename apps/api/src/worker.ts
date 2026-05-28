@@ -23,11 +23,7 @@ export async function listenForRequestId() {
       console.log(parsedData);
       const payload = eventSchema.parse(parsedData);
 
-      if (payload.kind === RESPONSE_KINDS.CREATE_ORDER_RESPONSE) {
-        console.log("[createOrder] Worker: received CREATE_ORDER_RESPONSE", {
-          requestId: payload.requestId,
-          data: payload.data,
-        });
+      if (payload.kind === RESPONSE_KINDS.CREATE_USER_RESPONSE) {
         if (payload.requestId) {
           const pendingRequest = requestMap.get(payload.requestId);
           if (!pendingRequest) {
@@ -35,9 +31,16 @@ export async function listenForRequestId() {
           }
           clearTimeout(pendingRequest.timeoutId);
           requestMap.delete(payload.requestId);
-          console.log("[createOrder] Worker: resolving pending request", {
-            requestId: payload.requestId,
-          });
+          pendingRequest.resolve(payload.data);
+        }
+      } else if (payload.kind === RESPONSE_KINDS.CREATE_ORDER_RESPONSE) {
+        if (payload.requestId) {
+          const pendingRequest = requestMap.get(payload.requestId);
+          if (!pendingRequest) {
+            continue;
+          }
+          clearTimeout(pendingRequest.timeoutId);
+          requestMap.delete(payload.requestId);
           pendingRequest.resolve(payload.data);
         }
       } else if (payload.kind === RESPONSE_KINDS.GET_ACCOUNT_STATE_RESPONSE) {
