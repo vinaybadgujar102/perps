@@ -119,6 +119,6 @@ export type Position = {
   estimatedLiquidationPrice: number;
   averageEntryPrice: number;
   collateralUser: number;
-  unrealizedPnl: number;
+  realizedPnl: number;
   createdAt: Date;
 };

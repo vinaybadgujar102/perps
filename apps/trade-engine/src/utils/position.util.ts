@@ -1,7 +1,9 @@
-import { AssetConfig, type Position } from "@repo/sharedtypes";
+import { AssetConfig, SIDE, type Position, type Side } from "@repo/sharedtypes";
 import type { Order } from "../types";
 import { POSITIONS } from "../inMemoryStates";
 import { calculateLiquidationPrice } from "./liquidation.util";
+import { lockUserMargin } from "./margin.util";
+import { settleRealizedPnl } from "./pnl.util";
 
 export const positionFactory = (
   order: Order,
@@ -14,9 +16,10 @@ export const positionFactory = (
     market: order.market,
     collateralUser: requiredCollateral,
     userId: order.userId,
-    size: order.filledQty * (order.type === "LONG" ? 1 : -1),
+    size: order.filledQty * (order.side === SIDE.LONG ? 1 : -1),
     averageEntryPrice,
     estimatedLiquidationPrice: 0,
+    realizedPnl: 0,
     createdAt: new Date(),
   };
 };
@@ -28,15 +31,13 @@ type CreatePositionParams = {
   userId: number;
   orderId: string;
   market: string;
-
-  orderType: "LONG" | "SHORT";
-
+  side: Side;
   filledQty: number;
   fillPrice: number;
 };
 
-function positionSideFromSize(size: number): "LONG" | "SHORT" {
-  return size > 0 ? "LONG" : "SHORT";
+function positionSideFromSize(size: number): Side {
+  return size > 0 ? SIDE.LONG : SIDE.SHORT;
 }
 
 function estimatedLiquidationPrice(
@@ -55,22 +56,22 @@ export const createPosition = ({
   userId,
   orderId,
   market,
-  orderType,
+  side,
   filledQty,
   fillPrice,
-}: CreatePositionParams) => {
+}: CreatePositionParams): void => {
   const positionMapKey = generatePositionKey(userId.toString(), market);
 
   const assetConfig = AssetConfig[market]!;
   const maxLeverage = assetConfig.maxLeverage;
 
-  const signedFilledSize = filledQty * (orderType === "LONG" ? 1 : -1);
+  const signedFilledSize = filledQty * (side === SIDE.LONG ? 1 : -1);
 
   const fillNotional = filledQty * fillPrice;
 
   const fillMargin = fillNotional / maxLeverage;
 
-  let currentPosition = POSITIONS.get(positionMapKey);
+  const currentPosition = POSITIONS.get(positionMapKey);
 
   if (!currentPosition) {
     const newPosition: Position = {
@@ -79,11 +80,10 @@ export const createPosition = ({
       userId,
       market,
       createdAt: new Date(),
-      unrealizedPnl: 0,
-
       size: signedFilledSize,
       collateralUser: fillMargin,
       averageEntryPrice: fillPrice,
+      realizedPnl: 0,
       estimatedLiquidationPrice: estimatedLiquidationPrice(
         signedFilledSize,
         fillPrice,
@@ -92,6 +92,7 @@ export const createPosition = ({
     };
 
     POSITIONS.set(positionMapKey, newPosition);
+    lockUserMargin(userId, fillMargin);
 
     return;
   }
@@ -118,6 +119,7 @@ export const createPosition = ({
       collateralUser: updatedCollateral,
 
       averageEntryPrice: weightedEntryPrice,
+      realizedPnl: currentPosition.realizedPnl,
       estimatedLiquidationPrice: estimatedLiquidationPrice(
         updatedSize,
         weightedEntryPrice,
@@ -126,14 +128,28 @@ export const createPosition = ({
     };
 
     POSITIONS.set(positionMapKey, updatedPosition);
+    lockUserMargin(userId, fillMargin);
 
     return;
   }
 
+  const closedQty = Math.min(Math.abs(signedFilledSize), Math.abs(oldSize));
+  const releasedCollateral =
+    currentPosition.collateralUser * (closedQty / Math.abs(oldSize));
+
   if (Math.abs(signedFilledSize) < Math.abs(oldSize)) {
+    const slicePnl =
+      settleRealizedPnl({
+      userId,
+      market,
+      signedPositionSizeBeforeClose: oldSize,
+      averageEntryPrice: currentPosition.averageEntryPrice,
+      closedQty,
+      releasedCollateral,
+      }) ?? 0;
+
     const updatedCollateral =
-      currentPosition.collateralUser *
-      (Math.abs(updatedSize) / Math.abs(oldSize));
+      currentPosition.collateralUser - releasedCollateral;
 
     const updatedPosition: Position = {
       ...currentPosition,
@@ -144,19 +160,39 @@ export const createPosition = ({
       ),
       size: updatedSize,
       collateralUser: updatedCollateral,
-
       averageEntryPrice: currentPosition.averageEntryPrice,
+      realizedPnl: currentPosition.realizedPnl + slicePnl,
     };
 
     POSITIONS.set(positionMapKey, updatedPosition);
 
     return;
   }
+
   if (updatedSize === 0) {
+    settleRealizedPnl({
+      userId,
+      market,
+      signedPositionSizeBeforeClose: oldSize,
+      averageEntryPrice: currentPosition.averageEntryPrice,
+      closedQty,
+      releasedCollateral,
+    });
+
     POSITIONS.delete(positionMapKey);
 
     return;
   }
+
+  const slicePnl =
+    settleRealizedPnl({
+    userId,
+    market,
+    signedPositionSizeBeforeClose: oldSize,
+    averageEntryPrice: currentPosition.averageEntryPrice,
+    closedQty,
+    releasedCollateral,
+    }) ?? 0;
 
   const updatedCollateral = (Math.abs(updatedSize) * fillPrice) / maxLeverage;
 
@@ -168,6 +204,7 @@ export const createPosition = ({
     collateralUser: updatedCollateral,
 
     averageEntryPrice: fillPrice,
+    realizedPnl: slicePnl,
     estimatedLiquidationPrice: estimatedLiquidationPrice(
       updatedSize,
       fillPrice,
@@ -176,4 +213,5 @@ export const createPosition = ({
   };
 
   POSITIONS.set(positionMapKey, updatedPosition);
+  lockUserMargin(userId, updatedCollateral);
 };

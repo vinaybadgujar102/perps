@@ -32,8 +32,6 @@ export const handleCreateOrderEvent = async (
     return;
   }
 
-  user.lockedBalance += requiredCollateral;
-
   const normalizeOrder = (
     payload: z.infer<typeof createOrderPayloadSchema.shape.payload>,
     userId: number,
@@ -68,26 +66,20 @@ export const handleCreateOrderEvent = async (
   }
 
   for (const fill of fills) {
-    // taker position
     createPosition({
       userId: fill.takerId,
       orderId: fill.takerOrderId,
       market: fill.market,
-
       side: fill.takerSide,
-
       filledQty: fill.filledQty,
       fillPrice: fill.price,
     });
 
-    // maker position
     createPosition({
       userId: fill.makerId,
       orderId: fill.makerOrderId,
       market: fill.market,
-
       side: fill.makerSide,
-
       filledQty: fill.filledQty,
       fillPrice: fill.price,
     });
