@@ -1,11 +1,14 @@
 import { ORDER_TYPE } from "@repo/sharedtypes";
 import { POSITIONS, orderbooks } from "../inMemoryStates";
 import { createOrder } from "../utils/order.util";
-import { createPosition } from "../utils/position.util";
+import { createPosition, generatePositionKey } from "../utils/position.util";
 import { USERS } from "../utils/user.util";
 import type { Order } from "../types";
 
-function getPositionsSnapshot() {
+const E2E_MARK_PRICE = 50_250;
+const E2E_USER_IDS = [101, 202, 303] as const;
+
+export function getPositionsSnapshot() {
   return Array.from(POSITIONS.entries()).map(([key, value]) => ({
     key,
     userId: value.userId,
@@ -13,9 +16,21 @@ function getPositionsSnapshot() {
     size: value.size,
     averageEntryPrice: value.averageEntryPrice,
     collateralUser: value.collateralUser,
+    realizedPnl: value.realizedPnl,
     orderId: value.orderId,
     liquidationPrice: value.estimatedLiquidationPrice,
   }));
+}
+
+export function getUsersSnapshot() {
+  return E2E_USER_IDS.map((userId) => {
+    const user = USERS.getUser(userId);
+    return {
+      userId,
+      balance: user?.balance ?? null,
+      lockedBalance: user?.lockedBalance ?? null,
+    };
+  });
 }
 
 function getOrderbookSnapshot() {
@@ -60,17 +75,18 @@ function logStep(title: string, payload?: unknown) {
   }
 }
 
-function resetState() {
-  orderbooks.BTC = { bids: [], asks: [], indexPrice: 0 };
+export function resetE2EState(markPrice = E2E_MARK_PRICE) {
+  orderbooks.BTC = { bids: [], asks: [], indexPrice: markPrice };
   orderbooks.SOL = { bids: [], asks: [], indexPrice: 0 };
   POSITIONS.clear();
 }
 
 function ensureUsers() {
-  for (const userId of [101, 202, 303]) {
+  for (const userId of E2E_USER_IDS) {
     if (!USERS.getUser(userId)) {
       const user = USERS.addUser(userId);
       user.balance = 1_000_000;
+      user.lockedBalance = 0;
     }
   }
 }
@@ -132,6 +148,7 @@ function applyFillsToPositions(fills: ReturnType<typeof createOrder>["data"]) {
   }
 
   logStep("Positions after fill application", getPositionsSnapshot());
+  logStep("Users after fill application", getUsersSnapshot());
 }
 
 function submitOrder(order: Order, label: string) {
@@ -142,19 +159,24 @@ function submitOrder(order: Order, label: string) {
   return result;
 }
 
-function runE2ESeed() {
+export type E2ESeedResult = {
+  markPrice: number;
+  positions: ReturnType<typeof getPositionsSnapshot>;
+  users: ReturnType<typeof getUsersSnapshot>;
+  taker202: ReturnType<typeof getPositionsSnapshot>[number] | undefined;
+};
+
+export function runE2ESeed(markPrice = E2E_MARK_PRICE): E2ESeedResult {
   logStep("E2E seed start");
-  resetState();
+  resetE2EState(markPrice);
   logStep("State reset", {
     positions: POSITIONS.size,
+    markPrice: orderbooks.BTC.indexPrice,
     orderbook: getOrderbookSnapshot(),
   });
 
   ensureUsers();
-  logStep(
-    "Users ensured",
-    [101, 202, 303].map((userId) => USERS.getUser(userId)),
-  );
+  logStep("Users ensured", getUsersSnapshot());
 
   // Seed resting SHORT liquidity (maker side).
   submitOrder(
@@ -178,7 +200,7 @@ function runE2ESeed() {
     "Step 2",
   );
 
-  // Seed taker LONG that matches both asks and creates positions.
+  // Taker LONG matches both asks and opens positions.
   const takerResult = submitOrder(
     makeOrder({
       id: "taker-long-1",
@@ -191,7 +213,6 @@ function runE2ESeed() {
   );
   applyFillsToPositions(takerResult.data);
 
-  // Add to existing taker position in same direction.
   submitOrder(
     makeOrder({
       id: "maker-short-3",
@@ -214,23 +235,58 @@ function runE2ESeed() {
   );
   applyFillsToPositions(scaleInResult.data);
 
-  const positionsSnapshot = getPositionsSnapshot();
-
-  console.log("=== E2E Seed Complete ===");
-  console.log(JSON.stringify(positionsSnapshot, null, 2));
-  console.log(
-    JSON.stringify(
-      {
-        btcBook: {
-          bids: orderbooks.BTC.bids.length,
-          asks: orderbooks.BTC.asks.length,
-        },
-        totalPositions: POSITIONS.size,
-      },
-      null,
-      2,
-    ),
+  // Partial close taker LONG at mark (resting bid then taker SHORT).
+  submitOrder(
+    makeOrder({
+      id: "maker-long-for-close",
+      userId: 101,
+      side: "LONG",
+      qty: 1,
+      price: 50_200,
+    }),
+    "Step 6a",
   );
+  const partialCloseResult = submitOrder(
+    makeOrder({
+      id: "taker-partial-close",
+      userId: 202,
+      side: "SHORT",
+      qty: 1,
+      price: 50_200,
+    }),
+    "Step 6b",
+  );
+  applyFillsToPositions(partialCloseResult.data);
+
+  const positions = getPositionsSnapshot();
+  const taker202 = positions.find((p) => p.userId === 202);
+
+  logStep("E2E seed complete", {
+    positions,
+    users: getUsersSnapshot(),
+    btcBook: {
+      bids: orderbooks.BTC.bids.length,
+      asks: orderbooks.BTC.asks.length,
+      indexPrice: orderbooks.BTC.indexPrice,
+    },
+  });
+
+  return {
+    markPrice,
+    positions,
+    users: getUsersSnapshot(),
+    taker202,
+  };
 }
 
-runE2ESeed();
+function getPosition(userId: number, market = "BTC") {
+  return POSITIONS.get(generatePositionKey(userId.toString(), market));
+}
+
+export { getPosition, E2E_MARK_PRICE };
+
+if (import.meta.main) {
+  const result = runE2ESeed();
+  console.log("=== E2E Seed Complete ===");
+  console.log(JSON.stringify(result, null, 2));
+}

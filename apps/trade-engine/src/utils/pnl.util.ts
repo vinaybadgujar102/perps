@@ -28,12 +28,6 @@ export function calculateRealizedPnl({
   );
 }
 
-export type RealizedSettlement = {
-  realizedPnl: number;
-  markPrice: number;
-  releasedCollateral: number;
-};
-
 export function settleRealizedPnl({
   userId,
   market,
@@ -48,7 +42,7 @@ export function settleRealizedPnl({
   averageEntryPrice: number;
   closedQty: number;
   releasedCollateral: number;
-}): RealizedSettlement | null {
+}): number | null {
   const markPrice = getMarkPrice(market);
   if (markPrice === null) {
     return null;
@@ -69,5 +63,5 @@ export function settleRealizedPnl({
   user.balance += realizedPnl;
   unlockUserMargin(userId, releasedCollateral);
 
-  return { realizedPnl, markPrice, releasedCollateral };
+  return realizedPnl;
 }
