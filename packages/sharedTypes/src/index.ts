@@ -13,11 +13,13 @@ export enum EVENT_KINDS {
   CREATE_ORDER = "create_order",
   CREATE_USER = "create_user",
   GET_ACCOUNT_STATE = "get_account_state",
+  GET_OPEN_POSITIONS = "get_open_positions",
 }
 
 export enum RESPONSE_KINDS {
   CREATE_ORDER_RESPONSE = "create_order_response",
   GET_ACCOUNT_STATE_RESPONSE = "get_account_state_response",
+  GET_OPEN_POSITIONS_RESPONSE = "get_open_positions_response",
 }
 
 export enum TICK_KINDS {
@@ -112,6 +114,34 @@ export const getAccountStateResponseSchema = z.object({
   }),
 });
 
+export const getOpenPositionsPayloadSchema = z.object({
+  requestId: z.string(),
+  kind: z.literal(EVENT_KINDS.GET_OPEN_POSITIONS),
+  payload: z.object({
+    userId: z.number().int().positive(),
+  }),
+});
+
+export const openPositionSchema = z.object({
+  market: z.string(),
+  side: z.nativeEnum(SIDE),
+  size: z.number(),
+  averageEntryPrice: z.number(),
+  collateralUser: z.number(),
+  estimatedLiquidationPrice: z.number(),
+  realizedPnl: z.number(),
+});
+
+export const getOpenPositionsResponseSchema = z.object({
+  kind: z.literal(RESPONSE_KINDS.GET_OPEN_POSITIONS_RESPONSE),
+  requestId: z.string(),
+  data: z.object({
+    success: z.boolean(),
+    message: z.string().nullable(),
+    data: z.array(openPositionSchema).nullable(),
+  }),
+});
+
 export const eventSchema = z.discriminatedUnion("kind", [
   createUserPayloadSchema,
   markPriceTickSchema,
@@ -119,6 +149,8 @@ export const eventSchema = z.discriminatedUnion("kind", [
   createOrderResponseSchema,
   getAccountStatePayloadSchema,
   getAccountStateResponseSchema,
+  getOpenPositionsPayloadSchema,
+  getOpenPositionsResponseSchema,
 ]);
 
 export const AssetConfig: Record<

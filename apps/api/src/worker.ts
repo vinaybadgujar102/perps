@@ -50,6 +50,16 @@ export async function listenForRequestId() {
           requestMap.delete(payload.requestId);
           pendingRequest.resolve(payload.data);
         }
+      } else if (payload.kind === RESPONSE_KINDS.GET_OPEN_POSITIONS_RESPONSE) {
+        if (payload.requestId) {
+          const pendingRequest = requestMap.get(payload.requestId);
+          if (!pendingRequest) {
+            continue;
+          }
+          clearTimeout(pendingRequest.timeoutId);
+          requestMap.delete(payload.requestId);
+          pendingRequest.resolve(payload.data);
+        }
       }
     } catch (e) {
       console.error(e);
