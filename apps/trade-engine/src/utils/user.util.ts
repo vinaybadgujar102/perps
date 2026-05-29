@@ -1,6 +1,19 @@
 import type { Position } from "@repo/sharedtypes";
 import type { User } from "../types";
 
+export type CreditBalanceResult =
+  | {
+      success: true;
+      balanceUsd: number;
+      lockedMarginUsd: number;
+      availableMarginUsd: number;
+      creditedAmountUsd: number;
+    }
+  | {
+      success: false;
+      message: string;
+    };
+
 export function createUserManager() {
   const users = new Map<number, User>();
 
@@ -10,6 +23,19 @@ export function createUserManager() {
       balance: 0,
       lockedBalance: 0,
       activePositions: new Map(),
+    };
+  }
+
+  function getBalanceSnapshot(
+    user: User,
+    creditedAmountUsd: number,
+  ): CreditBalanceResult {
+    return {
+      success: true,
+      balanceUsd: user.balance,
+      lockedMarginUsd: user.lockedBalance,
+      availableMarginUsd: user.balance - user.lockedBalance,
+      creditedAmountUsd,
     };
   }
 
@@ -46,6 +72,18 @@ export function createUserManager() {
       }
       const newPosition = user.activePositions.set(position.orderId, position);
       return newPosition;
+    },
+
+    creditBalance(userId: number, amountUsd: number): CreditBalanceResult {
+      if (amountUsd <= 0) {
+        return { success: false, message: "INVALID_AMOUNT" };
+      }
+      const user = users.get(userId);
+      if (!user) {
+        return { success: false, message: "USER_NOT_FOUND" };
+      }
+      user.balance += amountUsd;
+      return getBalanceSnapshot(user, amountUsd);
     },
   };
 }

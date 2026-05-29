@@ -111,10 +111,7 @@ authRouter.post(
         );
       }
 
-      const jwtSecret = process.env.JWT_SECRET;
-      if (!jwtSecret) {
-        throw new Error("INTERNAL_SERVER_ERROR");
-      }
+      const jwtSecret = process.env.JWT_SECRET!;
 
       const token = jwt.sign({ userId: user.id }, jwtSecret, {
         expiresIn: "7d",

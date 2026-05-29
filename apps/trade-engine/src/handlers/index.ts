@@ -13,6 +13,7 @@ import { handleMarkPriceUpdateEvent } from "./markPrice.handle";
 import { handleGetAccountStateEvent } from "./account.handler";
 import { handleGetOpenPositionsEvent } from "./position.handler";
 import { handleGetOrderbookEvent } from "./orderbook.handler";
+import { handleCreditBalanceEvent } from "./balance.handler";
 
 export const publisherRedis = await createClient().connect();
 
@@ -37,6 +38,8 @@ export const handleIncomingEvents = async (
     response = handleGetOpenPositionsEvent(data);
   } else if (data.kind === EVENT_KINDS.GET_ORDERBOOK) {
     response = handleGetOrderbookEvent(data);
+  } else if (data.kind === EVENT_KINDS.CREDIT_BALANCE) {
+    response = handleCreditBalanceEvent(data);
   } else if (data.kind === TICK_KINDS.MARK_PRICE) {
     handleMarkPriceUpdateEvent(data);
   }

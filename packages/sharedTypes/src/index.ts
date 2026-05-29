@@ -15,6 +15,7 @@ export enum EVENT_KINDS {
   GET_ACCOUNT_STATE = "get_account_state",
   GET_OPEN_POSITIONS = "get_open_positions",
   GET_ORDERBOOK = "get_orderbook",
+  CREDIT_BALANCE = "credit_balance",
 }
 
 export enum RESPONSE_KINDS {
@@ -23,6 +24,7 @@ export enum RESPONSE_KINDS {
   GET_ACCOUNT_STATE_RESPONSE = "get_account_state_response",
   GET_OPEN_POSITIONS_RESPONSE = "get_open_positions_response",
   GET_ORDERBOOK_RESPONSE = "get_orderbook_response",
+  CREDIT_BALANCE_RESPONSE = "credit_balance_response",
 }
 
 export enum TICK_KINDS {
@@ -189,12 +191,41 @@ export const getOrderbookResponseSchema = z.object({
   }),
 });
 
+export const creditBalancePayloadSchema = z.object({
+  requestId: z.string(),
+  kind: z.literal(EVENT_KINDS.CREDIT_BALANCE),
+  payload: z.object({
+    userId: z.number().int().positive(),
+    amountUsd: z.number().positive(),
+    onrampId: z.string().uuid(),
+  }),
+});
+
+export const creditBalanceResponseSchema = z.object({
+  kind: z.literal(RESPONSE_KINDS.CREDIT_BALANCE_RESPONSE),
+  requestId: z.string(),
+  data: z.object({
+    success: z.boolean(),
+    message: z.string().nullable(),
+    data: z
+      .object({
+        balanceUsd: z.number(),
+        lockedMarginUsd: z.number(),
+        availableMarginUsd: z.number(),
+        creditedAmountUsd: z.number(),
+        onrampId: z.string().uuid(),
+      })
+      .nullable(),
+  }),
+});
+
 export const tradeEngineResponseSchema = z.discriminatedUnion("kind", [
   createUserResponseSchema,
   createOrderResponseSchema,
   getAccountStateResponseSchema,
   getOpenPositionsResponseSchema,
   getOrderbookResponseSchema,
+  creditBalanceResponseSchema,
 ]);
 
 export type TradeEngineResponse = z.infer<typeof tradeEngineResponseSchema>;
@@ -211,6 +242,8 @@ export const eventSchema = z.discriminatedUnion("kind", [
   getOpenPositionsResponseSchema,
   getOrderbookPayloadSchema,
   getOrderbookResponseSchema,
+  creditBalancePayloadSchema,
+  creditBalanceResponseSchema,
 ]);
 
 export const AssetConfig: Record<

@@ -20,6 +20,6 @@ bun run --filter web dev
 
 - Markets list and symbol routing
 - `/trade/$symbol` exchange-style layout
-- Live orderbook polling
+- Orderbook snapshot on load (WebSocket updates planned)
 - Chart placeholder panel
 - Trade panel placeholder (auth-required actions disabled for now)
