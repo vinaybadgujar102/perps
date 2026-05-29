@@ -4,18 +4,26 @@ import { useParams } from "@tanstack/react-router";
 import { ChartPanel } from "../components/chart-panel";
 import { MarketHeader } from "../components/market-header";
 import { MarketsSidebar } from "../components/markets-sidebar";
+import { OpenPositionsPanel } from "../components/open-positions-panel";
 import { OrderbookPanel } from "../components/orderbook-panel";
 import { TradePanel } from "../components/trade-panel";
-import { fetchMarket, fetchMarkets, fetchOrderbook } from "../lib/api";
+import { useAuth } from "../context/auth-context";
+import { fetchMarket, fetchMarkets, fetchOpenPositions, fetchOrderbook } from "../lib/api";
 
 const TradeComponent = () => {
   const { symbol } = useParams({ from: "/trade/$symbol" });
   const queryClient = useQueryClient();
+  const { user, isAuthenticated } = useAuth();
   const marketsQuery = useQuery({ queryKey: ["markets"], queryFn: fetchMarkets });
   const marketQuery = useQuery({ queryKey: ["market", symbol], queryFn: () => fetchMarket(symbol) });
   const orderbookQuery = useQuery({
     queryKey: ["orderbook", symbol],
     queryFn: () => fetchOrderbook(symbol),
+  });
+  const positionsQuery = useQuery({
+    queryKey: ["positions", user?.id],
+    queryFn: () => fetchOpenPositions(user!.id),
+    enabled: isAuthenticated && Boolean(user?.id),
   });
 
   const market = marketQuery.data;
@@ -56,9 +64,19 @@ const TradeComponent = () => {
               onOrderPlaced={() => {
                 void orderbookQuery.refetch();
                 void queryClient.invalidateQueries({ queryKey: ["account"] });
+                void queryClient.invalidateQueries({ queryKey: ["positions"] });
               }}
             />
           </div>
+          <OpenPositionsPanel
+            positions={positionsQuery.data ?? []}
+            activeSymbol={market.symbol}
+            markets={markets}
+            isLoading={positionsQuery.isLoading}
+            error={positionsQuery.error ? "Unable to fetch positions" : null}
+            onRetry={() => void positionsQuery.refetch()}
+            isAuthenticated={isAuthenticated}
+          />
         </section>
       </div>
     </main>

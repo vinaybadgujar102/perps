@@ -95,8 +95,8 @@ export const fillSchema = z.object({
   makerOrderId: z.string(),
   takerOrderId: z.string(),
   filledQty: z.number(),
-  takerSide: z.nativeEnum(SIDE),
-  makerSide: z.nativeEnum(SIDE),
+  takerSide: z.enum(SIDE),
+  makerSide: z.enum(SIDE),
   timestamp: z.number(),
 });
 
@@ -166,7 +166,11 @@ export const getOrderbookPayloadSchema = z.object({
   requestId: z.string(),
   kind: z.literal(EVENT_KINDS.GET_ORDERBOOK),
   payload: z.object({
-    market: z.string().trim().min(1).transform((value) => value.toUpperCase()),
+    market: z
+      .string()
+      .trim()
+      .min(1)
+      .transform((value) => value.toUpperCase()),
   }),
 });
 
