@@ -180,7 +180,7 @@ a {
 
 .trade-content { min-width: 0; }
 .chart-panel, .orderbook-panel, .trade-panel { padding: 10px; min-height: 620px; }
-.chart-panel { min-width: 0; }
+.chart-panel { min-width: 0; padding: 10px; }
 .chart-canvas { height: 560px; margin-top: 8px; }
 
 .chart-tabs { border-bottom: 1px solid var(--border); padding-bottom: 6px; }
@@ -198,46 +198,129 @@ a {
 .inline-tabs button.is-active { color: var(--green); background: rgb(0 192 135 / 8%); }
 .inline-tabs.compact button { min-height: 24px; }
 
-.orderbook-head,
-.orderbook-row {
+.orderbook-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.orderbook-table-head {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
+  margin-top: 8px;
+  color: var(--muted);
   font-size: 11px;
 }
 
-.orderbook-head {
-  margin-top: 8px;
-  color: var(--muted);
-}
-
-.orderbook-body {
-  margin-top: 6px;
+.orderbook-table {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  margin-top: 6px;
+}
+
+.orderbook-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 0;
+}
+
+.orderbook-side.asks {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.orderbook-side.bids {
+  flex: 1;
+  justify-content: flex-start;
+}
+
+.orderbook-side-empty {
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+  padding: 12px 0;
+}
+
+.orderbook-row-v2 {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
+  align-items: center;
+  height: 22px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
 }
 
-.orderbook-row {
-  padding: 3px 0;
+.orderbook-row-v2:hover {
+  background: rgb(255 255 255 / 3%);
 }
 
-.orderbook-row.ask span:first-child {
+.orderbook-row-depth {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  right: 0;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.orderbook-row-v2.ask .orderbook-row-depth {
+  background: rgb(246 70 93 / 22%);
+}
+
+.orderbook-row-v2.bid .orderbook-row-depth {
+  background: rgb(0 192 135 / 22%);
+}
+
+.orderbook-cell {
+  position: relative;
+  z-index: 1;
+}
+
+.orderbook-cell.price {
+  font-weight: 500;
+}
+
+.orderbook-row-v2.ask .orderbook-cell.price {
   color: var(--red);
 }
 
-.orderbook-row.bid span:first-child {
+.orderbook-row-v2.bid .orderbook-cell.price {
   color: var(--green);
 }
 
-.spread-row {
+.orderbook-cell.total {
+  text-align: right;
+  color: var(--text);
+  overflow: hidden;
+}
+
+.orderbook-mid {
+  padding: 8px 0;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--green);
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  padding: 10px 0;
+  margin: 4px 0;
+}
+
+.orderbook-state {
+  padding: 24px 0;
   text-align: center;
-  font-size: 15px;
-  color: var(--green);
-  font-weight: 700;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.orderbook-state.error {
+  color: var(--red);
 }
 
 .trade-tabs {
@@ -321,6 +404,27 @@ a {
   border-radius: 7px;
   font-size: 11px;
   padding: 8px;
+}
+
+.trade-balance {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.deposit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.deposit-presets {
+  display: flex;
+  gap: 6px;
 }
 
 .primary-pill {

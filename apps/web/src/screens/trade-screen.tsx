@@ -15,7 +15,6 @@ const TradeComponent = () => {
   const orderbookQuery = useQuery({
     queryKey: ["orderbook", symbol],
     queryFn: () => fetchOrderbook(symbol),
-    refetchInterval: 2500,
   });
 
   const market = marketQuery.data;
@@ -39,9 +38,11 @@ const TradeComponent = () => {
           <div className="trade-grid">
             <ChartPanel />
             <OrderbookPanel
+              symbol={market.symbol}
               orderbook={orderbookQuery.data ?? null}
               priceScale={market.priceScale}
               quantityScale={market.quantityScale}
+              lastPrice={lastPrice}
               isLoading={orderbookQuery.isLoading}
               onRetry={() => void orderbookQuery.refetch()}
               error={orderbookQuery.error ? "Unable to fetch orderbook data" : null}

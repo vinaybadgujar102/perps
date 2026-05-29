@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { apiEnvelopeSchema, get } from "./api-envelope";
+import { apiEnvelopeSchema, get, requestJson } from "./api-envelope";
 import { loadSession } from "./auth-storage";
 
 const marketSchema = z.object({
@@ -46,10 +46,39 @@ const orderbookResponseSchema = apiEnvelopeSchema(
   }),
 );
 
+const accountStateResponseSchema = apiEnvelopeSchema(
+  z.object({
+    success: z.boolean(),
+    message: z.string().nullable(),
+    data: z
+      .object({
+        balanceUsd: z.number(),
+        lockedMarginUsd: z.number(),
+        availableMarginUsd: z.number(),
+      })
+      .nullable(),
+  }),
+);
+
+const onrampDepositResponseSchema = apiEnvelopeSchema(
+  z.object({
+    onrampId: z.string().uuid(),
+    amountUsd: z.number(),
+    balanceUsd: z.number(),
+    availableMarginUsd: z.number(),
+  }),
+);
+
 export type Market = z.infer<typeof marketSchema>;
 export type OrderbookData = NonNullable<
   z.infer<typeof orderbookResponseSchema>["data"]
 >["data"]["data"];
+export type AccountState = NonNullable<
+  z.infer<typeof accountStateResponseSchema>["data"]
+>["data"];
+export type OnrampDepositResult = NonNullable<
+  z.infer<typeof onrampDepositResponseSchema>["data"]
+>;
 
 export { apiEnvelopeSchema } from "./api-envelope";
 
@@ -80,4 +109,33 @@ export const fetchOrderbook = async (symbol: string): Promise<OrderbookData> => 
     throw new Error(response.error ?? response.data?.data.message ?? "Failed to load orderbook");
   }
   return response.data.data.data;
+};
+
+export const fetchAccountState = async (userId: number): Promise<AccountState> => {
+  const response = await requestJson(`/account/${userId}`, accountStateResponseSchema, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.success || !response.data?.success || !response.data.data) {
+    throw new Error(response.error ?? response.data?.message ?? "Failed to load account");
+  }
+
+  return response.data.data;
+};
+
+export const createOnrampDeposit = async (amountUsd: number): Promise<OnrampDepositResult> => {
+  const response = await requestJson("/onramp", onrampDepositResponseSchema, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ amountUsd }),
+  });
+
+  if (!response.success || !response.data) {
+    throw new Error(response.error ?? "Deposit failed");
+  }
+
+  return response.data;
 };
