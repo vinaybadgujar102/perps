@@ -23,12 +23,28 @@ export const handleCreateOrderEvent = (
   const user = USERS.getUser(data.userId);
   if (!user) {
     console.log("User not found");
-    return;
+    return {
+      requestId: data.requestId,
+      kind: RESPONSE_KINDS.CREATE_ORDER_RESPONSE,
+      data: {
+        success: false,
+        message: "User not found",
+        data: null,
+      },
+    };
   }
 
   if (user.balance - user.lockedBalance < requiredCollateral) {
     console.log("No margin available for this trade");
-    return;
+    return {
+      requestId: data.requestId,
+      kind: RESPONSE_KINDS.CREATE_ORDER_RESPONSE,
+      data: {
+        success: false,
+        message: "Insufficient margin",
+        data: null,
+      },
+    };
   }
 
   const normalizeOrder = (

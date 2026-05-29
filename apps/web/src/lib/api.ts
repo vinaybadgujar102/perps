@@ -71,7 +71,8 @@ const fillSchema = z.object({
   makerId: z.number(),
   takerId: z.number(),
   price: z.number(),
-  orderId: z.string(),
+  makerOrderId: z.string(),
+  takerOrderId: z.string(),
   filledQty: z.number(),
   takerSide: z.string(),
   makerSide: z.string(),
@@ -83,6 +84,24 @@ const createOrderResponseSchema = apiEnvelopeSchema(
     success: z.boolean(),
     message: z.string().nullable(),
     data: z.array(fillSchema).nullable(),
+  }),
+);
+
+const openPositionSchema = z.object({
+  market: z.string(),
+  side: z.enum(["LONG", "SHORT"]),
+  size: z.number(),
+  averageEntryPrice: z.number(),
+  collateralUser: z.number(),
+  estimatedLiquidationPrice: z.number(),
+  realizedPnl: z.number(),
+});
+
+const openPositionsResponseSchema = apiEnvelopeSchema(
+  z.object({
+    success: z.boolean(),
+    message: z.string().nullable(),
+    data: z.array(openPositionSchema).nullable(),
   }),
 );
 
@@ -118,6 +137,7 @@ export type AccountState = NonNullable<
 export type OnrampDepositResult = NonNullable<
   z.infer<typeof onrampDepositResponseSchema>["data"]
 >;
+export type OpenPosition = z.infer<typeof openPositionSchema>;
 
 export { apiEnvelopeSchema } from "./api-envelope";
 
@@ -160,6 +180,18 @@ export const fetchAccountState = async (userId: number): Promise<AccountState> =
   }
 
   return response.data.data;
+};
+
+export const fetchOpenPositions = async (userId: number): Promise<OpenPosition[]> => {
+  const response = await requestJson(`/positions/${userId}`, openPositionsResponseSchema, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.success || !response.data?.success) {
+    throw new Error(response.error ?? response.data?.message ?? "Failed to load positions");
+  }
+
+  return response.data.data ?? [];
 };
 
 export const createOnrampDeposit = async (amountUsd: number): Promise<OnrampDepositResult> => {

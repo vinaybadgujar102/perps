@@ -21,7 +21,7 @@ positionRouter.get(
       return errorResponse(res, StatusCodes.UNAUTHORIZED, "UNAUTHORIZED_USER");
     }
 
-    const { userId: requestedUserId } = req.params as z.infer<
+    const { userId: requestedUserId } = req.params as unknown as z.infer<
       typeof getPositionsParamsSchema
     >;
     if (requestedUserId !== authUser.userId) {
