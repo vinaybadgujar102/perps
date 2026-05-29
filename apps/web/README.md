@@ -20,6 +20,6 @@ bun run --filter web dev
 
 - Markets list and symbol routing
 - `/trade/$symbol` exchange-style layout
-- Orderbook snapshot on load (WebSocket updates planned)
+- Orderbook fetch on load, symbol change, manual refresh, and after placing orders
 - Chart placeholder panel
-- Trade panel placeholder (auth-required actions disabled for now)
+- Trade panel: Limit/Market orders, margin estimate, onramp deposit (auth required)

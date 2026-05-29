@@ -406,6 +406,34 @@ a {
   padding: 8px;
 }
 
+.trade-success {
+  margin: 8px 0 0;
+  border: 1px solid rgb(0 192 135 / 30%);
+  background: rgb(0 192 135 / 10%);
+  color: #9ef0d4;
+  border-radius: 7px;
+  font-size: 11px;
+  padding: 8px;
+}
+
+.trade-market-price-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.trade-margin-est {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.trade-deposit-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .trade-balance {
   margin: 0;
   color: var(--muted);

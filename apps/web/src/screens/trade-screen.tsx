@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { ChartPanel } from "../components/chart-panel";
 import { MarketHeader } from "../components/market-header";
@@ -10,6 +10,7 @@ import { fetchMarket, fetchMarkets, fetchOrderbook } from "../lib/api";
 
 const TradeComponent = () => {
   const { symbol } = useParams({ from: "/trade/$symbol" });
+  const queryClient = useQueryClient();
   const marketsQuery = useQuery({ queryKey: ["markets"], queryFn: fetchMarkets });
   const marketQuery = useQuery({ queryKey: ["market", symbol], queryFn: () => fetchMarket(symbol) });
   const orderbookQuery = useQuery({
@@ -47,7 +48,16 @@ const TradeComponent = () => {
               onRetry={() => void orderbookQuery.refetch()}
               error={orderbookQuery.error ? "Unable to fetch orderbook data" : null}
             />
-            <TradePanel />
+            <TradePanel
+              market={market}
+              lastPrice={lastPrice}
+              bestBid={orderbookQuery.data?.bestBid?.price ?? null}
+              bestAsk={orderbookQuery.data?.bestAsk?.price ?? null}
+              onOrderPlaced={() => {
+                void orderbookQuery.refetch();
+                void queryClient.invalidateQueries({ queryKey: ["account"] });
+              }}
+            />
           </div>
         </section>
       </div>

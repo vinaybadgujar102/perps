@@ -29,20 +29,16 @@ const marketResponseSchema = apiEnvelopeSchema(
 
 const orderbookResponseSchema = apiEnvelopeSchema(
   z.object({
-    kind: z.string(),
-    requestId: z.string(),
-    data: z.object({
-      success: z.boolean(),
-      message: z.string().nullable(),
-      data: z
-        .object({
-          bids: z.array(orderbookLevelSchema),
-          asks: z.array(orderbookLevelSchema),
-          bestBid: orderbookLevelSchema.nullable(),
-          bestAsk: orderbookLevelSchema.nullable(),
-        })
-        .nullable(),
-    }),
+    success: z.boolean(),
+    message: z.string().nullable(),
+    data: z
+      .object({
+        bids: z.array(orderbookLevelSchema),
+        asks: z.array(orderbookLevelSchema),
+        bestBid: orderbookLevelSchema.nullable(),
+        bestAsk: orderbookLevelSchema.nullable(),
+      })
+      .nullable(),
   }),
 );
 
@@ -69,10 +65,53 @@ const onrampDepositResponseSchema = apiEnvelopeSchema(
   }),
 );
 
+const fillSchema = z.object({
+  id: z.string(),
+  market: z.string(),
+  makerId: z.number(),
+  takerId: z.number(),
+  price: z.number(),
+  orderId: z.string(),
+  filledQty: z.number(),
+  takerSide: z.string(),
+  makerSide: z.string(),
+  timestamp: z.number(),
+});
+
+const createOrderResponseSchema = apiEnvelopeSchema(
+  z.object({
+    success: z.boolean(),
+    message: z.string().nullable(),
+    data: z.array(fillSchema).nullable(),
+  }),
+);
+
+export const ORDER_SIDE = ["LONG", "SHORT"] as const;
+export const ORDER_TYPE = ["LIMIT_ORDER", "market_order"] as const;
+
+export type OrderSide = (typeof ORDER_SIDE)[number];
+export type OrderType = (typeof ORDER_TYPE)[number];
+
+export type CreateOrderInput = {
+  market: string;
+  side: OrderSide;
+  qty: number;
+  orderType: OrderType;
+  price: number;
+};
+
+export type Fill = z.infer<typeof fillSchema>;
+
+export type CreateOrderResult = {
+  success: boolean;
+  message: string | null;
+  fills: Fill[];
+};
+
 export type Market = z.infer<typeof marketSchema>;
 export type OrderbookData = NonNullable<
   z.infer<typeof orderbookResponseSchema>["data"]
->["data"]["data"];
+>["data"];
 export type AccountState = NonNullable<
   z.infer<typeof accountStateResponseSchema>["data"]
 >["data"];
@@ -105,10 +144,10 @@ export const fetchMarket = async (symbol: string): Promise<Market> => {
 
 export const fetchOrderbook = async (symbol: string): Promise<OrderbookData> => {
   const response = await get(`/orderbook/${symbol}`, orderbookResponseSchema);
-  if (!response.success || !response.data?.data.success || !response.data.data.data) {
-    throw new Error(response.error ?? response.data?.data.message ?? "Failed to load orderbook");
+  if (!response.success || !response.data?.success || !response.data.data) {
+    throw new Error(response.error ?? response.data?.message ?? "Failed to load orderbook");
   }
-  return response.data.data.data;
+  return response.data.data;
 };
 
 export const fetchAccountState = async (userId: number): Promise<AccountState> => {
@@ -138,4 +177,30 @@ export const createOnrampDeposit = async (amountUsd: number): Promise<OnrampDepo
   }
 
   return response.data;
+};
+
+export const createOrder = async (input: CreateOrderInput): Promise<CreateOrderResult> => {
+  const response = await requestJson("/order", createOrderResponseSchema, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.success || !response.data) {
+    throw new Error(response.error ?? "Order failed");
+  }
+
+  const result = response.data;
+  if (!result.success) {
+    throw new Error(result.message ?? "Order failed");
+  }
+
+  return {
+    success: result.success,
+    message: result.message,
+    fills: result.data ?? [],
+  };
 };
