@@ -4,7 +4,6 @@ import { MMR } from "../constants";
 import { POSITIONS } from "../inMemoryStates";
 import { createOrder } from "./order.util";
 import type { Order } from "../types";
-import { size } from "zod";
 
 export type LiquidationInput = {
   qty: number;

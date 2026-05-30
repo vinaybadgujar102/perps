@@ -127,7 +127,7 @@ const matchOrder = (order: Order): Fill[] | null => {
   if (order.side === SIDE.LONG) {
     for (let i = 0; i < orderbook.asks.length; i++) {
       const priceLevel = orderbook.asks[i];
-      if (!priceLevel) return fills;
+      if (!priceLevel) continue;
 
       if (priceLevel.price > order.price || order.qty === order.filledQty)
         return fills;
