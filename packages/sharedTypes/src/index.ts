@@ -25,6 +25,7 @@ export enum RESPONSE_KINDS {
   GET_OPEN_POSITIONS_RESPONSE = "get_open_positions_response",
   GET_ORDERBOOK_RESPONSE = "get_orderbook_response",
   CREDIT_BALANCE_RESPONSE = "credit_balance_response",
+  INDEX_PRICE_UPDATE = "index_price_update",
 }
 
 export enum TICK_KINDS {
@@ -224,6 +225,43 @@ export const creditBalanceResponseSchema = z.object({
   }),
 });
 
+export const indexPriceUpdateSchema = z.object({
+  kind: z.literal(RESPONSE_KINDS.INDEX_PRICE_UPDATE),
+  payload: z.object({
+    market: z.string(),
+    indexPrice: z.number(),
+    timestamp: z.number(),
+  }),
+});
+
+export type IndexPriceUpdate = z.infer<typeof indexPriceUpdateSchema>;
+
+export const indexPriceChannel = (market: string) => `indexPrice.${market}`;
+
+export const wsSubscribeSchema = z.object({
+  method: z.literal("SUBSCRIBE"),
+  params: z.array(z.string()).min(1),
+});
+
+export const wsUnsubscribeSchema = z.object({
+  method: z.literal("UNSUBSCRIBE"),
+  params: z.array(z.string()).min(1),
+});
+
+export const wsClientMessageSchema = z.discriminatedUnion("method", [
+  wsSubscribeSchema,
+  wsUnsubscribeSchema,
+]);
+
+export const indexPricePushSchema = z.object({
+  stream: z.string(),
+  data: z.object({
+    market: z.string(),
+    indexPrice: z.number(),
+    timestamp: z.number(),
+  }),
+});
+
 export const tradeEngineResponseSchema = z.discriminatedUnion("kind", [
   createUserResponseSchema,
   createOrderResponseSchema,
@@ -234,6 +272,18 @@ export const tradeEngineResponseSchema = z.discriminatedUnion("kind", [
 ]);
 
 export type TradeEngineResponse = z.infer<typeof tradeEngineResponseSchema>;
+
+export const responseQueueSchema = z.discriminatedUnion("kind", [
+  createUserResponseSchema,
+  createOrderResponseSchema,
+  getAccountStateResponseSchema,
+  getOpenPositionsResponseSchema,
+  getOrderbookResponseSchema,
+  creditBalanceResponseSchema,
+  indexPriceUpdateSchema,
+]);
+
+export type ResponseQueueMessage = z.infer<typeof responseQueueSchema>;
 
 export const eventSchema = z.discriminatedUnion("kind", [
   createUserPayloadSchema,
@@ -249,6 +299,7 @@ export const eventSchema = z.discriminatedUnion("kind", [
   getOrderbookResponseSchema,
   creditBalancePayloadSchema,
   creditBalanceResponseSchema,
+  indexPriceUpdateSchema,
 ]);
 
 export const AssetConfig: Record<

@@ -3,6 +3,7 @@ import {
   QUEUES,
   TICK_KINDS,
   type eventSchema,
+  type ResponseQueueMessage,
   type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type z from "zod";
@@ -17,9 +18,9 @@ import { handleCreditBalanceEvent } from "./balance.handler";
 
 export const publisherRedis = await createClient().connect();
 
-const publishResponse = async (response: TradeEngineResponse) => {
+const publishToResponseQueue = async (message: ResponseQueueMessage) => {
   await publisherRedis.xAdd(QUEUES.RESPONSE_QUEUE, "*", {
-    data: JSON.stringify(response),
+    data: JSON.stringify(message),
   });
 };
 
@@ -41,10 +42,13 @@ export const handleIncomingEvents = async (
   } else if (data.kind === EVENT_KINDS.CREDIT_BALANCE) {
     response = handleCreditBalanceEvent(data);
   } else if (data.kind === TICK_KINDS.MARK_PRICE) {
-    handleMarkPriceUpdateEvent(data);
+    const updates = handleMarkPriceUpdateEvent(data);
+    for (const update of updates) {
+      await publishToResponseQueue(update);
+    }
   }
 
   if (response) {
-    await publishResponse(response);
+    await publishToResponseQueue(response);
   }
 };
