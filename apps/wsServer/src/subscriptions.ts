@@ -1,39 +1,47 @@
-export interface WsData {
-  subscriptions: Set<string>;
-}
+import type { WebSocket } from "ws";
 
-export interface WsClient {
-  data: WsData;
-  send(message: string): number;
-}
+const rooms = new Map<string, Set<WebSocket>>();
+const clientRooms = new WeakMap<WebSocket, Set<string>>();
 
-const channels = new Map<string, Set<WsClient>>();
-
-export function subscribe(ws: WsClient, channel: string) {
-  if (!channels.has(channel)) {
-    channels.set(channel, new Set());
+function getClientRooms(ws: WebSocket) {
+  let joinedRooms = clientRooms.get(ws);
+  if (!joinedRooms) {
+    joinedRooms = new Set<string>();
+    clientRooms.set(ws, joinedRooms);
   }
-  channels.get(channel)!.add(ws);
-  ws.data.subscriptions.add(channel);
+  return joinedRooms;
 }
 
-export function unsubscribe(ws: WsClient, channel: string) {
-  channels.get(channel)?.delete(ws);
-  ws.data.subscriptions.delete(channel);
-}
-
-export function removeClient(ws: WsClient) {
-  for (const channel of ws.data.subscriptions) {
-    channels.get(channel)?.delete(ws);
+export function subscribe(ws: WebSocket, room: string) {
+  if (!rooms.has(room)) {
+    rooms.set(room, new Set());
   }
-  ws.data.subscriptions.clear();
+  rooms.get(room)!.add(ws);
+  getClientRooms(ws).add(room);
 }
 
-export function broadcast(channel: string, message: string) {
-  const subscribers = channels.get(channel);
-  if (!subscribers) return;
+export function unsubscribe(ws: WebSocket, room: string) {
+  rooms.get(room)?.delete(ws);
+  getClientRooms(ws).delete(room);
+}
 
-  for (const ws of subscribers) {
-    ws.send(message);
+export function removeClient(ws: WebSocket) {
+  const joinedRooms = clientRooms.get(ws);
+  if (!joinedRooms) return;
+
+  for (const room of joinedRooms) {
+    rooms.get(room)?.delete(ws);
+  }
+  clientRooms.delete(ws);
+}
+
+export function broadcast(room: string, message: string) {
+  const peopleInRoom = rooms.get(room);
+  if (!peopleInRoom) return;
+
+  for (const ws of peopleInRoom) {
+    if (ws.readyState === ws.OPEN) {
+      ws.send(message);
+    }
   }
 }

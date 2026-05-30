@@ -1,5 +1,5 @@
 import {
-  indexPriceChannel,
+  indexPriceRoom,
   indexPricePushSchema,
   QUEUES,
   RESPONSE_KINDS,
@@ -30,13 +30,13 @@ export async function startRedisConsumer() {
 
       if (data.kind !== RESPONSE_KINDS.INDEX_PRICE_UPDATE) continue;
 
-      const channel = indexPriceChannel(data.payload.market);
-      const push = indexPricePushSchema.parse({
-        stream: channel,
+      const room = indexPriceRoom(data.payload.market);
+      const messageToBroadcast = indexPricePushSchema.parse({
+        stream: room,
         data: data.payload,
       });
 
-      broadcast(channel, JSON.stringify(push));
+      broadcast(room, JSON.stringify(messageToBroadcast));
     } catch (error) {
       console.error(error);
     }

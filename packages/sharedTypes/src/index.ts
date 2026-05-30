@@ -236,16 +236,16 @@ export const indexPriceUpdateSchema = z.object({
 
 export type IndexPriceUpdate = z.infer<typeof indexPriceUpdateSchema>;
 
-export const indexPriceChannel = (market: string) => `indexPrice.${market}`;
+export const indexPriceRoom = (market: string) => `indexPrice.${market}`;
 
 export const wsSubscribeSchema = z.object({
   method: z.literal("SUBSCRIBE"),
-  params: z.array(z.string()).min(1),
+  params: z.array(z.string()),
 });
 
 export const wsUnsubscribeSchema = z.object({
   method: z.literal("UNSUBSCRIBE"),
-  params: z.array(z.string()).min(1),
+  params: z.array(z.string()),
 });
 
 export const wsClientMessageSchema = z.discriminatedUnion("method", [

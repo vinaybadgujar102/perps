@@ -92,9 +92,11 @@
       "dependencies": {
         "@repo/sharedtypes": "workspace:*",
         "redis": "^6.0.0",
+        "ws": "^8.21.0",
       },
       "devDependencies": {
         "@types/bun": "latest",
+        "@types/ws": "^8.18.1",
       },
       "peerDependencies": {
         "typescript": "^5",
