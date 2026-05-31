@@ -1,90 +1,118 @@
+import { BrandMark } from "@/components/layout/app-shell";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { signup } from "@/lib/auth-api";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
-import { signup } from "../lib/auth-api";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+const signupSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Enter a valid email"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+type SignupForm = z.infer<typeof signupSchema>;
 
 export const SignupScreen = () => {
   const navigate = useNavigate();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, setIsPending] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<SignupForm>({
+    resolver: zodResolver(signupSchema),
+  });
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
-    setIsPending(true);
-
+  const onSubmit = async (values: SignupForm) => {
     try {
-      await signup({ name, email, password });
+      await signup(values);
+      toast.success("Account created");
       await navigate({ to: "/login", search: { registered: "1" } });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to create account");
-    } finally {
-      setIsPending(false);
+      toast.error(err instanceof Error ? err.message : "Unable to create account");
     }
   };
 
   return (
-    <main className="auth-screen">
-      <div className="panel auth-card">
-        <div className="auth-card-header">
-          <span className="brand-mark">MM</span>
-          <h1>Create account</h1>
-          <p>Start trading on Market Maker</p>
-        </div>
+    <main className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="items-center text-center">
+          <BrandMark className="mb-2 size-10 text-sm" />
+          <CardTitle className="text-2xl">Create account</CardTitle>
+          <CardDescription>Start trading on Market Maker</CardDescription>
+        </CardHeader>
 
-        <form className="trade-form auth-form" onSubmit={handleSubmit}>
-          <label htmlFor="signup-name">Name</label>
-          <input
-            id="signup-name"
-            type="text"
-            autoComplete="name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            required
-          />
+        <CardContent>
+          <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+            <div className="space-y-2">
+              <Label htmlFor="signup-name">Name</Label>
+              <Input
+                id="signup-name"
+                type="text"
+                autoComplete="name"
+                aria-invalid={Boolean(errors.name)}
+                {...register("name")}
+              />
+              {errors.name ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {errors.name.message}
+                </p>
+              ) : null}
+            </div>
 
-          <label htmlFor="signup-email">Email</label>
-          <input
-            id="signup-email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
+            <div className="space-y-2">
+              <Label htmlFor="signup-email">Email</Label>
+              <Input
+                id="signup-email"
+                type="email"
+                autoComplete="email"
+                aria-invalid={Boolean(errors.email)}
+                {...register("email")}
+              />
+              {errors.email ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {errors.email.message}
+                </p>
+              ) : null}
+            </div>
 
-          <label htmlFor="signup-password">Password</label>
-          <input
-            id="signup-password"
-            type="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            minLength={6}
-            required
-          />
+            <div className="space-y-2">
+              <Label htmlFor="signup-password">Password</Label>
+              <Input
+                id="signup-password"
+                type="password"
+                autoComplete="new-password"
+                aria-invalid={Boolean(errors.password)}
+                {...register("password")}
+              />
+              {errors.password ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {errors.password.message}
+                </p>
+              ) : null}
+            </div>
 
-          {error ? (
-            <p className="auth-error" role="alert">
-              {error}
-            </p>
-          ) : null}
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Creating account..." : "Sign up"}
+            </Button>
+          </form>
+        </CardContent>
 
-          <button type="submit" className="primary-button" disabled={isPending}>
-            {isPending ? "Creating account..." : "Sign up"}
-          </button>
-        </form>
-
-        <p className="auth-footer">
-          Already have an account?{" "}
-          <Link to="/login" className="auth-link">
-            Sign in
-          </Link>
-        </p>
-      </div>
+        <CardFooter className="justify-center">
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link to="/login" className="font-medium text-primary hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
     </main>
   );
 };

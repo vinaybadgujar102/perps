@@ -9,4 +9,7 @@ export const formatNumber = (value: number, digits = 2) =>
     maximumFractionDigits: digits,
   }).format(value);
 
+export const formatScaledNumber = (scaledValue: number, scale: number) =>
+  formatNumber(scaledValue / 10 ** scale, scale);
+
 export const formatCompact = (value: number) => compactFormatter.format(value);

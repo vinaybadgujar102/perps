@@ -1,3 +1,7 @@
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { useEffect, useRef } from "react";
 import {
   CandlestickSeries,
@@ -5,6 +9,15 @@ import {
   type CandlestickData,
   type IChartApi,
 } from "lightweight-charts";
+
+const CHART_COLORS = {
+  background: "#0b0e11",
+  text: "#848e9c",
+  grid: "#1a1f28",
+  border: "#2b3139",
+  up: "#00c087",
+  down: "#f6465d",
+};
 
 const buildDemoCandles = (): CandlestickData[] => {
   const candles: CandlestickData[] = [];
@@ -36,25 +49,25 @@ export const ChartPanel = () => {
 
     const chart = createChart(chartRef.current, {
       layout: {
-        background: { color: "#0B0E11" },
-        textColor: "#848E9C",
+        background: { color: CHART_COLORS.background },
+        textColor: CHART_COLORS.text,
       },
       grid: {
-        vertLines: { color: "#1A1F28" },
-        horzLines: { color: "#1A1F28" },
+        vertLines: { color: CHART_COLORS.grid },
+        horzLines: { color: CHART_COLORS.grid },
       },
-      rightPriceScale: { borderColor: "#2B3139" },
-      timeScale: { borderColor: "#2B3139" },
+      rightPriceScale: { borderColor: CHART_COLORS.border },
+      timeScale: { borderColor: CHART_COLORS.border },
       crosshair: { mode: 0 },
       autoSize: true,
     });
 
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: "#00C087",
-      downColor: "#F6465D",
+      upColor: CHART_COLORS.up,
+      downColor: CHART_COLORS.down,
       borderVisible: false,
-      wickUpColor: "#00C087",
-      wickDownColor: "#F6465D",
+      wickUpColor: CHART_COLORS.up,
+      wickDownColor: CHART_COLORS.down,
     });
     series.setData(buildDemoCandles());
 
@@ -66,24 +79,35 @@ export const ChartPanel = () => {
   }, []);
 
   return (
-    <section className="panel chart-panel">
-      <div className="panel-title-row chart-tabs">
-        <div className="inline-tabs">
-          <button type="button" className="is-active">
-            Chart
-          </button>
-          <button type="button">Info</button>
-          <button type="button">Rules</button>
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0 pb-2">
+        <Tabs defaultValue="chart">
+          <TabsList>
+            <TabsTrigger value="chart">Chart</TabsTrigger>
+            <TabsTrigger value="info" disabled>
+              Info
+            </TabsTrigger>
+            <TabsTrigger value="rules" disabled>
+              Rules
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="flex gap-1">
+          {["1H", "4H", "1D"].map((interval, index) => (
+            <Button
+              key={interval}
+              variant={index === 0 ? "secondary" : "ghost"}
+              size="sm"
+              className="h-7 px-2 text-xs"
+            >
+              {interval}
+            </Button>
+          ))}
         </div>
-        <div className="inline-tabs compact">
-          <button type="button" className="is-active">
-            1H
-          </button>
-          <button type="button">4H</button>
-          <button type="button">1D</button>
-        </div>
-      </div>
-      <div className="chart-canvas" ref={chartRef} />
-    </section>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className={cn("h-[360px] w-full")} ref={chartRef} />
+      </CardContent>
+    </Card>
   );
 };

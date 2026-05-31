@@ -1,3 +1,10 @@
+import { AppShell } from "@/components/layout/app-shell";
+import { TopNav } from "@/components/top-nav";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { fetchMarket } from "@/hooks/queries/use-market";
+import { fetchMarkets } from "@/hooks/queries/use-markets";
+import { queryKeys } from "@/lib/query-keys";
 import {
   Outlet,
   createRootRouteWithContext,
@@ -8,7 +15,6 @@ import {
 } from "@tanstack/react-router";
 import type { QueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { TopNav } from "./components/top-nav";
 import { LoginScreen } from "./screens/login-screen";
 import { SignupScreen } from "./screens/signup-screen";
 import { TradeRouteView } from "./screens/trade-screen";
@@ -27,24 +33,27 @@ const RootLayout = () => {
   }
 
   return (
-    <div className="app-shell">
-      <TopNav />
+    <AppShell header={<TopNav />}>
       <Outlet />
-    </div>
+    </AppShell>
   );
 };
 
 const rootRoute = createRootRouteWithContext<RouterContext>()({
   component: RootLayout,
   errorComponent: ({ error, reset }) => (
-    <main className="screen-state error">
-      <div className="panel error-panel">
-        <h2>Failed to load trading data</h2>
-        <p>{error.message}</p>
-        <button type="button" className="primary-button" onClick={reset}>
-          Retry
-        </button>
-      </div>
+    <main className="flex min-h-screen items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Failed to load trading data</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">{error.message}</p>
+          <Button type="button" onClick={reset}>
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
     </main>
   ),
 });
@@ -62,13 +71,13 @@ const tradeRoute = createRoute({
   path: "/trade/$symbol",
   loader: async ({ context, params }) => {
     await context.queryClient.ensureQueryData({
-      queryKey: ["markets"],
-      queryFn: TradeRouteView.fetchMarkets,
+      queryKey: queryKeys.markets,
+      queryFn: fetchMarkets,
     });
 
     await context.queryClient.ensureQueryData({
-      queryKey: ["market", params.symbol],
-      queryFn: () => TradeRouteView.fetchMarket(params.symbol),
+      queryKey: queryKeys.market(params.symbol),
+      queryFn: () => fetchMarket(params.symbol),
     });
   },
   component: TradeRouteView.Component,
@@ -79,8 +88,8 @@ const marketsRoute = createRoute({
   path: "/markets",
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData({
-      queryKey: ["markets"],
-      queryFn: MarketsRouteView.fetchMarkets,
+      queryKey: queryKeys.markets,
+      queryFn: fetchMarkets,
     });
   },
   component: MarketsRouteView.Component,
