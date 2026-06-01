@@ -11,6 +11,8 @@
   },
   "scripts": {
     "dev": "bun run src/index.ts",
+    "dev:cluster": "bash ../../scripts/run-api-cluster.sh",
+    "dev:cluster:stop": "bash ../../scripts/stop-api-cluster.sh",
     "test": "bun test"
   },
   "dependencies": {
