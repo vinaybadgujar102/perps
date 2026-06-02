@@ -87,5 +87,3 @@ export function createUserManager() {
     },
   };
 }
-
-export const USERS = createUserManager();

@@ -5,10 +5,10 @@ import {
   type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type z from "zod";
-import { USERS } from "../utils/user.util";
 import { createPosition } from "../utils/position.util";
 import type { Order } from "../types";
 import { createOrder } from "../utils/order.util";
+import { USERMANAGER } from "../inMemoryStates";
 
 export const handleCreateOrderEvent = (
   data: z.infer<typeof createOrderPayloadSchema>,
@@ -20,7 +20,7 @@ export const handleCreateOrderEvent = (
   const positionalValue = price * qty;
   const requiredCollateral = positionalValue / maxLeverage;
 
-  const user = USERS.getUser(data.userId);
+  const user = USERMANAGER.getUser(data.userId);
   if (!user) {
     console.log("User not found");
     return {
@@ -34,7 +34,7 @@ export const handleCreateOrderEvent = (
     };
   }
 
-  if (user.balance - user.lockedBalance < requiredCollateral) {
+  if (user.balance - user.lockedBalanece < requiredCollateral) {
     console.log("No margin available for this trade");
     return {
       requestId: data.requestId,

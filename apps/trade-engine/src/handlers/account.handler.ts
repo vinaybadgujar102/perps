@@ -4,12 +4,12 @@ import {
   type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type z from "zod";
-import { USERS } from "../utils/user.util";
+import { USERMANAGER } from "../inMemoryStates";
 
 export const handleGetAccountStateEvent = (
   data: z.infer<typeof getAccountStatePayloadSchema>,
 ): TradeEngineResponse => {
-  const user = USERS.getUser(data.payload.userId);
+  const user = USERMANAGER.getUser(data.payload.userId);
 
   const responseData = user
     ? {
@@ -17,8 +17,8 @@ export const handleGetAccountStateEvent = (
         message: null,
         data: {
           balanceUsd: user.balance,
-          lockedMarginUsd: user.lockedBalance,
-          availableMarginUsd: user.balance - user.lockedBalance,
+          lockedMarginUsd: user.lockedBalanece,
+          availableMarginUsd: user.balance - user.lockedBalanece,
         },
       }
     : {

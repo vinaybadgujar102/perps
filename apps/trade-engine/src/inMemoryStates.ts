@@ -1,5 +1,6 @@
 import type { Position } from "@repo/sharedtypes";
 import type { PriceLevel } from "./types";
+import { UserManager } from "./utils/UserManager.class";
 
 export const orderbooks: Record<
   string,
@@ -10,3 +11,5 @@ export const orderbooks: Record<
 };
 
 export const POSITIONS: Map<string, Position> = new Map();
+
+export const USERMANAGER = new UserManager();

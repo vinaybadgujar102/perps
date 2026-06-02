@@ -4,14 +4,14 @@ import {
   type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type z from "zod";
-import { USERS } from "../utils/user.util";
+import { USERMANAGER } from "../inMemoryStates";
 
 export const handleCreateUserEvent = (
   data: z.infer<typeof createUserPayloadSchema>,
 ): TradeEngineResponse => {
   const { userId } = data.payload;
 
-  if (USERS.getUser(userId)) {
+  if (USERMANAGER.getUser(userId)) {
     return {
       requestId: data.requestId,
       kind: RESPONSE_KINDS.CREATE_USER_RESPONSE,
@@ -23,7 +23,7 @@ export const handleCreateUserEvent = (
     };
   }
 
-  USERS.addUser(userId);
+  USERMANAGER.createUser(userId);
 
   return {
     requestId: data.requestId,

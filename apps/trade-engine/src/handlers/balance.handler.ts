@@ -4,25 +4,28 @@ import {
   type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type z from "zod";
-import { USERS } from "../utils/user.util";
+import { USERMANAGER } from "../inMemoryStates";
 
 export const handleCreditBalanceEvent = (
   data: z.infer<typeof creditBalancePayloadSchema>,
 ): TradeEngineResponse => {
   const { userId, amountUsd, onrampId } = data.payload;
-  const result = USERS.creditBalance(userId, amountUsd);
+  const user = USERMANAGER.getUser(userId);
+  const result = user?.depositBalance(amountUsd);
 
-  if (!result.success) {
+  if (!result || !user) {
     return {
       requestId: data.requestId,
       kind: RESPONSE_KINDS.CREDIT_BALANCE_RESPONSE,
       data: {
         success: false,
-        message: result.message,
+        message: "Failed to credit balance",
         data: null,
       },
     };
   }
+
+  const balanceSnapshot = user.getBalanceSnapshot();
 
   return {
     requestId: data.requestId,
@@ -31,10 +34,11 @@ export const handleCreditBalanceEvent = (
       success: true,
       message: null,
       data: {
-        balanceUsd: result.balanceUsd,
-        lockedMarginUsd: result.lockedMarginUsd,
-        availableMarginUsd: result.availableMarginUsd,
-        creditedAmountUsd: result.creditedAmountUsd,
+        balanceUsd: balanceSnapshot.balance,
+        lockedMarginUsd: balanceSnapshot.lockedBalanece,
+        availableMarginUsd:
+          balanceSnapshot.balance - balanceSnapshot.lockedBalanece,
+        creditedAmountUsd: result,
         onrampId,
       },
     },
