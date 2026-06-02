@@ -1,6 +1,7 @@
 import {
   EVENT_KINDS,
   QUEUES,
+  RESPONSE_KINDS,
   TICK_KINDS,
   type eventSchema,
   type ResponseQueueMessage,

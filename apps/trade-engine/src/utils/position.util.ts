@@ -2,7 +2,6 @@ import { AssetConfig, SIDE, type Position, type Side } from "@repo/sharedtypes";
 import type { Order } from "../types";
 import { POSITIONS } from "../inMemoryStates";
 import { calculateLiquidationPrice } from "./liquidation.util";
-import { lockUserMargin } from "./margin.util";
 import { settleRealizedPnl } from "./pnl.util";
 
 export const positionFactory = (
@@ -140,12 +139,12 @@ export const createPosition = ({
   if (Math.abs(signedFilledSize) < Math.abs(oldSize)) {
     const slicePnl =
       settleRealizedPnl({
-      userId,
-      market,
-      signedPositionSizeBeforeClose: oldSize,
-      averageEntryPrice: currentPosition.averageEntryPrice,
-      closedQty,
-      releasedCollateral,
+        userId,
+        market,
+        signedPositionSizeBeforeClose: oldSize,
+        averageEntryPrice: currentPosition.averageEntryPrice,
+        closedQty,
+        releasedCollateral,
       }) ?? 0;
 
     const updatedCollateral =
@@ -186,12 +185,12 @@ export const createPosition = ({
 
   const slicePnl =
     settleRealizedPnl({
-    userId,
-    market,
-    signedPositionSizeBeforeClose: oldSize,
-    averageEntryPrice: currentPosition.averageEntryPrice,
-    closedQty,
-    releasedCollateral,
+      userId,
+      market,
+      signedPositionSizeBeforeClose: oldSize,
+      averageEntryPrice: currentPosition.averageEntryPrice,
+      closedQty,
+      releasedCollateral,
     }) ?? 0;
 
   const updatedCollateral = (Math.abs(updatedSize) * fillPrice) / maxLeverage;
