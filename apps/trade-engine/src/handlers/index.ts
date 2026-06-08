@@ -14,13 +14,24 @@ import {
 } from "../dispatcher/eventdispatcher";
 import { CreateUserHandler } from "./createUser.handler";
 import { CreateOrderHandler } from "./createOrder.handle";
+import { OrderService } from "../services/order.service";
+import { GLOBAL_ORDERBOOK, USERMANAGER } from "../inMemoryStates";
+import { RiskService } from "../services/risk.service";
+import { MatchingEngineService } from "../services/matchingEngineService";
 
 export const publisherRedis = await createClient().connect();
+
+const orderService = new OrderService(
+  USERMANAGER,
+  new RiskService(),
+  new MatchingEngineService(GLOBAL_ORDERBOOK),
+  GLOBAL_ORDERBOOK,
+);
 
 export const dispatcher = new EventDispatcher(
   new Map<string, EventHandler<any>>([
     [EVENT_KINDS.CREATE_USER, new CreateUserHandler()],
-    [EVENT_KINDS.CREATE_ORDER, new CreateOrderHandler()],
+    [EVENT_KINDS.CREATE_ORDER, new CreateOrderHandler(orderService)],
   ]),
 );
 

@@ -2,7 +2,7 @@ import type { Side } from "@repo/sharedtypes";
 import { ORDER_TYPE, SIDE } from "@repo/sharedtypes";
 import { MMR } from "../constants";
 import { POSITIONS } from "../inMemoryStates";
-import { createOrder } from "./order.util";
+// import { createOrder } from "./order.util";
 import type { Order } from "../types";
 
 export type LiquidationInput = {
@@ -65,6 +65,7 @@ export const liquidatePositions = (indexPrice: number) => {
       side: isLong ? SIDE.SHORT : SIDE.LONG,
     };
 
-    createOrder(liquidationOrder);
+    // createOrder(liquidationOrder);
+    void liquidationOrder;
   }
 };

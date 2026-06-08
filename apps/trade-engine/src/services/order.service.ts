@@ -1,7 +1,7 @@
 import type z from "zod";
 import { type createOrderPayloadSchema } from "@repo/sharedtypes";
 import type { UserManager } from "../utils/UserManager.class";
-import { Orderbook } from "../inMemoryStates";
+import { Orderbook, OrderbookManager } from "../inMemoryStates";
 import { createPosition } from "../entity/position.util";
 import type { MatchingEngineService } from "./matchingEngineService";
 import type { RiskService } from "./risk.service";
@@ -13,7 +13,7 @@ export class OrderService {
     private userManager: UserManager,
     private riskService: RiskService,
     private matchingEngineService: MatchingEngineService,
-    private orderBook: Orderbook,
+    private orderBookManager: OrderbookManager,
   ) {}
 
   createOrder(event: z.infer<typeof createOrderPayloadSchema>): Fill[] {
@@ -28,7 +28,8 @@ export class OrderService {
 
     // add in orderbook
     if (order.getAvailableQty() && order.isLimitOrder()) {
-      this.orderBook.addOrder(order);
+      const orderbook = this.orderBookManager.getOrderbook(order.market);
+      orderbook.addOrder(order);
     }
 
     // if no matches then no positions created so return

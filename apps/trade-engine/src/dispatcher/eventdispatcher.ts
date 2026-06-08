@@ -27,7 +27,6 @@ export class EventDispatcher {
     if (!handler) {
       throw new Error(`Unknown event ${event.kind}`);
     }
-
     return handler.handle(event);
   }
 }

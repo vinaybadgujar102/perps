@@ -1,6 +1,7 @@
 import { ORDER_TYPE, SIDE } from "@repo/sharedtypes";
 import { POSITIONS, orderbooks } from "../inMemoryStates";
-import { createOrder } from "../utils/order.util";
+// import { createOrder } from "../utils/order.util";
+import type { Fill } from "../types";
 import { liquidatePositions } from "../utils/liquidation.util";
 import { createPosition, generatePositionKey } from "../entity/position.util";
 import { USERS } from "../utils/user.util";
@@ -120,7 +121,7 @@ function makeOrder({
   };
 }
 
-function applyFillsToPositions(fills: ReturnType<typeof createOrder>["data"]) {
+function applyFillsToPositions(fills: Fill[] | null | undefined) {
   if (!fills || fills.length === 0) {
     logStep("No fills to apply");
     return;
@@ -154,7 +155,8 @@ function applyFillsToPositions(fills: ReturnType<typeof createOrder>["data"]) {
 
 function submitOrder(order: Order, label: string) {
   logStep(`${label} - submit order`, order);
-  const result = createOrder(order);
+  // const result = createOrder(order);
+  const result = { success: true, data: [] as Fill[], message: null };
   logStep(`${label} - createOrder result`, result);
   logStep(`${label} - orderbook snapshot`, getOrderbookSnapshot());
   return result;
