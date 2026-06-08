@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { orderbooks, POSITIONS } from "../inMemoryStates";
 import { calculateLiquidationPrice } from "../utils/liquidation.util";
-import { createPosition, generatePositionKey } from "../utils/position.util";
+import { createPosition, generatePositionKey } from "../entity/position.util";
 import { USERS } from "../utils/user.util";
 
 function getPosition(userId: number, market = "BTC") {
@@ -102,13 +102,7 @@ describe("createPosition", () => {
     expect(position?.collateralUser).toBe(7_550);
     expect(position?.orderId).toBe("order-a");
     expect(position?.realizedPnl).toBe(0);
-    expectEstimatedLiquidationPrice(
-      position,
-      "LONG",
-      3,
-      weightedEntry,
-      7_550,
-    );
+    expectEstimatedLiquidationPrice(position, "LONG", 3, weightedEntry, 7_550);
   });
 
   test("reduces LONG on opposite-side partial close using position side, not fill side", () => {

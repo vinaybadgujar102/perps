@@ -5,10 +5,27 @@ import {
   type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type z from "zod";
-import { createPosition } from "../utils/position.util";
+import { createPosition } from "../entity/position.util";
 import type { Order } from "../types";
 import { createOrder } from "../utils/order.util";
 import { USERMANAGER } from "../inMemoryStates";
+
+export const normalizeOrder = (
+  payload: z.infer<typeof createOrderPayloadSchema.shape.payload>,
+  userId: number,
+): Order => {
+  return {
+    id: payload.id,
+    market: payload.market,
+    qty: payload.qty,
+    filledQty: 0,
+    price: payload.price,
+    userId: userId,
+    side: payload.side,
+    orderType: payload.orderType,
+    timestamp: Date.now(),
+  };
+};
 
 export const handleCreateOrderEvent = (
   data: z.infer<typeof createOrderPayloadSchema>,
@@ -47,22 +64,6 @@ export const handleCreateOrderEvent = (
     };
   }
 
-  const normalizeOrder = (
-    payload: z.infer<typeof createOrderPayloadSchema.shape.payload>,
-    userId: number,
-  ): Order => {
-    return {
-      id: payload.id,
-      market: payload.market,
-      qty: payload.qty,
-      filledQty: 0,
-      price: payload.price,
-      userId: userId,
-      side: payload.side,
-      orderType: payload.orderType,
-      timestamp: Date.now(),
-    };
-  };
   const order = normalizeOrder(data.payload, data.userId);
   const res = createOrder(order);
 

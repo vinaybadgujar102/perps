@@ -2,7 +2,7 @@ import { ORDER_TYPE, SIDE } from "@repo/sharedtypes";
 import { POSITIONS, orderbooks } from "../inMemoryStates";
 import { createOrder } from "../utils/order.util";
 import { liquidatePositions } from "../utils/liquidation.util";
-import { createPosition, generatePositionKey } from "../utils/position.util";
+import { createPosition, generatePositionKey } from "../entity/position.util";
 import { USERS } from "../utils/user.util";
 import type { Order } from "../types";
 

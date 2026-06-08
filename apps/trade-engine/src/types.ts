@@ -1,5 +1,6 @@
 import type { ORDER_TYPE, Position, Side } from "@repo/sharedtypes";
 import { z } from "zod";
+import type { OrderEntity } from "./services/order.service";
 
 export type User = {
   userId: number;
@@ -29,7 +30,7 @@ export type BinanceMarkPriceResponse = z.infer<
 export type PriceLevel = {
   price: number;
   availableQty: number;
-  orders: Order[];
+  orders: OrderEntity[];
 };
 
 export type Order = {
