@@ -4,7 +4,7 @@ import { POSITIONS, orderbooks } from "../inMemoryStates";
 import type { Fill } from "../types";
 import { liquidatePositions } from "../utils/liquidation.util";
 import { createPosition, generatePositionKey } from "../entity/position.util";
-import { USERS } from "../utils/user.util";
+// import { USERS } from "../utils/user.util";
 import type { Order } from "../types";
 
 const E2E_MARK_PRICE = 50_250;
@@ -26,11 +26,11 @@ export function getPositionsSnapshot() {
 
 export function getUsersSnapshot() {
   return E2E_USER_IDS.map((userId) => {
-    const user = USERS.getUser(userId);
+    // const user = USERS.getUser(userId);
     return {
       userId,
-      balance: user?.balance ?? null,
-      lockedBalance: user?.lockedBalance ?? null,
+      balance: null,
+      lockedBalance: null,
     };
   });
 }
@@ -85,11 +85,12 @@ export function resetE2EState(markPrice = E2E_MARK_PRICE) {
 
 function ensureUsers() {
   for (const userId of E2E_USER_IDS) {
-    if (!USERS.getUser(userId)) {
-      const user = USERS.addUser(userId);
-      user.balance = 1_000_000;
-      user.lockedBalance = 0;
-    }
+    void userId;
+    // if (!USERS.getUser(userId)) {
+    //   const user = USERS.addUser(userId);
+    //   user.balance = 1_000_000;
+    //   user.lockedBalance = 0;
+    // }
   }
 }
 

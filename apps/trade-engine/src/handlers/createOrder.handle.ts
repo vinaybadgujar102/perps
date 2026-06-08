@@ -9,6 +9,8 @@ import {
   type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type { OrderService } from "../services/order.service";
+import { successResponse } from "../utils/handlerResponse.util";
+import { mapErrorToResponse } from "../utils/mapErrorToResponse";
 
 export class CreateOrderHandler implements EventHandler<
   z.infer<typeof createOrderPayloadSchema>
@@ -28,16 +30,19 @@ export class CreateOrderHandler implements EventHandler<
       price: number;
     };
   }): TradeEngineResponse {
-    const response = this.orderService.createOrder(event);
-
-    return {
-      kind: RESPONSE_KINDS.CREATE_ORDER_RESPONSE,
-      requestId: event.requestId,
-      data: {
-        message: "Fills",
-        success: true,
-        data: response ?? [],
-      },
-    };
+    try {
+      const fills = this.orderService.createOrder(event);
+      return successResponse(
+        event.requestId,
+        RESPONSE_KINDS.CREATE_ORDER_RESPONSE,
+        fills,
+      );
+    } catch (error) {
+      return mapErrorToResponse(
+        error,
+        event.requestId,
+        RESPONSE_KINDS.CREATE_ORDER_RESPONSE,
+      );
+    }
   }
 }

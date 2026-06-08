@@ -1,8 +1,4 @@
-import {
-  EVENT_KINDS,
-  type eventSchema,
-  type TradeEngineResponse,
-} from "@repo/sharedtypes";
+import { type eventSchema, type TradeEngineResponse } from "@repo/sharedtypes";
 import type z from "zod";
 
 // this class helps us to hadnle the incoming events

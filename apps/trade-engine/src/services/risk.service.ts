@@ -1,5 +1,6 @@
 import { AssetConfig } from "@repo/sharedtypes";
 import type { OrderEntity } from "../entity/order.entity";
+import { InsufficientMarginError } from "../errors";
 import type { User } from "../utils/User.class";
 
 export class RiskService {
@@ -10,7 +11,7 @@ export class RiskService {
     const requiredCollateral = positionalValue / maxLeverage;
 
     if (user.getAvailableBalance() < requiredCollateral) {
-      throw new Error("Insufficient margin");
+      throw new InsufficientMarginError();
     }
   }
 }

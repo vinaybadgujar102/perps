@@ -1,6 +1,6 @@
 import { orderbooks } from "../inMemoryStates";
 import { unlockUserMargin } from "./margin.util";
-import { USERS } from "./user.util";
+// import { USERS } from "./user.util";
 
 export function getMarkPrice(market: string): number | null {
   const book = orderbooks[market];
@@ -48,10 +48,10 @@ export function settleRealizedPnl({
     return null;
   }
 
-  const user = USERS.getUser(userId);
-  if (!user) {
-    return null;
-  }
+  // const user = USERS.getUser(userId);
+  // if (!user) {
+  //   return null;
+  // }
 
   const realizedPnl = calculateRealizedPnl({
     markPrice,
@@ -60,7 +60,7 @@ export function settleRealizedPnl({
     signedPositionSizeBeforeClose,
   });
 
-  user.balance += realizedPnl;
+  // user.balance += realizedPnl;
   unlockUserMargin(userId, releasedCollateral);
 
   return realizedPnl;

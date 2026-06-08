@@ -1,4 +1,5 @@
 import { SIDE, type Position } from "@repo/sharedtypes";
+import { OrderbookNotFoundError } from "./errors";
 import type { PriceLevel } from "./types";
 import { UserManager } from "./utils/UserManager.class";
 import type { OrderEntity } from "./entity/order.entity";
@@ -112,7 +113,7 @@ export class OrderbookManager {
   getOrderbook(market: string) {
     const orderbook = this.orderbook[market];
     if (!orderbook) {
-      throw new Error("Orderbook doesn't exist! Create one!");
+      throw new OrderbookNotFoundError(market);
     }
     return orderbook;
   }
