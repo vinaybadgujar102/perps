@@ -1,7 +1,12 @@
 import type z from "zod";
-import { type createOrderPayloadSchema } from "@repo/sharedtypes";
+import {
+  ORDER_TYPE,
+  SIDE,
+  type createOrderPayloadSchema,
+  type Position,
+} from "@repo/sharedtypes";
 import type { UserManager } from "../utils/UserManager.class";
-import { Orderbook, OrderbookManager } from "../inMemoryStates";
+import { OrderbookManager } from "../inMemoryStates";
 import { createPosition } from "../entity/position.util";
 import type { MatchingEngineService } from "./matchingEngineService";
 import type { RiskService } from "./risk.service";
@@ -32,13 +37,30 @@ export class OrderService {
       orderbook.addOrder(order);
     }
 
-    // if no matches then no positions created so return
-    if (fills.length === 0) {
-      // send respose
-      return fills;
-    }
+    this.applyFills(fills);
+    return fills;
+  }
 
-    // create positions
+  liquidatePosition(position: Position, indexPrice: number): Fill[] {
+    const isLong = position.size > 0;
+    const order = new OrderEntity(
+      {
+        id: crypto.randomUUID(),
+        market: position.market,
+        side: isLong ? SIDE.SHORT : SIDE.LONG,
+        qty: Math.abs(position.size),
+        orderType: ORDER_TYPE.MARKET_ORDER,
+        price: indexPrice,
+      },
+      position.userId,
+    );
+
+    const fills = this.matchingEngineService.matchOrder(order);
+    this.applyFills(fills);
+    return fills;
+  }
+
+   applyFills(fills: Fill[]): void {
     for (const fill of fills) {
       createPosition({
         userId: fill.takerId,
@@ -58,7 +80,5 @@ export class OrderService {
         fillPrice: fill.price,
       });
     }
-
-    return fills;
   }
 }

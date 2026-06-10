@@ -10,20 +10,21 @@ export const handleCreditBalanceEvent = (
   data: z.infer<typeof creditBalancePayloadSchema>,
 ): TradeEngineResponse => {
   const { userId, amountUsd, onrampId } = data.payload;
-  const user = USERMANAGER.getUser(userId);
-  const result = user?.depositBalance(amountUsd);
 
-  if (!result || !user) {
+  if (!USERMANAGER.hasUser(userId)) {
     return {
       requestId: data.requestId,
       kind: RESPONSE_KINDS.CREDIT_BALANCE_RESPONSE,
       data: {
         success: false,
-        message: "Failed to credit balance",
+        message: "USER_NOT_FOUND",
         data: null,
       },
     };
   }
+
+  const user = USERMANAGER.getUser(userId);
+  const result = user.depositBalance(amountUsd);
 
   const balanceSnapshot = user.getBalanceSnapshot();
 

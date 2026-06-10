@@ -5,13 +5,21 @@ import type { Orderbook, OrderbookManager } from "../inMemoryStates";
 
 export class MatchingEngineService {
   constructor(private orderBookManager: OrderbookManager) {}
+
   private matchAsks(order: OrderEntity, orderbook: Orderbook): Fill[] {
     const fills: Fill[] = [];
     for (let i = 0; i < orderbook.asks.length; i++) {
       const priceLevel = orderbook.asks[i];
       if (!priceLevel) continue;
 
-      if (priceLevel.price > order.price || order.isOrderFullyFilled()) {
+      if (
+        !order.isMarketOrder() &&
+        (priceLevel.price > order.price || order.isOrderFullyFilled())
+      ) {
+        return fills;
+      }
+
+      if (order.isOrderFullyFilled()) {
         return fills;
       }
 
@@ -23,6 +31,8 @@ export class MatchingEngineService {
           makerOrder.getAvailableQty(),
           order.getAvailableQty(),
         );
+
+        if (filledQty <= 0) continue;
 
         makerOrder.filledQty += filledQty;
         order.filledQty += filledQty;
@@ -41,17 +51,10 @@ export class MatchingEngineService {
           filledQty: filledQty,
           price: priceLevel.price,
         });
+      }
 
-        priceLevel.orders = priceLevel.orders.filter(
-          (o) => !o.isOrderFullyFilled(),
-        );
-
-        if (priceLevel.orders.length === 0) {
-          orderbook.asks.splice(i, 1);
-          i--;
-        } else {
-          priceLevel.availableQty -= totalFilledQty;
-        }
+      if (orderbook.cleanupPriceLevel(orderbook.asks, priceLevel, i, totalFilledQty)) {
+        i--;
       }
     }
     return fills;
@@ -63,7 +66,14 @@ export class MatchingEngineService {
       const priceLevel = orderbook.bids[i];
       if (!priceLevel) continue;
 
-      if (priceLevel.price > order.price || order.isOrderFullyFilled()) {
+      if (
+        !order.isMarketOrder() &&
+        (priceLevel.price < order.price || order.isOrderFullyFilled())
+      ) {
+        return fills;
+      }
+
+      if (order.isOrderFullyFilled()) {
         return fills;
       }
 
@@ -75,6 +85,8 @@ export class MatchingEngineService {
           makerOrder.getAvailableQty(),
           order.getAvailableQty(),
         );
+
+        if (filledQty <= 0) continue;
 
         makerOrder.filledQty += filledQty;
         order.filledQty += filledQty;
@@ -93,17 +105,10 @@ export class MatchingEngineService {
           filledQty: filledQty,
           price: priceLevel.price,
         });
+      }
 
-        priceLevel.orders = priceLevel.orders.filter(
-          (o) => !order.isOrderFullyFilled(),
-        );
-
-        if (priceLevel.orders.length === 0) {
-          orderbook.asks.splice(i, 1);
-          i--;
-        } else {
-          priceLevel.availableQty -= totalFilledQty;
-        }
+      if (orderbook.cleanupPriceLevel(orderbook.bids, priceLevel, i, totalFilledQty)) {
+        i--;
       }
     }
     return fills;
@@ -112,15 +117,10 @@ export class MatchingEngineService {
   matchOrder(order: OrderEntity) {
     const orderbook = this.orderBookManager.getOrderbook(order.market);
 
-    let fills: Fill[] = [];
-
     if (order.side === SIDE.LONG) {
-      // match asks
-      fills = this.matchAsks(order, orderbook);
-    } else {
-      // match bids
-      fills = this.matchBids(order, orderbook);
+      return this.matchAsks(order, orderbook);
     }
-    return fills;
+
+    return this.matchBids(order, orderbook);
   }
 }

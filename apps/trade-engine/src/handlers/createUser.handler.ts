@@ -35,8 +35,8 @@ export class CreateUserHandler implements EventHandler {
     } catch (error) {
       return mapErrorToResponse(
         error,
-        event.requestId,
         RESPONSE_KINDS.CREATE_USER_RESPONSE,
+        event.requestId,
       );
     }
   }

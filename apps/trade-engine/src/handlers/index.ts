@@ -14,6 +14,10 @@ import {
 } from "../dispatcher/eventdispatcher";
 import { CreateUserHandler } from "./createUser.handler";
 import { CreateOrderHandler } from "./createOrder.handle";
+import { handleGetAccountStateEvent } from "./account.handler";
+import { handleCreditBalanceEvent } from "./balance.handler";
+import { handleGetOpenPositionsEvent } from "./position.handler";
+import { handleGetOrderbookEvent } from "./orderbook.handler";
 import { OrderService } from "../services/order.service";
 import { GLOBAL_ORDERBOOK, USERMANAGER } from "../inMemoryStates";
 import { RiskService } from "../services/risk.service";
@@ -42,7 +46,11 @@ export const dispatcher = new EventDispatcher(
   new Map<string, EventHandler<any>>([
     [EVENT_KINDS.CREATE_USER, new CreateUserHandler()],
     [EVENT_KINDS.CREATE_ORDER, new CreateOrderHandler(orderService)],
-    [TICK_KINDS.MARK_PRICE, new MarkPriceHandler(pubsub)],
+    [EVENT_KINDS.GET_ACCOUNT_STATE, { handle: handleGetAccountStateEvent }],
+    [EVENT_KINDS.CREDIT_BALANCE, { handle: handleCreditBalanceEvent }],
+    [EVENT_KINDS.GET_OPEN_POSITIONS, { handle: handleGetOpenPositionsEvent }],
+    [EVENT_KINDS.GET_ORDERBOOK, { handle: handleGetOrderbookEvent }],
+    [TICK_KINDS.MARK_PRICE, new MarkPriceHandler(pubsub, orderService)],
   ]),
 );
 

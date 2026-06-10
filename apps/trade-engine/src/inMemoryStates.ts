@@ -59,9 +59,9 @@ export class Orderbook {
 
   addOrder(order: OrderEntity) {
     const availableQty = order.getAvailableQty();
-    const side = order.side === SIDE.LONG ? this.bids : this.asks;
+    const bookSide = order.side === SIDE.LONG ? this.bids : this.asks;
 
-    const existingLevel = side.find((level) => level.price === order.price);
+    const existingLevel = bookSide.find((level) => level.price === order.price);
 
     if (existingLevel) {
       existingLevel.availableQty += availableQty;
@@ -69,10 +69,31 @@ export class Orderbook {
       return;
     }
 
-    const newLevel = this.createNewPriceLevel(order.price, availableQty);
+    const newPriceLevel: PriceLevel = {
+      price: order.price,
+      availableQty,
+      orders: [order],
+    };
 
-    newLevel.orders.push(order);
-    this.insertPriceLevel(newLevel, order.side);
+    if (order.side === SIDE.LONG) {
+      const index = this.bids.findIndex(
+        (level) => order.price > level.price,
+      );
+      if (index === -1) {
+        this.bids.push(newPriceLevel);
+      } else {
+        this.bids.splice(index, 0, newPriceLevel);
+      }
+    } else {
+      const index = this.asks.findIndex(
+        (level) => order.price < level.price,
+      );
+      if (index === -1) {
+        this.asks.push(newPriceLevel);
+      } else {
+        this.asks.splice(index, 0, newPriceLevel);
+      }
+    }
   }
 
   cleanupPriceLevel(

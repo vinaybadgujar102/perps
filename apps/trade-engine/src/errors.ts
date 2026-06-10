@@ -13,8 +13,8 @@ export class InsufficientMarginError extends Error {
 }
 
 export class OrderbookNotFoundError extends Error {
-  constructor(market: string) {
-    super(`ORDERBOOK_NOT_FOUND:${market}`);
+  constructor(_market: string) {
+    super("Orderbook not found");
     this.name = "OrderbookNotFoundError";
   }
 }
