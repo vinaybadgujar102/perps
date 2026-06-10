@@ -1,0 +1,19 @@
+@theme {
+  --color-background: #131313;
+  --color-surface: #131313;
+  --color-surface-container: #1f2020;
+
+  --color-foreground: #e4e2e1;
+  --color-foreground-muted: #c4c7c7;
+
+  --color-primary: #c9c6c5;
+  --color-accent: #ff3d00;
+  --color-negative: #64748b;
+
+  --color-border: #262626;
+
+  --font-display: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --spacing-unit: 4px;
+}
