@@ -11,7 +11,7 @@ import type z from "zod";
 export interface EventHandler<T = z.infer<typeof eventSchema>> {
   // every handler should implment handle function which takes
   // event as input
-  handle(event: T): TradeEngineResponse;
+  handle(event: T): TradeEngineResponse | null;
 }
 
 export class EventDispatcher {

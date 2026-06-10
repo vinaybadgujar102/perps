@@ -36,28 +36,25 @@ export class Orderbook {
     return this.indexPrice;
   }
 
-  createNewPriceLevel(price: number, availableQty: number): PriceLevel {
-    return {
-      price,
-      orders: [],
-      availableQty,
-    };
+  getBestBidPrice() {
+    const priceLevel = this.bids[0];
+    if (!priceLevel) throw new Error("Orderbook is empty");
+    return priceLevel.price;
   }
 
-  insertPriceLevel(level: PriceLevel, side: SIDE) {
-    const book = side === SIDE.LONG ? this.bids : this.asks;
+  getBestAskPrice() {
+    const priceLevel = this.asks[0];
+    if (!priceLevel) throw new Error("Orderbook is empty");
+    return priceLevel.price;
+  }
 
-    const index = book.findIndex((existing) =>
-      side === SIDE.LONG
-        ? level.price > existing.price
-        : level.price < existing.price,
-    );
+  getMarkPrice() {
+    return (this.getBestAskPrice() - this.getBestBidPrice()) / 2;
+  }
 
-    if (index === -1) {
-      book.push(level);
-    } else {
-      book.splice(index, 0, level);
-    }
+  setIndexPrice(indexPrice: number) {
+    if (indexPrice < 0) throw new Error("Invalid index price");
+    this.indexPrice = indexPrice;
   }
 
   addOrder(order: OrderEntity) {

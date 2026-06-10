@@ -20,6 +20,7 @@
     "@repo/sharedtypes": "workspace:*",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "bcrypt": "^6.0.0",
     "express": "^5.2.1",
     "http-status-codes": "^2.3.0",
