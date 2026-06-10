@@ -17,8 +17,8 @@ export const handleGetAccountStateEvent = (
         message: null,
         data: {
           balanceUsd: user.balance,
-          lockedMarginUsd: user.lockedBalanece,
-          availableMarginUsd: user.balance - user.lockedBalanece,
+          lockedMarginUsd: user.lockedBalance,
+          availableMarginUsd: user.balance - user.lockedBalance,
         },
       }
     : {

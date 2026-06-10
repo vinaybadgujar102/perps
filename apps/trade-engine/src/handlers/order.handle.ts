@@ -52,7 +52,7 @@
 //     };
 //   }
 //
-//   if (user.balance - user.lockedBalanece < requiredCollateral) {
+//   if (user.balance - user.lockedBalance < requiredCollateral) {
 //     console.log("No margin available for this trade");
 //     return {
 //       requestId: data.requestId,

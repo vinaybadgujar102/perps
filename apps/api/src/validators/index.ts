@@ -13,6 +13,7 @@ export const schemaValidator = (
       (req as any)[target] = parsed;
       next();
     } catch {
+      console.log("Schema Validator Error");
       return errorResponse(res, StatusCodes.BAD_REQUEST, "INVALID_REQUEST");
     }
   };

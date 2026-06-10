@@ -1,16 +1,18 @@
+import { InsufficientMarginError } from "../errors";
+
 // here user owns the state and it should be responsible for actually
 // changing its state. when to change is depends on other service according to usecase
 export class User {
   userId: number;
   balance: number = 0;
-  lockedBalanece: number = 0;
+  lockedBalance: number = 0;
 
   constructor(userId: number) {
     this.userId = userId;
   }
 
   getAvailableBalance() {
-    return this.balance - this.lockedBalanece;
+    return this.balance - this.lockedBalance;
   }
 
   depositBalance(amount: number) {
@@ -24,15 +26,23 @@ export class User {
   lockFunds(amountToLock: number) {
     const availableBalance = this.getAvailableBalance();
     if (availableBalance < amountToLock) {
-      throw new Error("Insufficient balance");
+      throw new InsufficientMarginError();
     }
-    this.lockedBalanece += amountToLock;
+    this.lockedBalance += amountToLock;
+  }
+
+  unlockFunds(amount: number) {
+    this.lockedBalance = Math.max(0, this.lockedBalance - amount);
+  }
+
+  applyRealizedPnl(amount: number) {
+    this.balance += amount;
   }
 
   getBalanceSnapshot() {
     return {
       balance: this.balance,
-      lockedBalanece: this.lockedBalanece,
+      lockedBalance: this.lockedBalance,
     };
   }
 }

@@ -35,9 +35,9 @@ export const handleCreditBalanceEvent = (
       message: null,
       data: {
         balanceUsd: balanceSnapshot.balance,
-        lockedMarginUsd: balanceSnapshot.lockedBalanece,
+        lockedMarginUsd: balanceSnapshot.lockedBalance,
         availableMarginUsd:
-          balanceSnapshot.balance - balanceSnapshot.lockedBalanece,
+          balanceSnapshot.balance - balanceSnapshot.lockedBalance,
         creditedAmountUsd: result,
         onrampId,
       },

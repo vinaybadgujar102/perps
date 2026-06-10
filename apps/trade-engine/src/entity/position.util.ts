@@ -1,6 +1,6 @@
 import { AssetConfig, SIDE, type Position, type Side } from "@repo/sharedtypes";
 import type { Order } from "../types";
-import { POSITIONS } from "../inMemoryStates";
+import { POSITIONS, USERMANAGER } from "../inMemoryStates";
 import { calculateLiquidationPrice } from "../utils/liquidation.util";
 import { settleRealizedPnl } from "../utils/pnl.util";
 
@@ -91,7 +91,7 @@ export const createPosition = ({
     };
 
     POSITIONS.set(positionMapKey, newPosition);
-    lockUserMargin(userId, fillMargin);
+    USERMANAGER.getUser(userId).lockFunds(fillMargin);
 
     return;
   }
@@ -127,7 +127,7 @@ export const createPosition = ({
     };
 
     POSITIONS.set(positionMapKey, updatedPosition);
-    lockUserMargin(userId, fillMargin);
+    USERMANAGER.getUser(userId).lockFunds(fillMargin);
 
     return;
   }
@@ -212,5 +212,5 @@ export const createPosition = ({
   };
 
   POSITIONS.set(positionMapKey, updatedPosition);
-  lockUserMargin(userId, updatedCollateral);
+  USERMANAGER.getUser(userId).lockFunds(updatedCollateral);
 };
