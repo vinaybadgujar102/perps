@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { schemaValidator } from "../validators";
 import type z from "zod";
-import { loginSchema, signUpSchema } from "../validators/auth.validator";
+import { loginSchema, signUpSchema } from "@repo/sharedtypes";
 import { prisma } from "@repo/database";
 import { errorResponse, successResponse } from "../utils/responseUtils";
 import { StatusCodes } from "http-status-codes";

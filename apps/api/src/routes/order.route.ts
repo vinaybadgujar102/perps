@@ -1,14 +1,14 @@
 import { Router, type Request, type Response } from "express";
 import { schemaValidator } from "../validators";
-import { createOrderSchema } from "../validators/order.validators";
-import type z from "zod";
-import { redis } from ".";
 import {
   createOrderPayloadSchema,
+  createOrderSchema,
   EVENT_KINDS,
   QUEUES,
 } from "@repo/sharedtypes";
+import type z from "zod";
 import { requestMap } from "..";
+import { redis } from ".";
 import { errorResponse, successResponse } from "../utils/responseUtils";
 import { StatusCodes } from "http-status-codes";
 import { isUser } from "../middlewares/user.middleware";

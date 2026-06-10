@@ -1,5 +1,5 @@
-import { ORDER_TYPE, SIDE } from "@repo/sharedtypes";
 import { z } from "zod";
+import { ORDER_TYPE, SIDE } from "../enums";
 
 export const createOrderSchema = z.object({
   market: z.string(),
@@ -8,3 +8,5 @@ export const createOrderSchema = z.object({
   orderType: z.enum(ORDER_TYPE),
   price: z.number(),
 });
+
+export type CreateOrderInput = z.infer<typeof createOrderSchema>;

@@ -1,4 +1,8 @@
-import { EVENT_KINDS, QUEUES } from "@repo/sharedtypes";
+import {
+  EVENT_KINDS,
+  getPositionsParamsSchema,
+  QUEUES,
+} from "@repo/sharedtypes";
 import { Router, type Request, type Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import type z from "zod";
@@ -7,7 +11,6 @@ import { isUser } from "../middlewares/user.middleware";
 import { redis } from ".";
 import { errorResponse, successResponse } from "../utils/responseUtils";
 import { schemaValidator } from "../validators";
-import { getPositionsParamsSchema } from "../validators/position.validator";
 
 const positionRouter = Router();
 

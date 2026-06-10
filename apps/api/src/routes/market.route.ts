@@ -7,7 +7,7 @@ import { schemaValidator } from "../validators";
 import {
   createMarketSchema,
   updateMarketSchema,
-} from "../validators/market.validator";
+} from "@repo/sharedtypes";
 
 const marketRouter = Router();
 
