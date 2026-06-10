@@ -1,9 +1,8 @@
 import { AssetConfig, SIDE, type Position, type Side } from "@repo/sharedtypes";
 import type { Order } from "../types";
-import { POSITIONS } from "../inMemoryStates";
-import { calculateLiquidationPrice } from "./liquidation.util";
-import { lockUserMargin } from "./margin.util";
-import { settleRealizedPnl } from "./pnl.util";
+import { POSITIONS, USERMANAGER } from "../inMemoryStates";
+import { calculateLiquidationPrice } from "../utils/liquidation.util";
+import { settleRealizedPnl } from "../utils/pnl.util";
 
 export const positionFactory = (
   order: Order,
@@ -92,7 +91,7 @@ export const createPosition = ({
     };
 
     POSITIONS.set(positionMapKey, newPosition);
-    lockUserMargin(userId, fillMargin);
+    USERMANAGER.getUser(userId).lockFunds(fillMargin);
 
     return;
   }
@@ -128,7 +127,7 @@ export const createPosition = ({
     };
 
     POSITIONS.set(positionMapKey, updatedPosition);
-    lockUserMargin(userId, fillMargin);
+    USERMANAGER.getUser(userId).lockFunds(fillMargin);
 
     return;
   }
@@ -140,12 +139,12 @@ export const createPosition = ({
   if (Math.abs(signedFilledSize) < Math.abs(oldSize)) {
     const slicePnl =
       settleRealizedPnl({
-      userId,
-      market,
-      signedPositionSizeBeforeClose: oldSize,
-      averageEntryPrice: currentPosition.averageEntryPrice,
-      closedQty,
-      releasedCollateral,
+        userId,
+        market,
+        signedPositionSizeBeforeClose: oldSize,
+        averageEntryPrice: currentPosition.averageEntryPrice,
+        closedQty,
+        releasedCollateral,
       }) ?? 0;
 
     const updatedCollateral =
@@ -186,12 +185,12 @@ export const createPosition = ({
 
   const slicePnl =
     settleRealizedPnl({
-    userId,
-    market,
-    signedPositionSizeBeforeClose: oldSize,
-    averageEntryPrice: currentPosition.averageEntryPrice,
-    closedQty,
-    releasedCollateral,
+      userId,
+      market,
+      signedPositionSizeBeforeClose: oldSize,
+      averageEntryPrice: currentPosition.averageEntryPrice,
+      closedQty,
+      releasedCollateral,
     }) ?? 0;
 
   const updatedCollateral = (Math.abs(updatedSize) * fillPrice) / maxLeverage;
@@ -213,5 +212,5 @@ export const createPosition = ({
   };
 
   POSITIONS.set(positionMapKey, updatedPosition);
-  lockUserMargin(userId, updatedCollateral);
+  USERMANAGER.getUser(userId).lockFunds(updatedCollateral);
 };

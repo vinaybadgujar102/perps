@@ -27,8 +27,6 @@ orderRouter.post(
       return errorResponse(res, StatusCodes.UNAUTHORIZED, "UNAUTHORIZED_USER");
     }
 
-    console.log("[createOrder] API: received request", { body: data });
-
     const requestId = crypto.randomUUID();
     const payload: z.infer<typeof createOrderPayloadSchema> = {
       requestId,
@@ -39,7 +37,6 @@ orderRouter.post(
         ...data,
       },
     };
-    console.log("[createOrder] API: built payload", { requestId, payload });
 
     try {
       await redis.xAdd(QUEUES.SEND_QUEUE, "*", {
@@ -68,7 +65,6 @@ orderRouter.post(
 
       return successResponse(res, StatusCodes.OK, response);
     } catch (error) {
-      console.error("[createOrder] API: failed", { requestId, error });
       return errorResponse(res, StatusCodes.GATEWAY_TIMEOUT, "REQUEST_FAILED");
     }
   },
