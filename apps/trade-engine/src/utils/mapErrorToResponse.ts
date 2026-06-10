@@ -9,7 +9,7 @@ import { errorResponse } from "./handlerResponse.util";
 export function mapErrorToResponse(
   error: unknown,
   responseKind: RESPONSE_KINDS,
-  requestId?: string,
+  requestId: string,
 ): TradeEngineResponse {
   if (error instanceof UserNotFoundError) {
     return errorResponse(requestId, responseKind, error.message);

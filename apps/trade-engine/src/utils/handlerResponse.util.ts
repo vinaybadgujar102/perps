@@ -1,7 +1,4 @@
-import {
-  RESPONSE_KINDS,
-  type TradeEngineResponse,
-} from "@repo/sharedtypes";
+import { RESPONSE_KINDS, type TradeEngineResponse } from "@repo/sharedtypes";
 
 export function successResponse<T>(
   requestId: string,
