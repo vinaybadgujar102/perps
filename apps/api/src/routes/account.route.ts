@@ -17,14 +17,22 @@ accountRouter.get(
   async (req: Request, res: Response) => {
     const authUser = (res as Response & { user?: { userId: number } }).user;
     if (!authUser?.userId) {
-      return errorResponse(res, StatusCodes.UNAUTHORIZED, "UNAUTHORIZED_USER");
+      return errorResponse(
+        res,
+        StatusCodes.UNAUTHORIZED,
+        "Please sign in to continue.",
+      );
     }
 
     const { userId: requestedUserId } = req.params as z.infer<
       typeof getAccountParamsSchema
     >;
     if (requestedUserId !== authUser.userId) {
-      return errorResponse(res, StatusCodes.FORBIDDEN, "FORBIDDEN");
+      return errorResponse(
+        res,
+        StatusCodes.FORBIDDEN,
+        "You do not have permission to view this account.",
+      );
     }
 
     const requestId = crypto.randomUUID();
@@ -53,9 +61,18 @@ accountRouter.get(
       });
 
       const data = await promise;
-      return successResponse(res, StatusCodes.OK, data);
+      return successResponse(
+        res,
+        StatusCodes.OK,
+        data,
+        "Account loaded successfully.",
+      );
     } catch {
-      return errorResponse(res, StatusCodes.GATEWAY_TIMEOUT, "REQUEST_FAILED");
+      return errorResponse(
+        res,
+        StatusCodes.GATEWAY_TIMEOUT,
+        "Request timed out. Please try again.",
+      );
     }
   },
 );

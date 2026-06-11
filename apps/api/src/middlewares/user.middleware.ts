@@ -19,14 +19,14 @@ export const isUser = async (
   const jwtSecret = process.env.JWT_SECRET;
 
   if (!token || !jwtSecret) {
-    return errorResponse(res, StatusCodes.UNAUTHORIZED, "UNAUTHORIZED_USER");
+    return errorResponse(res, StatusCodes.UNAUTHORIZED, "Please sign in to continue.");
   }
 
   try {
     const decoded = jwt.verify(token, jwtSecret) as AuthPayload;
 
     if (!decoded?.userId) {
-      return errorResponse(res, StatusCodes.UNAUTHORIZED, "UNAUTHORIZED_USER");
+      return errorResponse(res, StatusCodes.UNAUTHORIZED, "Please sign in to continue.");
     }
 
     (res as Response & { user?: AuthPayload }).user = {
@@ -34,7 +34,7 @@ export const isUser = async (
     };
     next();
   } catch {
-    return errorResponse(res, StatusCodes.UNAUTHORIZED, "UNAUTHORIZED_USER");
+    return errorResponse(res, StatusCodes.UNAUTHORIZED, "Please sign in to continue.");
   }
 
 };

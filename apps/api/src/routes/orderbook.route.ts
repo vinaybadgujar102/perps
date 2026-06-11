@@ -45,9 +45,18 @@ orderbookRouter.get(
       });
 
       const data = await promise;
-      return successResponse(res, StatusCodes.OK, data);
+      return successResponse(
+        res,
+        StatusCodes.OK,
+        data,
+        "Orderbook loaded successfully.",
+      );
     } catch {
-      return errorResponse(res, StatusCodes.GATEWAY_TIMEOUT, "REQUEST_FAILED");
+      return errorResponse(
+        res,
+        StatusCodes.GATEWAY_TIMEOUT,
+        "Request timed out. Please try again.",
+      );
     }
   },
 );

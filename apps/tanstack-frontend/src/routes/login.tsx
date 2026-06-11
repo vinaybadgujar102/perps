@@ -24,15 +24,15 @@ function RouteComponent() {
     mutationFn: loginApi,
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["login"] });
-      localStorage.setItem("auth-token", res.data.token);
+      localStorage.setItem("auth-token", res.data!.token);
       navigate({ to: "/dashboard" });
-      terminalToast.success(
-        "SYSTEM_STATUS",
-        "CONNECTION_ESTABLISHED: SECURE_GATEWAY_ACTIVE",
-      );
+      terminalToast.success("SUCCESS", res.message);
     },
-    onError: () => {
-      terminalToast.error(403);
+    onError: (error) => {
+      terminalToast.error(
+        "ERROR",
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
     },
   });
 

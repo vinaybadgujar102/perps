@@ -13,3 +13,22 @@ export const loginSchema = z.object({
 
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export type ApiEnvelope<T> = {
+  success: boolean;
+  data: T | null;
+  message: string;
+};
+
+export type AuthUser = {
+  id: number;
+  email: string;
+  name: string;
+};
+
+export type LoginData = {
+  token: string;
+  user: AuthUser;
+};
+
+export type SignUpData = Record<string, never>;

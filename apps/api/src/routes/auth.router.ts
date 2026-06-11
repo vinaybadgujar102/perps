@@ -1,14 +1,13 @@
 import { Router, type Request, type Response } from "express";
 import { schemaValidator } from "../validators";
 import type z from "zod";
-import { loginSchema, signUpSchema } from "@repo/sharedtypes";
+import { loginSchema, signUpSchema, EVENT_KINDS, QUEUES } from "@repo/sharedtypes";
 import { prisma } from "@repo/database";
 import { errorResponse, successResponse } from "../utils/responseUtils";
 import { StatusCodes } from "http-status-codes";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { redis } from ".";
-import { EVENT_KINDS, QUEUES } from "@repo/sharedtypes";
 import { requestMap } from "..";
 const authRouter = Router();
 
@@ -29,7 +28,11 @@ authRouter.post(
       });
 
       if (existingUser) {
-        return errorResponse(res, StatusCodes.CONFLICT, "USER_ALREADY_EXISTS");
+        return errorResponse(
+          res,
+          StatusCodes.CONFLICT,
+          "An account with this email already exists.",
+        );
       }
       const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -73,9 +76,12 @@ authRouter.post(
 
       await promise;
 
-      return successResponse(res, StatusCodes.CREATED, {
-        message: "User Successfully Created",
-      });
+      return successResponse(
+        res,
+        StatusCodes.CREATED,
+        null,
+        "Your account has been created successfully.",
+      );
     } catch (e) {
       throw new Error("INTERNAL_SERVER_ERROR");
     }
@@ -97,7 +103,7 @@ authRouter.post(
         return errorResponse(
           res,
           StatusCodes.UNAUTHORIZED,
-          "INVALID_CREDENTIALS",
+          "Invalid email or password.",
         );
       }
 
@@ -106,7 +112,7 @@ authRouter.post(
         return errorResponse(
           res,
           StatusCodes.UNAUTHORIZED,
-          "INVALID_CREDENTIALS",
+          "Invalid email or password.",
         );
       }
 
@@ -116,14 +122,19 @@ authRouter.post(
         expiresIn: "7d",
       });
 
-      return successResponse(res, StatusCodes.OK, {
-        token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
+      return successResponse(
+        res,
+        StatusCodes.OK,
+        {
+          token,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+          },
         },
-      });
+        "Signed in successfully.",
+      );
     } catch {
       throw new Error("INTERNAL_SERVER_ERROR");
     }

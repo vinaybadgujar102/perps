@@ -11,7 +11,7 @@ export const isAdmin = (
   const providedSecret = req.header("x-admin-secret");
 
   if (!expectedSecret || providedSecret !== expectedSecret) {
-    return errorResponse(res, StatusCodes.UNAUTHORIZED, "UNAUTHORIZED_ADMIN");
+    return errorResponse(res, StatusCodes.UNAUTHORIZED, "Admin access required.");
   }
 
   return next();

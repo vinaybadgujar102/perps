@@ -14,7 +14,11 @@ export const schemaValidator = (
       next();
     } catch {
       console.log("Schema Validator Error");
-      return errorResponse(res, StatusCodes.BAD_REQUEST, "INVALID_REQUEST");
+      return errorResponse(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Please check your input and try again.",
+      );
     }
   };
 };

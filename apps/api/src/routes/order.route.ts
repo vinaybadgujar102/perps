@@ -24,7 +24,11 @@ orderRouter.post(
     const authUser = (res as Response & { user?: { userId: number } }).user;
 
     if (!authUser?.userId) {
-      return errorResponse(res, StatusCodes.UNAUTHORIZED, "UNAUTHORIZED_USER");
+      return errorResponse(
+        res,
+        StatusCodes.UNAUTHORIZED,
+        "Please sign in to continue.",
+      );
     }
 
     const requestId = crypto.randomUUID();
@@ -63,9 +67,18 @@ orderRouter.post(
         });
       });
 
-      return successResponse(res, StatusCodes.OK, response);
+      return successResponse(
+        res,
+        StatusCodes.OK,
+        response,
+        "Order submitted successfully.",
+      );
     } catch (error) {
-      return errorResponse(res, StatusCodes.GATEWAY_TIMEOUT, "REQUEST_FAILED");
+      return errorResponse(
+        res,
+        StatusCodes.GATEWAY_TIMEOUT,
+        "Request timed out. Please try again.",
+      );
     }
   },
 );

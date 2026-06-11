@@ -19,7 +19,12 @@ marketRouter.get("/markets", async (_req: Request, res: Response) => {
     orderBy: { symbol: "asc" },
   });
 
-  return successResponse(res, StatusCodes.OK, { markets });
+  return successResponse(
+    res,
+    StatusCodes.OK,
+    { markets },
+    "Markets loaded successfully.",
+  );
 });
 
 marketRouter.get("/markets/:symbol", async (req: Request, res: Response) => {
@@ -30,10 +35,15 @@ marketRouter.get("/markets/:symbol", async (req: Request, res: Response) => {
   });
 
   if (!market) {
-    return errorResponse(res, StatusCodes.NOT_FOUND, "MARKET_NOT_FOUND");
+    return errorResponse(res, StatusCodes.NOT_FOUND, "Market not found.");
   }
 
-  return successResponse(res, StatusCodes.OK, { market });
+  return successResponse(
+    res,
+    StatusCodes.OK,
+    { market },
+    "Market loaded successfully.",
+  );
 });
 
 marketRouter.post(
@@ -54,9 +64,18 @@ marketRouter.post(
         },
       });
 
-      return successResponse(res, StatusCodes.CREATED, { market });
+      return successResponse(
+        res,
+        StatusCodes.CREATED,
+        { market },
+        "Market created successfully.",
+      );
     } catch {
-      return errorResponse(res, StatusCodes.CONFLICT, "MARKET_ALREADY_EXISTS");
+      return errorResponse(
+        res,
+        StatusCodes.CONFLICT,
+        "This market already exists.",
+      );
     }
   },
 );
@@ -81,9 +100,14 @@ marketRouter.put(
         },
       });
 
-      return successResponse(res, StatusCodes.OK, { market });
+      return successResponse(
+        res,
+        StatusCodes.OK,
+        { market },
+        "Market updated successfully.",
+      );
     } catch {
-      return errorResponse(res, StatusCodes.NOT_FOUND, "MARKET_NOT_FOUND");
+      return errorResponse(res, StatusCodes.NOT_FOUND, "Market not found.");
     }
   },
 );
@@ -100,9 +124,14 @@ marketRouter.delete(
         data: { isActive: false },
       });
 
-      return successResponse(res, StatusCodes.OK, { market });
+      return successResponse(
+        res,
+        StatusCodes.OK,
+        { market },
+        "Market deactivated successfully.",
+      );
     } catch {
-      return errorResponse(res, StatusCodes.NOT_FOUND, "MARKET_NOT_FOUND");
+      return errorResponse(res, StatusCodes.NOT_FOUND, "Market not found.");
     }
   },
 );

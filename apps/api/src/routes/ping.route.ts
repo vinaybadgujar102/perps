@@ -7,7 +7,7 @@ const pingRouter = Router();
 pingRouter.get("/ping", (req: Request, res: Response) => {
   const port = String(req.socket.localPort ?? process.env.PORT ?? "unknown");
 
-  return successResponse(res, StatusCodes.OK, { port });
+  return successResponse(res, StatusCodes.OK, { port }, "Pong.");
 });
 
 export default pingRouter;

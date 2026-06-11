@@ -17,7 +17,11 @@ onrampRouter.post(
   async (req: Request, res: Response) => {
     const authUser = (res as Response & { user?: { userId: number } }).user;
     if (!authUser?.userId) {
-      return errorResponse(res, StatusCodes.UNAUTHORIZED, "UNAUTHORIZED_USER");
+      return errorResponse(
+        res,
+        StatusCodes.UNAUTHORIZED,
+        "Please sign in to continue.",
+      );
     }
 
     const { amountUsd } = req.body as z.infer<typeof onrampDepositSchema>;
@@ -64,18 +68,27 @@ onrampRouter.post(
         return errorResponse(
           res,
           StatusCodes.BAD_REQUEST,
-          engineResponse.message || "ONRAMP_FAILED",
+          engineResponse.message ?? "Deposit failed. Please try again.",
         );
       }
 
-      return successResponse(res, StatusCodes.OK, {
-        onrampId: engineResponse.data.onrampId,
-        amountUsd,
-        balanceUsd: engineResponse.data.balanceUsd,
-        availableMarginUsd: engineResponse.data.availableMarginUsd,
-      });
+      return successResponse(
+        res,
+        StatusCodes.OK,
+        {
+          onrampId: engineResponse.data.onrampId,
+          amountUsd,
+          balanceUsd: engineResponse.data.balanceUsd,
+          availableMarginUsd: engineResponse.data.availableMarginUsd,
+        },
+        "Deposit completed successfully.",
+      );
     } catch {
-      return errorResponse(res, StatusCodes.GATEWAY_TIMEOUT, "REQUEST_FAILED");
+      return errorResponse(
+        res,
+        StatusCodes.GATEWAY_TIMEOUT,
+        "Request timed out. Please try again.",
+      );
     }
   },
 );
