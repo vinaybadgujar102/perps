@@ -1,6 +1,7 @@
-import type { ORDER_TYPE, Position, Side } from "@repo/sharedtypes";
+import type { Fill, ORDER_TYPE, Position, Side } from "@repo/sharedtypes";
+
+export type { Fill };
 import { z } from "zod";
-import type { OrderEntity } from "./services/order.service";
 
 export type User = {
   userId: number;
@@ -42,19 +43,5 @@ export type Order = {
   userId: number;
   orderType: ORDER_TYPE;
   side: Side;
-  timestamp: number;
-};
-
-export type Fill = {
-  id: string;
-  market: string;
-  makerId: number;
-  takerId: number;
-  price: number;
-  makerOrderId: string;
-  takerOrderId: string;
-  filledQty: number;
-  makerSide: Side;
-  takerSide: Side;
   timestamp: number;
 };

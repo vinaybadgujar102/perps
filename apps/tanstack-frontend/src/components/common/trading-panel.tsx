@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
+import { useMutation } from "@tanstack/react-query";
 import { createOrderSchema, ORDER_TYPE, SIDE } from "@repo/sharedtypes";
+import { createOrderApi } from "#/api/order.api";
 import { Button } from "#/components/ui/button";
+import { terminalToast } from "#/components/ui/terminal-toast";
 import {
   Field,
   FieldError,
@@ -13,6 +16,19 @@ import { cn } from "#/lib/utils";
 
 export function TradingPanel() {
   const [orderType, setOrderType] = useState(ORDER_TYPE.LIMIT_ORDER);
+
+  const mutation = useMutation({
+    mutationFn: createOrderApi,
+    onSuccess: (res) => {
+      terminalToast.success("SUCCESS", res.message);
+    },
+    onError: (error) => {
+      terminalToast.error(
+        "ERROR",
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
+    },
+  });
 
   const orderForm = useForm({
     defaultValues: {
@@ -26,7 +42,7 @@ export function TradingPanel() {
       onSubmit: createOrderSchema,
     },
     onSubmit: async ({ value }) => {
-      console.log(value);
+      mutation.mutate(value);
     },
   });
 

@@ -8,6 +8,7 @@ import {
   SIDE,
   TICK_KINDS,
 } from "./enums";
+import { fillSchema } from "./validators/order.validator";
 
 //------------------------------------------------//
 
@@ -50,20 +51,6 @@ export const createOrderPayloadSchema = z.object({
 export const markPriceTickSchema = z.object({
   kind: z.literal(TICK_KINDS.MARK_PRICE),
   payload: z.record(z.string(), z.number()),
-});
-
-export const fillSchema = z.object({
-  id: z.string(),
-  market: z.string(),
-  makerId: z.number(),
-  takerId: z.number(),
-  price: z.number(),
-  makerOrderId: z.string(),
-  takerOrderId: z.string(),
-  filledQty: z.number(),
-  takerSide: z.enum(SIDE),
-  makerSide: z.enum(SIDE),
-  timestamp: z.number(),
 });
 
 export const createOrderResponseSchema = z.object({
