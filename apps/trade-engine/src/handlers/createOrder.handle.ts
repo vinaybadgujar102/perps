@@ -11,11 +11,15 @@ import {
 import type { OrderService } from "../services/order.service";
 import { successResponse } from "../utils/handlerResponse.util";
 import { mapErrorToResponse } from "../utils/mapErrorToResponse";
+import type { PubSub } from "../pubsub/pubsub";
 
 export class CreateOrderHandler implements EventHandler<
   z.infer<typeof createOrderPayloadSchema>
 > {
-  constructor(private orderService: OrderService) {}
+  constructor(
+    private orderService: OrderService,
+    private pubsub: PubSub,
+  ) {}
 
   handle(event: {
     requestId: string;
@@ -31,7 +35,7 @@ export class CreateOrderHandler implements EventHandler<
     };
   }): TradeEngineResponse {
     try {
-      const fills = this.orderService.createOrder(event);
+      const { fills, depthDelta } = this.orderService.createOrder(event);
       let message: string | null = null;
 
       if (event.payload.orderType === ORDER_TYPE.MARKET_ORDER) {
@@ -43,6 +47,18 @@ export class CreateOrderHandler implements EventHandler<
             message = "Order fully/partially filled";
           }
         }
+      }
+
+      if (depthDelta.bids.length > 0 || depthDelta.asks.length > 0) {
+        this.pubsub.publish({
+          kind: RESPONSE_KINDS.DEPTH_UPDATE,
+          payload: {
+            market: event.payload.market,
+            timestamp: Date.now(),
+            bids: depthDelta.bids,
+            asks: depthDelta.asks,
+          },
+        });
       }
 
       return successResponse(

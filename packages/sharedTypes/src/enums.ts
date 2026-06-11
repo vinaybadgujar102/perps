@@ -14,6 +14,7 @@ export enum EVENT_KINDS {
   GET_OPEN_POSITIONS = "get_open_positions",
   GET_ORDERBOOK = "get_orderbook",
   CREDIT_BALANCE = "credit_balance",
+  CANCEL_ORDER = "cancel_order",
 }
 
 export enum RESPONSE_KINDS {
@@ -24,6 +25,8 @@ export enum RESPONSE_KINDS {
   GET_ORDERBOOK_RESPONSE = "get_orderbook_response",
   CREDIT_BALANCE_RESPONSE = "credit_balance_response",
   INDEX_PRICE_UPDATE = "index_price_update",
+  DEPTH_UPDATE = "depth_update",
+  CANCEL_ORDER_RESPONSE = "cancel_order_response",
 }
 
 export enum TICK_KINDS {

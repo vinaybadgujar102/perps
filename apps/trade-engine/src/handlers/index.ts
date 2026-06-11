@@ -14,6 +14,7 @@ import {
 } from "../dispatcher/eventdispatcher";
 import { CreateUserHandler } from "./createUser.handler";
 import { CreateOrderHandler } from "./createOrder.handle";
+import { CancelOrderHandler } from "./cancelOrder.handler";
 import { handleGetAccountStateEvent } from "./account.handler";
 import { handleCreditBalanceEvent } from "./balance.handler";
 import { handleGetOpenPositionsEvent } from "./position.handler";
@@ -45,7 +46,8 @@ const orderService = new OrderService(
 export const dispatcher = new EventDispatcher(
   new Map<string, EventHandler<any>>([
     [EVENT_KINDS.CREATE_USER, new CreateUserHandler()],
-    [EVENT_KINDS.CREATE_ORDER, new CreateOrderHandler(orderService)],
+    [EVENT_KINDS.CREATE_ORDER, new CreateOrderHandler(orderService, pubsub)],
+    [EVENT_KINDS.CANCEL_ORDER, new CancelOrderHandler(orderService, pubsub)],
     [EVENT_KINDS.GET_ACCOUNT_STATE, { handle: handleGetAccountStateEvent }],
     [EVENT_KINDS.CREDIT_BALANCE, { handle: handleCreditBalanceEvent }],
     [EVENT_KINDS.GET_OPEN_POSITIONS, { handle: handleGetOpenPositionsEvent }],

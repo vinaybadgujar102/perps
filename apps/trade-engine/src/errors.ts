@@ -18,3 +18,24 @@ export class OrderbookNotFoundError extends Error {
     this.name = "OrderbookNotFoundError";
   }
 }
+
+export class OrderNotFoundError extends Error {
+  constructor(_orderId: string) {
+    super("ORDER_NOT_FOUND");
+    this.name = "OrderNotFoundError";
+  }
+}
+
+export class UnauthorizedOrderError extends Error {
+  constructor() {
+    super("UNAUTHORIZED_ORDER");
+    this.name = "UnauthorizedOrderError";
+  }
+}
+
+export class OrderNotCancellableError extends Error {
+  constructor() {
+    super("ORDER_NOT_CANCELLABLE");
+    this.name = "OrderNotCancellableError";
+  }
+}

@@ -28,7 +28,7 @@ export const createUserResponseSchema = z.object({
     message: z.string().nullable(),
     data: z
       .object({
-        userId: z.number().int().positive(),
+        userId: z.number(),
       })
       .nullable(),
   }),
@@ -67,7 +67,7 @@ export const getAccountStatePayloadSchema = z.object({
   requestId: z.string(),
   kind: z.literal(EVENT_KINDS.GET_ACCOUNT_STATE),
   payload: z.object({
-    userId: z.number().int().positive(),
+    userId: z.number(),
   }),
 });
 
@@ -91,7 +91,7 @@ export const getOpenPositionsPayloadSchema = z.object({
   requestId: z.string(),
   kind: z.literal(EVENT_KINDS.GET_OPEN_POSITIONS),
   payload: z.object({
-    userId: z.number().int().positive(),
+    userId: z.number(),
   }),
 });
 
@@ -153,7 +153,7 @@ export const creditBalancePayloadSchema = z.object({
   requestId: z.string(),
   kind: z.literal(EVENT_KINDS.CREDIT_BALANCE),
   payload: z.object({
-    userId: z.number().int().positive(),
+    userId: z.number(),
     amountUsd: z.number().positive(),
     onrampId: z.string().uuid(),
   }),
@@ -172,6 +172,31 @@ export const creditBalanceResponseSchema = z.object({
         availableMarginUsd: z.number(),
         creditedAmountUsd: z.number(),
         onrampId: z.string().uuid(),
+      })
+      .nullable(),
+  }),
+});
+
+export const cancelOrderPayloadSchema = z.object({
+  requestId: z.string(),
+  kind: z.literal(EVENT_KINDS.CANCEL_ORDER),
+  userId: z.number(),
+  payload: z.object({
+    orderId: z.string().uuid(),
+  }),
+});
+
+export const cancelOrderResponseSchema = z.object({
+  kind: z.literal(RESPONSE_KINDS.CANCEL_ORDER_RESPONSE),
+  requestId: z.string(),
+  data: z.object({
+    success: z.boolean(),
+    message: z.string().nullable(),
+    data: z
+      .object({
+        orderId: z.string().uuid(),
+        market: z.string(),
+        cancelledQty: z.number(),
       })
       .nullable(),
   }),
@@ -214,6 +239,30 @@ export const indexPricePushSchema = z.object({
   }),
 });
 
+export const depthUpdateSchema = z.object({
+  kind: z.literal(RESPONSE_KINDS.DEPTH_UPDATE),
+  payload: z.object({
+    market: z.string(),
+    timestamp: z.number(),
+    bids: z.array(orderbookLevelSchema),
+    asks: z.array(orderbookLevelSchema),
+  }),
+});
+
+export type DepthUpdate = z.infer<typeof depthUpdateSchema>;
+
+export const depthRoom = (market: string) => `depth.${market}`;
+
+export const depthPushSchema = z.object({
+  stream: z.string(),
+  data: z.object({
+    market: z.string(),
+    timestamp: z.number(),
+    bids: z.array(orderbookLevelSchema),
+    asks: z.array(orderbookLevelSchema),
+  }),
+});
+
 export const tradeEngineResponseSchema = z.discriminatedUnion("kind", [
   createUserResponseSchema,
   createOrderResponseSchema,
@@ -221,6 +270,7 @@ export const tradeEngineResponseSchema = z.discriminatedUnion("kind", [
   getOpenPositionsResponseSchema,
   getOrderbookResponseSchema,
   creditBalanceResponseSchema,
+  cancelOrderResponseSchema,
 ]);
 
 export type TradeEngineResponse = z.infer<typeof tradeEngineResponseSchema>;
@@ -232,7 +282,9 @@ export const responseQueueSchema = z.discriminatedUnion("kind", [
   getOpenPositionsResponseSchema,
   getOrderbookResponseSchema,
   creditBalanceResponseSchema,
+  cancelOrderResponseSchema,
   indexPriceUpdateSchema,
+  depthUpdateSchema,
 ]);
 
 export type ResponseQueueMessage = z.infer<typeof responseQueueSchema>;
@@ -251,7 +303,10 @@ export const eventSchema = z.discriminatedUnion("kind", [
   getOrderbookResponseSchema,
   creditBalancePayloadSchema,
   creditBalanceResponseSchema,
+  cancelOrderPayloadSchema,
+  cancelOrderResponseSchema,
   indexPriceUpdateSchema,
+  depthUpdateSchema,
 ]);
 
 export const AssetConfig: Record<

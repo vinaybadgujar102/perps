@@ -32,3 +32,7 @@ export type CreateOrderData = {
   message: string | null;
   data: Fill[] | null;
 };
+
+export const cancelOrderParamsSchema = z.object({
+  orderId: z.string().uuid(),
+});

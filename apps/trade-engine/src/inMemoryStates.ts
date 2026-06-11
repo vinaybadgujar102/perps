@@ -1,6 +1,11 @@
 import { SIDE, type Position } from "@repo/sharedtypes";
-import { OrderbookNotFoundError } from "./errors";
-import type { PriceLevel } from "./types";
+import {
+  OrderbookNotFoundError,
+  OrderNotCancellableError,
+  OrderNotFoundError,
+  UnauthorizedOrderError,
+} from "./errors";
+import type { PriceLevel } from "./orderbook.types";
 import { UserManager } from "./utils/UserManager.class";
 import type { OrderEntity } from "./entity/order.entity";
 
@@ -57,16 +62,17 @@ export class Orderbook {
     this.indexPrice = indexPrice;
   }
 
-  addOrder(order: OrderEntity) {
+  addOrder(order: OrderEntity): { side: "bids" | "asks"; price: number; qty: number } {
     const availableQty = order.getAvailableQty();
     const bookSide = order.side === SIDE.LONG ? this.bids : this.asks;
+    const side = order.side === SIDE.LONG ? "bids" : "asks";
 
     const existingLevel = bookSide.find((level) => level.price === order.price);
 
     if (existingLevel) {
       existingLevel.availableQty += availableQty;
       existingLevel.orders.push(order);
-      return;
+      return { side, price: order.price, qty: existingLevel.availableQty };
     }
 
     const newPriceLevel: PriceLevel = {
@@ -94,6 +100,8 @@ export class Orderbook {
         this.asks.splice(index, 0, newPriceLevel);
       }
     }
+
+    return { side, price: order.price, qty: availableQty };
   }
 
   cleanupPriceLevel(
@@ -113,6 +121,51 @@ export class Orderbook {
 
     priceLevel.availableQty -= totalFilledQty;
     return false;
+  }
+
+  removeOrderById(
+    orderId: string,
+    userId: number,
+  ): { side: "bids" | "asks"; price: number; qty: number; cancelledQty: number } {
+    for (const side of ["bids", "asks"] as const) {
+      const book = side === "bids" ? this.bids : this.asks;
+
+      for (let i = 0; i < book.length; i++) {
+        const level = book[i];
+        if (!level) continue;
+
+        const orderIndex = level.orders.findIndex((order) => order.id === orderId);
+        if (orderIndex === -1) continue;
+
+        const order = level.orders[orderIndex];
+        if (!order) continue;
+
+        if (order.userId !== userId) {
+          throw new UnauthorizedOrderError();
+        }
+        if (!order.isLimitOrder() || order.getAvailableQty() <= 0) {
+          throw new OrderNotCancellableError();
+        }
+
+        const cancelledQty = order.getAvailableQty();
+        level.availableQty -= cancelledQty;
+        level.orders.splice(orderIndex, 1);
+
+        if (level.orders.length === 0) {
+          book.splice(i, 1);
+          return { side, price: level.price, qty: 0, cancelledQty };
+        }
+
+        return {
+          side,
+          price: level.price,
+          qty: level.availableQty,
+          cancelledQty,
+        };
+      }
+    }
+
+    throw new OrderNotFoundError(orderId);
   }
 }
 

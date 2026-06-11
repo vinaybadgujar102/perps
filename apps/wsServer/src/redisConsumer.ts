@@ -1,6 +1,8 @@
 import {
-  indexPriceRoom,
+  depthPushSchema,
+  depthRoom,
   indexPricePushSchema,
+  indexPriceRoom,
   QUEUES,
   RESPONSE_KINDS,
   responseQueueSchema,
@@ -28,15 +30,24 @@ export async function startRedisConsumer() {
       const parsedData = JSON.parse(message.message.data);
       const data = responseQueueSchema.parse(parsedData);
 
-      if (data.kind !== RESPONSE_KINDS.INDEX_PRICE_UPDATE) continue;
+      if (data.kind === RESPONSE_KINDS.INDEX_PRICE_UPDATE) {
+        const room = indexPriceRoom(data.payload.market);
+        const messageToBroadcast = indexPricePushSchema.parse({
+          stream: room,
+          data: data.payload,
+        });
+        broadcast(room, JSON.stringify(messageToBroadcast));
+        continue;
+      }
 
-      const room = indexPriceRoom(data.payload.market);
-      const messageToBroadcast = indexPricePushSchema.parse({
-        stream: room,
-        data: data.payload,
-      });
-
-      broadcast(room, JSON.stringify(messageToBroadcast));
+      if (data.kind === RESPONSE_KINDS.DEPTH_UPDATE) {
+        const room = depthRoom(data.payload.market);
+        const messageToBroadcast = depthPushSchema.parse({
+          stream: room,
+          data: data.payload,
+        });
+        broadcast(room, JSON.stringify(messageToBroadcast));
+      }
     } catch (error) {
       console.error(error);
     }

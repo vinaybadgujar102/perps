@@ -28,12 +28,6 @@ export type BinanceMarkPriceResponse = z.infer<
   typeof BinanceMarkPriceResponseSchema
 >;
 
-export type PriceLevel = {
-  price: number;
-  availableQty: number;
-  orders: OrderEntity[];
-};
-
 export type Order = {
   id: string;
   market: string;
