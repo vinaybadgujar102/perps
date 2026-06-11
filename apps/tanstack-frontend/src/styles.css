@@ -32,6 +32,12 @@
   letter-spacing: -0.04em;
 }
 
+.headline-nm {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 48px;
+  letter-spacing: -0.04em;
+}
 .mono-label {
   font-family: var(--font-mono);
   font-size: 12px;
