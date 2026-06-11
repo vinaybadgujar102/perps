@@ -22,27 +22,27 @@ authRouter.post(
         typeof signUpSchema
       >;
 
-      // const existingUser = await prisma.user.findFirst({
-      //   where: {
-      //     email,
-      //   },
-      // });
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          email,
+        },
+      });
 
-      // if (existingUser) {
-      //   return errorResponse(res, StatusCodes.CONFLICT, "USER_ALREADY_EXISTS");
-      // }
-      // const hashedPassword = await bcrypt.hash(password, 10);
+      if (existingUser) {
+        return errorResponse(res, StatusCodes.CONFLICT, "USER_ALREADY_EXISTS");
+      }
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-      // const createdUser = await prisma.user.create({
-      //   data: {
-      //     password: hashedPassword,
-      //     email,
-      //     name,
-      //   },
-      //   select: {
-      //     id: true,
-      //   },
-      // });
+      const createdUser = await prisma.user.create({
+        data: {
+          password: hashedPassword,
+          email,
+          name,
+        },
+        select: {
+          id: true,
+        },
+      });
 
       const requestId = crypto.randomUUID();
 

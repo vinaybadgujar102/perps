@@ -13,6 +13,7 @@ import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import appCss from "../styles.css?url";
 
 import type { QueryClient } from "@tanstack/react-query";
+import { Toaster } from "#/components/ui/sonner";
 
 interface MyRouterContext {
   queryClient: QueryClient;
@@ -51,6 +52,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="font-sans antialiased bg-background">
         <ClerkProvider>
           {children}
+          <Toaster />
           <TanStackDevtools
             config={{
               position: "bottom-right",

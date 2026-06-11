@@ -1,6 +1,6 @@
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { MoveRight } from "lucide-react";
 import { useForm } from "@tanstack/react-form";
 import {
@@ -10,11 +10,32 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { loginSchema } from "@repo/sharedtypes";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { loginApi } from "#/api/auth.api";
+import { terminalToast } from "#/components/ui/terminal-toast";
 export const Route = createFileRoute("/login")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: loginApi,
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["login"] });
+      localStorage.setItem("auth-token", res.data.token);
+      navigate({ to: "/dashboard" });
+      terminalToast.success(
+        "SYSTEM_STATUS",
+        "CONNECTION_ESTABLISHED: SECURE_GATEWAY_ACTIVE",
+      );
+    },
+    onError: () => {
+      terminalToast.error(403);
+    },
+  });
+
   const loginForm = useForm({
     defaultValues: {
       email: "",
@@ -25,6 +46,7 @@ function RouteComponent() {
     },
     onSubmit: async ({ value }) => {
       console.log("form submitted", value);
+      mutation.mutate({ email: value.email, password: value.password });
     },
   });
 
@@ -151,11 +173,17 @@ function RouteComponent() {
             LOGIN
             <MoveRight strokeWidth={4} size={5} />
           </Button>
+          <Link
+            className="text-neutral-600 text-xs hover:underline-offset-4 hover:underline hover:text-foreground"
+            to="/register"
+          >
+            NO ACCOUNT? CREATE ONE
+          </Link>
         </div>
 
         {/* Bottom animating line */}
         <div className="relative w-full h-px overflow-hidden bg-border mb-4">
-          <div className="absolute top-0 left-0 h-px w-24 bg-primary animate-shimmer" />
+          <div className="absolute top-0 left-0 h-px w-24 bg-accent animate-shimmer" />
         </div>
       </section>
     </div>
