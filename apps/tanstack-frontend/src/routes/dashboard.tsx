@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ChartSection } from "#/components/common/chart-section";
 import { SiteHeader } from "#/components/common/site-header";
 import { TradingPanel } from "#/components/common/trading-panel";
 
@@ -11,7 +12,7 @@ function RouteComponent() {
     <div className="text-foreground h-screen flex flex-col">
       <SiteHeader />
       <section className="flex flex-1 overflow-hidden">
-        <div className="flex-2">First</div>
+        <ChartSection />
         <div className="flex-1">First</div>
         <TradingPanel />
       </section>
