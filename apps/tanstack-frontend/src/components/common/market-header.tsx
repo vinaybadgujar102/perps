@@ -46,7 +46,8 @@ export function MarketHeader() {
 
   const lastTradedPrice =
     orderbookQuery.data?.bestBid && orderbookQuery.data?.bestAsk
-      ? (orderbookQuery.data.bestBid.price + orderbookQuery.data.bestAsk.price) /
+      ? (orderbookQuery.data.bestBid.price +
+          orderbookQuery.data.bestAsk.price) /
         2 /
         10 ** priceScale
       : null;
@@ -76,14 +77,20 @@ export function MarketHeader() {
           </div>
           <div className="flex flex-col">
             <span className="mono-label mb-1 text-input-label">24h High</span>
-            <span className="font-mono text-foreground">{MARKET_STATS.high}</span>
+            <span className="font-mono text-foreground">
+              {MARKET_STATS.high}
+            </span>
           </div>
           <div className="flex flex-col">
             <span className="mono-label mb-1 text-input-label">24h Low</span>
-            <span className="font-mono text-foreground">{MARKET_STATS.low}</span>
+            <span className="font-mono text-foreground">
+              {MARKET_STATS.low}
+            </span>
           </div>
           <div className="flex flex-col">
-            <span className="mono-label mb-1 text-input-label">Index Price</span>
+            <span className="mono-label mb-1 text-input-label">
+              Index Price
+            </span>
             <span className="font-mono text-foreground">
               {formatIndexPrice(tickerQuery.data ?? undefined)}
             </span>

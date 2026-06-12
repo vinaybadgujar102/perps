@@ -1,3 +1,5 @@
+import { loadSession } from "#/lib/auth-storage";
+
 export function getAuthToken() {
-  return localStorage.getItem("auth-token");
+  return loadSession()?.token ?? null;
 }

@@ -13,15 +13,20 @@ import { loginSchema } from "@repo/sharedtypes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { loginApi } from "#/api/auth.api";
 import { terminalToast } from "#/components/ui/terminal-toast";
+import { useUser } from "#/context/user-context";
 
 export function LoginRightPanel() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { setSession } = useUser();
   const mutation = useMutation({
     mutationFn: loginApi,
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["login"] });
-      localStorage.setItem("auth-token", res.data!.token);
+      setSession({
+        token: res.data!.token,
+        user: res.data!.user,
+      });
       navigate({ to: "/dashboard" });
       terminalToast.success("SUCCESS", res.message);
     },

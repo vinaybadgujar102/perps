@@ -45,6 +45,13 @@
   text-transform: uppercase;
 }
 
+.nav-label {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
 .terminal-toaster [data-sonner-toast] {
   width: auto;
   padding: 0;
