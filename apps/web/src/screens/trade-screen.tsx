@@ -24,7 +24,7 @@ const TradeComponent = () => {
   const marketsQuery = useMarkets();
   const marketQuery = useMarket(symbol);
   const orderbookQuery = useOrderbook(symbol);
-  const positionsQuery = usePositions(user?.id, isAuthenticated);
+  const positionsQuery = usePositions(isAuthenticated);
 
   const market = marketQuery.data;
   const markets = marketsQuery.data ?? [];

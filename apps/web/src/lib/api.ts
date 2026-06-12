@@ -182,8 +182,8 @@ export const fetchAccountState = async (userId: number): Promise<AccountState> =
   return response.data.data;
 };
 
-export const fetchOpenPositions = async (userId: number): Promise<OpenPosition[]> => {
-  const response = await requestJson(`/positions/${userId}`, openPositionsResponseSchema, {
+export const fetchOpenPositions = async (): Promise<OpenPosition[]> => {
+  const response = await requestJson("/positions", openPositionsResponseSchema, {
     headers: getAuthHeaders(),
   });
 

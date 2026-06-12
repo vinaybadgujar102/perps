@@ -5,7 +5,7 @@ import { requestMap } from ".";
 const consumerRedis = await createClient().connect();
 
 export async function listenForRequestId() {
-  let lastId = "$";
+  let lastId = "0";
 
   while (true) {
     try {

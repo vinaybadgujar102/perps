@@ -3,7 +3,7 @@ import { createClient } from "redis";
 import { handleIncomingEvents } from "./handlers";
 
 const subscriberRedis = await createClient().connect();
-let lastId = "$";
+let lastId = "0";
 
 while (true) {
   try {

@@ -15,15 +15,6 @@ onrampRouter.post(
   isUser,
   schemaValidator(onrampDepositSchema),
   async (req: Request, res: Response) => {
-    const authUser = (res as Response & { user?: { userId: number } }).user;
-    if (!authUser?.userId) {
-      return errorResponse(
-        res,
-        StatusCodes.UNAUTHORIZED,
-        "Please sign in to continue.",
-      );
-    }
-
     const { amountUsd } = req.body as z.infer<typeof onrampDepositSchema>;
     const requestId = crypto.randomUUID();
     const onrampId = crypto.randomUUID();
@@ -34,7 +25,7 @@ onrampRouter.post(
           requestId,
           kind: EVENT_KINDS.CREDIT_BALANCE,
           payload: {
-            userId: authUser.userId,
+            userId: req.user.userId,
             amountUsd,
             onrampId,
           },

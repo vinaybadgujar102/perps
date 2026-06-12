@@ -15,19 +15,10 @@ accountRouter.get(
   isUser,
   schemaValidator(getAccountParamsSchema, "params"),
   async (req: Request, res: Response) => {
-    const authUser = (res as Response & { user?: { userId: number } }).user;
-    if (!authUser?.userId) {
-      return errorResponse(
-        res,
-        StatusCodes.UNAUTHORIZED,
-        "Please sign in to continue.",
-      );
-    }
-
     const { userId: requestedUserId } = req.params as z.infer<
       typeof getAccountParamsSchema
     >;
-    if (requestedUserId !== authUser.userId) {
+    if (requestedUserId !== req.user.userId) {
       return errorResponse(
         res,
         StatusCodes.FORBIDDEN,

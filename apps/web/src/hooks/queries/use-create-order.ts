@@ -9,7 +9,7 @@ export const useCreateOrder = (userId: number | undefined) => {
     mutationFn: (input: CreateOrderInput) => createOrder(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.account(userId ?? 0) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.positions(userId ?? 0) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.positions });
     },
   });
 };

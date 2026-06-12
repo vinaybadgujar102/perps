@@ -45,21 +45,11 @@ orderRouter.post(
   schemaValidator(createOrderSchema),
   async (req: Request, res: Response) => {
     const data = req.body as z.infer<typeof createOrderSchema>;
-    const authUser = (res as Response & { user?: { userId: number } }).user;
-
-    if (!authUser?.userId) {
-      return errorResponse(
-        res,
-        StatusCodes.UNAUTHORIZED,
-        "Please sign in to continue.",
-      );
-    }
-
     const requestId = crypto.randomUUID();
     const payload: z.infer<typeof createOrderPayloadSchema> = {
       requestId,
       kind: EVENT_KINDS.CREATE_ORDER,
-      userId: authUser.userId,
+      userId: req.user.userId,
       payload: {
         id: crypto.randomUUID(),
         ...data,
@@ -89,23 +79,13 @@ orderRouter.delete(
   isUser,
   schemaValidator(cancelOrderParamsSchema, "params"),
   async (req: Request, res: Response) => {
-    const authUser = (res as Response & { user?: { userId: number } }).user;
-
-    if (!authUser?.userId) {
-      return errorResponse(
-        res,
-        StatusCodes.UNAUTHORIZED,
-        "Please sign in to continue.",
-      );
-    }
-
     const { orderId } = req.params as z.infer<typeof cancelOrderParamsSchema>;
     const requestId = crypto.randomUUID();
 
     const payload: z.infer<typeof cancelOrderPayloadSchema> = {
       requestId,
       kind: EVENT_KINDS.CANCEL_ORDER,
-      userId: authUser.userId,
+      userId: req.user.userId,
       payload: {
         orderId,
       },

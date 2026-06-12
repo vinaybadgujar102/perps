@@ -3,10 +3,6 @@ import { StatusCodes } from "http-status-codes";
 import jwt from "jsonwebtoken";
 import { errorResponse } from "../utils/responseUtils";
 
-type AuthPayload = {
-  userId: number;
-};
-
 export const isUser = async (
   req: Request,
   res: Response,
@@ -23,18 +19,15 @@ export const isUser = async (
   }
 
   try {
-    const decoded = jwt.verify(token, jwtSecret) as AuthPayload;
+    const decoded = jwt.verify(token, jwtSecret) as { userId: number };
 
     if (!decoded?.userId) {
       return errorResponse(res, StatusCodes.UNAUTHORIZED, "Please sign in to continue.");
     }
 
-    (res as Response & { user?: AuthPayload }).user = {
-      userId: decoded.userId,
-    };
+    req.user = { userId: decoded.userId };
     next();
   } catch {
     return errorResponse(res, StatusCodes.UNAUTHORIZED, "Please sign in to continue.");
   }
-
 };
