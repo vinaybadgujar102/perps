@@ -33,6 +33,18 @@ export type CreateOrderData = {
   data: Fill[] | null;
 };
 
+export type CancelOrderPayload = {
+  orderId: string;
+  market: string;
+  cancelledQty: number;
+};
+
+export type CancelOrderData = {
+  success: boolean;
+  message: string | null;
+  data: CancelOrderPayload | null;
+};
+
 export const cancelOrderParamsSchema = z.object({
   orderId: z.string().uuid(),
 });
