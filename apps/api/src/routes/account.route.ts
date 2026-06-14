@@ -73,13 +73,23 @@ accountRouter.get(
               ...engineResponse,
               data: {
                 balanceUsd:
-                  engineResponse.data.balanceUsd / BASE_CURRENCY_SCALE_FACTOR,
+                  Math.round(
+                    (engineResponse.data.balanceUsd /
+                      BASE_CURRENCY_SCALE_FACTOR) *
+                      100,
+                  ) / 100,
                 lockedMarginUsd:
-                  engineResponse.data.lockedMarginUsd /
-                  BASE_CURRENCY_SCALE_FACTOR,
+                  Math.round(
+                    (engineResponse.data.lockedMarginUsd /
+                      BASE_CURRENCY_SCALE_FACTOR) *
+                      100,
+                  ) / 100,
                 availableMarginUsd:
-                  engineResponse.data.availableMarginUsd /
-                  BASE_CURRENCY_SCALE_FACTOR,
+                  Math.round(
+                    (engineResponse.data.availableMarginUsd /
+                      BASE_CURRENCY_SCALE_FACTOR) *
+                      100,
+                  ) / 100,
               },
             }
           : engineResponse;

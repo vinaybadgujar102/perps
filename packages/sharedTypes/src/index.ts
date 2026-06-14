@@ -12,6 +12,9 @@ import {
 import { fillSchema, openOrderSchema } from "./validators/order.validator";
 
 //------------------------------------------------//
+/**
+ * Currency scaling factor. 100 cents (base unit) = 1$
+ */
 export const BASE_CURRENCY_SCALE_FACTOR = 100;
 
 export const createUserPayloadSchema = z.object({

@@ -81,9 +81,16 @@ onrampRouter.post(
           onrampId: engineResponse.data.onrampId,
           amountUsd: displayAmountUsd,
           balanceUsd:
-            engineResponse.data.balanceUsd / BASE_CURRENCY_SCALE_FACTOR,
+            Math.round(
+              (engineResponse.data.balanceUsd / BASE_CURRENCY_SCALE_FACTOR) *
+                100,
+            ) / 100,
           availableMarginUsd:
-            engineResponse.data.availableMarginUsd / BASE_CURRENCY_SCALE_FACTOR,
+            Math.round(
+              (engineResponse.data.availableMarginUsd /
+                BASE_CURRENCY_SCALE_FACTOR) *
+                100,
+            ) / 100,
         },
         "Deposit completed successfully.",
       );
