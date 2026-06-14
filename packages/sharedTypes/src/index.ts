@@ -12,6 +12,7 @@ import {
 import { fillSchema, openOrderSchema } from "./validators/order.validator";
 
 //------------------------------------------------//
+export const BASE_CURRENCY_SCALE_FACTOR = 100;
 
 export const createUserPayloadSchema = z.object({
   requestId: z.string(),
@@ -42,7 +43,7 @@ export const createOrderPayloadSchema = z.object({
   payload: z.object({
     id: z.string(),
     market: z.string(),
-    side: z.nativeEnum(SIDE),
+    side: z.enum(SIDE),
     qty: z.number(),
     orderType: z.enum(ORDER_TYPE),
     price: z.number(),
@@ -98,7 +99,7 @@ export const getOpenPositionsPayloadSchema = z.object({
 
 export const openPositionSchema = z.object({
   market: z.string(),
-  side: z.nativeEnum(SIDE),
+  side: z.enum(SIDE),
   size: z.number(),
   averageEntryPrice: z.number(),
   collateralUser: z.number(),
@@ -174,7 +175,7 @@ export const creditBalancePayloadSchema = z.object({
   payload: z.object({
     userId: z.number(),
     amountUsd: z.number().positive(),
-    onrampId: z.string().uuid(),
+    onrampId: z.uuid(),
   }),
 });
 
@@ -190,7 +191,7 @@ export const creditBalanceResponseSchema = z.object({
         lockedMarginUsd: z.number(),
         availableMarginUsd: z.number(),
         creditedAmountUsd: z.number(),
-        onrampId: z.string().uuid(),
+        onrampId: z.uuid(),
       })
       .nullable(),
   }),
@@ -201,7 +202,7 @@ export const cancelOrderPayloadSchema = z.object({
   kind: z.literal(EVENT_KINDS.CANCEL_ORDER),
   userId: z.number(),
   payload: z.object({
-    orderId: z.string().uuid(),
+    orderId: z.uuid(),
   }),
 });
 
@@ -213,7 +214,7 @@ export const cancelOrderResponseSchema = z.object({
     message: z.string().nullable(),
     data: z
       .object({
-        orderId: z.string().uuid(),
+        orderId: z.uuid(),
         market: z.string(),
         cancelledQty: z.number(),
       })
