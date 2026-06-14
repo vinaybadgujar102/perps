@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChartSection } from "#/components/common/chart-section";
-import { OpenPositionsPanel } from "#/components/common/open-positions-panel";
 import { OrderbookPanel } from "#/components/common/orderbook-panel";
 import { SiteHeader } from "#/components/common/site-header";
+import { TradingFooter } from "#/components/common/trading-footer";
 import { TradingPanel } from "#/components/common/trading-panel";
 import { useMarketSubscriptions } from "#/hooks/use-market-subscriptions";
 
@@ -24,7 +24,7 @@ function RouteComponent() {
         <TradingPanel />
       </section>
       <footer className="h-44 shrink-0 border-t border-border">
-        <OpenPositionsPanel />
+        <TradingFooter />
       </footer>
     </div>
   );

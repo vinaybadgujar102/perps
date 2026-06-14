@@ -1,26 +1,20 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createOrderApi } from "#/api/order.api";
+import { cancelOrderApi } from "#/api/order.api";
 import { terminalToast } from "#/components/ui/terminal-toast";
 import { useUser } from "#/context/user-context";
-import { formatOrderSuccessMessage } from "#/lib/trading/order-messages";
 import { queryKeys } from "#/lib/query-keys";
 
-export function usePlaceOrder(onQtyCleared?: () => void) {
+export function useCancelOrder() {
   const queryClient = useQueryClient();
   const { refreshBalance } = useUser();
 
   return useMutation({
-    mutationFn: createOrderApi,
+    mutationFn: cancelOrderApi,
     onSuccess: (result) => {
-      terminalToast.success(
-        "SUCCESS",
-        formatOrderSuccessMessage(result.message, result.fills.length),
-      );
+      terminalToast.success("SUCCESS", result.message);
       refreshBalance();
       void queryClient.invalidateQueries({ queryKey: queryKeys.orderbook() });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.positions() });
       void queryClient.invalidateQueries({ queryKey: queryKeys.openOrders() });
-      onQtyCleared?.();
     },
     onError: (error) => {
       terminalToast.error(

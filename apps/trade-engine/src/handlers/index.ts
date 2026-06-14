@@ -18,6 +18,7 @@ import { CancelOrderHandler } from "./cancelOrder.handler";
 import { handleGetAccountStateEvent } from "./account.handler";
 import { handleCreditBalanceEvent } from "./balance.handler";
 import { handleGetOpenPositionsEvent } from "./position.handler";
+import { handleGetOpenOrdersEvent } from "./openOrders.handler";
 import { handleGetOrderbookEvent } from "./orderbook.handler";
 import { OrderService } from "../services/order.service";
 import { GLOBAL_ORDERBOOK, USERMANAGER } from "../inMemoryStates";
@@ -49,6 +50,7 @@ export const dispatcher = new EventDispatcher(
     [EVENT_KINDS.CREDIT_BALANCE, { handle: handleCreditBalanceEvent }], // add money
     [EVENT_KINDS.CREATE_ORDER, new CreateOrderHandler(orderService, pubsub)], // create order
     [EVENT_KINDS.GET_OPEN_POSITIONS, { handle: handleGetOpenPositionsEvent }], // get positiosn
+    [EVENT_KINDS.GET_OPEN_ORDERS, { handle: handleGetOpenOrdersEvent }],
     [EVENT_KINDS.CANCEL_ORDER, new CancelOrderHandler(orderService, pubsub)],
     [EVENT_KINDS.GET_ACCOUNT_STATE, { handle: handleGetAccountStateEvent }],
     [EVENT_KINDS.GET_ORDERBOOK, { handle: handleGetOrderbookEvent }],

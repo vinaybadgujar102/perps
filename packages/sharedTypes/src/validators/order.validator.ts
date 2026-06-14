@@ -46,5 +46,17 @@ export type CancelOrderData = {
 };
 
 export const cancelOrderParamsSchema = z.object({
-  orderId: z.string().uuid(),
+  orderId: z.uuid(),
 });
+
+export const openOrderSchema = z.object({
+  id: z.uuid(),
+  market: z.string(),
+  side: z.enum(SIDE),
+  orderType: z.enum(ORDER_TYPE),
+  price: z.number(),
+  qty: z.number(),
+  filledQty: z.number(),
+});
+
+export type OpenOrder = z.infer<typeof openOrderSchema>;

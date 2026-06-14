@@ -8,7 +8,7 @@ import {
   SIDE,
   TICK_KINDS,
 } from "./enums";
-import { fillSchema } from "./validators/order.validator";
+import { fillSchema, openOrderSchema } from "./validators/order.validator";
 
 //------------------------------------------------//
 
@@ -112,6 +112,24 @@ export const getOpenPositionsResponseSchema = z.object({
     success: z.boolean(),
     message: z.string().nullable(),
     data: z.array(openPositionSchema).nullable(),
+  }),
+});
+
+export const getOpenOrdersPayloadSchema = z.object({
+  requestId: z.string(),
+  kind: z.literal(EVENT_KINDS.GET_OPEN_ORDERS),
+  payload: z.object({
+    userId: z.number(),
+  }),
+});
+
+export const getOpenOrdersResponseSchema = z.object({
+  kind: z.literal(RESPONSE_KINDS.GET_OPEN_ORDERS_RESPONSE),
+  requestId: z.string(),
+  data: z.object({
+    success: z.boolean(),
+    message: z.string().nullable(),
+    data: z.array(openOrderSchema).nullable(),
   }),
 });
 
@@ -268,6 +286,7 @@ export const tradeEngineResponseSchema = z.discriminatedUnion("kind", [
   createOrderResponseSchema,
   getAccountStateResponseSchema,
   getOpenPositionsResponseSchema,
+  getOpenOrdersResponseSchema,
   getOrderbookResponseSchema,
   creditBalanceResponseSchema,
   cancelOrderResponseSchema,
@@ -280,6 +299,7 @@ export const responseQueueSchema = z.discriminatedUnion("kind", [
   createOrderResponseSchema,
   getAccountStateResponseSchema,
   getOpenPositionsResponseSchema,
+  getOpenOrdersResponseSchema,
   getOrderbookResponseSchema,
   creditBalanceResponseSchema,
   cancelOrderResponseSchema,
@@ -299,6 +319,8 @@ export const eventSchema = z.discriminatedUnion("kind", [
   getAccountStateResponseSchema,
   getOpenPositionsPayloadSchema,
   getOpenPositionsResponseSchema,
+  getOpenOrdersPayloadSchema,
+  getOpenOrdersResponseSchema,
   getOrderbookPayloadSchema,
   getOrderbookResponseSchema,
   creditBalancePayloadSchema,

@@ -39,6 +39,34 @@ async function dispatchToEngine<T>(
   });
 }
 
+orderRouter.get("/", isUser, async (req: Request, res: Response) => {
+  const requestId = crypto.randomUUID();
+
+  const payload = {
+    requestId,
+    kind: EVENT_KINDS.GET_OPEN_ORDERS,
+    payload: {
+      userId: req.user.userId,
+    },
+  };
+
+  try {
+    const response = await dispatchToEngine(payload, requestId);
+    return successResponse(
+      res,
+      StatusCodes.OK,
+      response,
+      "Open orders loaded successfully.",
+    );
+  } catch {
+    return errorResponse(
+      res,
+      StatusCodes.GATEWAY_TIMEOUT,
+      "Request timed out. Please try again.",
+    );
+  }
+});
+
 orderRouter.post(
   "/",
   isUser,

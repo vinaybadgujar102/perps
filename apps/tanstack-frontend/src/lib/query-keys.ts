@@ -5,4 +5,5 @@ export const queryKeys = {
   ticker: (market: string = TRADING_MARKET) => ["ticker", market] as const,
   account: (userId: number) => ["account", userId] as const,
   positions: () => ["positions"] as const,
+  openOrders: () => ["openOrders"] as const,
 };

@@ -5,6 +5,7 @@ import type {
   CreateOrderData,
   CreateOrderInput,
   Fill,
+  OpenOrder,
 } from "@repo/sharedtypes";
 import { apiClient } from "./axiosClient";
 import { getAuthToken } from "#/lib/auth";
@@ -18,6 +19,8 @@ export type CreateOrderResult = {
 export type CancelOrderResult = {
   message: string;
 };
+
+export type { OpenOrder };
 
 function authHeaders() {
   const token = getAuthToken();
@@ -56,4 +59,17 @@ export async function cancelOrderApi(
   return {
     message: engine.message ?? "Order cancelled",
   };
+}
+
+export async function getOpenOrdersApi(): Promise<OpenOrder[]> {
+  const result = await apiClient.get<
+    ApiEnvelope<{
+      success: boolean;
+      message: string | null;
+      data: OpenOrder[] | null;
+    }>
+  >("/order", { headers: authHeaders() });
+
+  const engine = unwrapEngineResponse<OpenOrder[]>(result.data);
+  return engine.data ?? [];
 }
