@@ -15,6 +15,12 @@ export interface EventHandler<T = z.infer<typeof eventSchema>> {
 }
 
 export class EventDispatcher {
+  // constructor(private handlers: Map<string, EventHandler<any>>) {}
+  // above line is same as doing
+  // private handlers: Map<string, EventHandler<any>>{}
+  //   constructor(handlers: Map<string, EventHandler<any>>) {
+  //        this.handlers = handlers
+  // }
   constructor(private handlers: Map<string, EventHandler<any>>) {}
 
   dispatch(event: z.infer<typeof eventSchema>) {

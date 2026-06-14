@@ -45,7 +45,7 @@ const orderService = new OrderService(
 
 export const dispatcher = new EventDispatcher(
   new Map<string, EventHandler<any>>([
-    [EVENT_KINDS.CREATE_USER, new CreateUserHandler()],
+    [EVENT_KINDS.CREATE_USER, new CreateUserHandler()], // create user
     [EVENT_KINDS.CREATE_ORDER, new CreateOrderHandler(orderService, pubsub)],
     [EVENT_KINDS.CANCEL_ORDER, new CancelOrderHandler(orderService, pubsub)],
     [EVENT_KINDS.GET_ACCOUNT_STATE, { handle: handleGetAccountStateEvent }],

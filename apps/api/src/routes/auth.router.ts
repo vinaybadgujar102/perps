@@ -71,7 +71,7 @@ authRouter.post(
         requestId: requestId,
         kind: EVENT_KINDS.CREATE_USER,
         payload: {
-          userId: 1,
+          userId: createdUser.id,
         },
       };
 
