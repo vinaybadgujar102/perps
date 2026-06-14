@@ -1,13 +1,16 @@
-import { eventSchema, QUEUES } from "@repo/sharedtypes";
+import { eventSchema, QUEUES, type Position } from "@repo/sharedtypes";
 import { createClient } from "redis";
 import { handleIncomingEvents } from "./handlers";
 import { POSITIONS, USERMANAGER } from "./inMemoryStates";
+import type { User } from "./utils/User.class";
 
+type Snapshot = {
+  users: [number, User][];
+  positions: [string, Position][];
+  lastProcessedId: string;
+};
 export async function writeSnapshot() {
-  let count = 0;
-  count++;
-  const snapshot = {
-    count: count,
+  const snapshot: Snapshot = {
     users: USERMANAGER.getAllUsers(),
     positions: Array.from(POSITIONS.entries()),
     lastProcessedId: lastId,
@@ -16,8 +19,15 @@ export async function writeSnapshot() {
   await Bun.write("snapshot.json", JSON.stringify(snapshot));
 }
 
+export async function readSnapshot() {
+  const content = Bun.file("snapshot.json");
+  const snapshot = (await content.json()) as Snapshot;
+  return snapshot;
+}
+
+export const latestSnapshot = await readSnapshot();
 const subscriberRedis = await createClient().connect();
-let lastId = "0";
+let lastId = latestSnapshot.lastProcessedId;
 
 while (true) {
   try {
