@@ -1,0 +1,8 @@
+# .coderabbit.yaml
+
+reviews:
+  auto_review:
+    enabled: true
+
+language: en
+early_access: false

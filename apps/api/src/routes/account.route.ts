@@ -1,4 +1,11 @@
-import { EVENT_KINDS, getAccountParamsSchema, QUEUES } from "@repo/sharedtypes";
+import {
+  BASE_CURRENCY_SCALE_FACTOR,
+  EVENT_KINDS,
+  getAccountParamsSchema,
+  QUEUES,
+  RESPONSE_KINDS,
+  type TradeEngineResponse,
+} from "@repo/sharedtypes";
 import { Router, type Request, type Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import type z from "zod";
@@ -7,6 +14,13 @@ import { isUser } from "../middlewares/user.middleware";
 import { redis } from ".";
 import { errorResponse, successResponse } from "../utils/responseUtils";
 import { schemaValidator } from "../validators";
+
+type GetAccountStateResponse = Extract<
+  TradeEngineResponse,
+  { kind: RESPONSE_KINDS.GET_ACCOUNT_STATE_RESPONSE }
+>;
+
+type GetAccountStateResponsePayload = GetAccountStateResponse["data"];
 
 const accountRouter = Router();
 
@@ -38,24 +52,42 @@ accountRouter.get(
         }),
       });
 
-      const promise = new Promise((resolve, reject) => {
-        const timeoutId = setTimeout(() => {
-          requestMap.delete(requestId);
-          reject(new Error("Request timed out"));
-        }, 10000);
+      const engineResponse = await new Promise<GetAccountStateResponsePayload>(
+        (resolve, reject) => {
+          const timeoutId = setTimeout(() => {
+            requestMap.delete(requestId);
+            reject(new Error("Request timed out"));
+          }, 10000);
 
-        requestMap.set(requestId, {
-          timeoutId,
-          resolve,
-          reject,
-        });
-      });
+          requestMap.set(requestId, {
+            timeoutId,
+            resolve,
+            reject,
+          });
+        },
+      );
 
-      const data = await promise;
+      const clientData =
+        engineResponse.success && engineResponse.data
+          ? {
+              ...engineResponse,
+              data: {
+                balanceUsd:
+                  engineResponse.data.balanceUsd / BASE_CURRENCY_SCALE_FACTOR,
+                lockedMarginUsd:
+                  engineResponse.data.lockedMarginUsd /
+                  BASE_CURRENCY_SCALE_FACTOR,
+                availableMarginUsd:
+                  engineResponse.data.availableMarginUsd /
+                  BASE_CURRENCY_SCALE_FACTOR,
+              },
+            }
+          : engineResponse;
+
       return successResponse(
         res,
         StatusCodes.OK,
-        data,
+        clientData,
         "Account loaded successfully.",
       );
     } catch {
