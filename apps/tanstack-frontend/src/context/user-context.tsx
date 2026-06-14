@@ -50,6 +50,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     clearSession();
     setSessionState(null);
     queryClient.removeQueries({ queryKey: ["account"] });
+    queryClient.removeQueries({ queryKey: queryKeys.positions() });
   };
 
   const accountQuery = useQuery({

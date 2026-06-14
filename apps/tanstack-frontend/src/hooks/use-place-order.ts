@@ -18,6 +18,7 @@ export function usePlaceOrder(onQtyCleared?: () => void) {
       );
       refreshBalance();
       void queryClient.invalidateQueries({ queryKey: queryKeys.orderbook() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.positions() });
       onQtyCleared?.();
     },
     onError: (error) => {

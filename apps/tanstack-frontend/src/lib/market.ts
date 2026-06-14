@@ -27,6 +27,24 @@ export function formatDisplayPrice(value: number) {
   });
 }
 
+export function formatApiPrice(apiPrice: number) {
+  return formatDisplayPrice(unscalePriceFromApi(apiPrice));
+}
+
+export function formatApiQty(apiQty: number) {
+  return unscaleQtyFromApi(apiQty).toLocaleString("en-US", {
+    minimumFractionDigits: marketConfig.quantityScale,
+    maximumFractionDigits: marketConfig.quantityScale,
+  });
+}
+
+export function unscaleCollateralFromApi(collateralUser: number) {
+  return (
+    collateralUser /
+    10 ** (marketConfig.priceScale + marketConfig.quantityScale)
+  );
+}
+
 export function qtyInputPlaceholder() {
   return `0.${"0".repeat(marketConfig.quantityScale)}`;
 }

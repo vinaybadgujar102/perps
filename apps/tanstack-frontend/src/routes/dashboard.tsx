@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChartSection } from "#/components/common/chart-section";
+import { OpenPositionsPanel } from "#/components/common/open-positions-panel";
 import { OrderbookPanel } from "#/components/common/orderbook-panel";
 import { SiteHeader } from "#/components/common/site-header";
 import { TradingPanel } from "#/components/common/trading-panel";
@@ -22,7 +23,9 @@ function RouteComponent() {
         <OrderbookPanel />
         <TradingPanel />
       </section>
-      <footer className="h-10 shrink-0 border-t border-border" />
+      <footer className="h-44 shrink-0 border-t border-border">
+        <OpenPositionsPanel />
+      </footer>
     </div>
   );
 }
