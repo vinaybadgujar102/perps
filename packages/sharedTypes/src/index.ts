@@ -220,6 +220,25 @@ export const cancelOrderResponseSchema = z.object({
   }),
 });
 
+export const closePositionPayloadSchema = z.object({
+  requestId: z.string(),
+  kind: z.literal(EVENT_KINDS.CLOSE_POSITION),
+  userId: z.number(),
+  payload: z.object({
+    market: z.string(),
+  }),
+});
+
+export const closePositionResponseSchema = z.object({
+  kind: z.literal(RESPONSE_KINDS.CLOSE_POSITION_RESPONSE),
+  requestId: z.string(),
+  data: z.object({
+    success: z.boolean(),
+    message: z.string().nullable(),
+    data: z.array(fillSchema).nullable(),
+  }),
+});
+
 export const indexPriceUpdateSchema = z.object({
   kind: z.literal(RESPONSE_KINDS.INDEX_PRICE_UPDATE),
   payload: z.object({
@@ -290,6 +309,7 @@ export const tradeEngineResponseSchema = z.discriminatedUnion("kind", [
   getOrderbookResponseSchema,
   creditBalanceResponseSchema,
   cancelOrderResponseSchema,
+  closePositionResponseSchema,
 ]);
 
 export type TradeEngineResponse = z.infer<typeof tradeEngineResponseSchema>;
@@ -303,6 +323,7 @@ export const responseQueueSchema = z.discriminatedUnion("kind", [
   getOrderbookResponseSchema,
   creditBalanceResponseSchema,
   cancelOrderResponseSchema,
+  closePositionResponseSchema,
   indexPriceUpdateSchema,
   depthUpdateSchema,
 ]);
@@ -327,6 +348,8 @@ export const eventSchema = z.discriminatedUnion("kind", [
   creditBalanceResponseSchema,
   cancelOrderPayloadSchema,
   cancelOrderResponseSchema,
+  closePositionPayloadSchema,
+  closePositionResponseSchema,
   indexPriceUpdateSchema,
   depthUpdateSchema,
 ]);

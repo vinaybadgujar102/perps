@@ -3,13 +3,14 @@ import {
   ORDER_TYPE,
   SIDE,
   type cancelOrderPayloadSchema,
+  type closePositionPayloadSchema,
   type createOrderPayloadSchema,
   type Position,
 } from "@repo/sharedtypes";
-import { OrderNotFoundError } from "../errors";
+import { OrderNotFoundError, PositionNotFoundError } from "../errors";
 import type { UserManager } from "../utils/UserManager.class";
-import { OrderbookManager } from "../inMemoryStates";
-import { createPosition } from "../entity/position.util";
+import { OrderbookManager, POSITIONS } from "../inMemoryStates";
+import { createPosition, generatePositionKey } from "../entity/position.util";
 import type { MatchingEngineService } from "./matchingEngineService";
 import type { RiskService } from "./risk.service";
 import { OrderEntity } from "../entity/order.entity";
@@ -27,6 +28,12 @@ export type CancelOrderResult = {
   market: string;
   cancelledQty: number;
   depthDelta: DepthDelta;
+};
+
+export type ClosePositionResult = {
+  fills: Fill[];
+  depthDelta: DepthDelta;
+  market: string;
 };
 
 export class OrderService {
@@ -109,7 +116,36 @@ export class OrderService {
     };
   }
 
+  closePosition(
+    event: z.infer<typeof closePositionPayloadSchema>,
+  ): ClosePositionResult {
+    const { userId, payload } = event;
+    const positionKey = generatePositionKey(userId.toString(), payload.market);
+    const position = POSITIONS.get(positionKey);
+
+    if (!position || position.userId !== userId) {
+      throw new PositionNotFoundError(payload.market);
+    }
+
+    const orderbook = this.orderBookManager.getOrderbook(payload.market);
+    const indexPrice = orderbook.getIndexPrice();
+    const { fills, depthDelta } = this.executeMarketCloseOrder(
+      position,
+      indexPrice,
+    );
+
+    return { fills, depthDelta, market: payload.market };
+  }
+
   liquidatePosition(position: Position, indexPrice: number): Fill[] {
+    const { fills } = this.executeMarketCloseOrder(position, indexPrice);
+    return fills;
+  }
+
+  private executeMarketCloseOrder(
+    position: Position,
+    indexPrice: number,
+  ): { fills: Fill[]; depthDelta: DepthDelta } {
     const isLong = position.size > 0;
     const order = new OrderEntity(
       {
@@ -123,9 +159,9 @@ export class OrderService {
       position.userId,
     );
 
-    const { fills } = this.matchingEngineService.matchOrder(order);
+    const { fills, depthDelta } = this.matchingEngineService.matchOrder(order);
     this.applyFills(fills);
-    return fills;
+    return { fills, depthDelta };
   }
 
   applyFills(fills: Fill[]): void {

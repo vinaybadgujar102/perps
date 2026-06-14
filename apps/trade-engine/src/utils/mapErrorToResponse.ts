@@ -4,6 +4,7 @@ import {
   OrderbookNotFoundError,
   OrderNotCancellableError,
   OrderNotFoundError,
+  PositionNotFoundError,
   UnauthorizedOrderError,
   UserNotFoundError,
 } from "../errors";
@@ -30,6 +31,9 @@ export function mapErrorToResponse(
     return errorResponse(requestId, responseKind, error.message);
   }
   if (error instanceof OrderNotCancellableError) {
+    return errorResponse(requestId, responseKind, error.message);
+  }
+  if (error instanceof PositionNotFoundError) {
     return errorResponse(requestId, responseKind, error.message);
   }
   throw error;

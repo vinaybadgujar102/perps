@@ -15,6 +15,7 @@ import {
 import { CreateUserHandler } from "./createUser.handler";
 import { CreateOrderHandler } from "./createOrder.handle";
 import { CancelOrderHandler } from "./cancelOrder.handler";
+import { ClosePositionHandler } from "./closePosition.handler";
 import { handleGetAccountStateEvent } from "./account.handler";
 import { handleCreditBalanceEvent } from "./balance.handler";
 import { handleGetOpenPositionsEvent } from "./position.handler";
@@ -50,8 +51,9 @@ export const dispatcher = new EventDispatcher(
     [EVENT_KINDS.CREDIT_BALANCE, { handle: handleCreditBalanceEvent }], // add money
     [EVENT_KINDS.CREATE_ORDER, new CreateOrderHandler(orderService, pubsub)], // create order
     [EVENT_KINDS.GET_OPEN_POSITIONS, { handle: handleGetOpenPositionsEvent }], // get positiosn
-    [EVENT_KINDS.GET_OPEN_ORDERS, { handle: handleGetOpenOrdersEvent }],
-    [EVENT_KINDS.CANCEL_ORDER, new CancelOrderHandler(orderService, pubsub)],
+    [EVENT_KINDS.GET_OPEN_ORDERS, { handle: handleGetOpenOrdersEvent }], // get orders
+    [EVENT_KINDS.CANCEL_ORDER, new CancelOrderHandler(orderService, pubsub)], // cancel order
+    [EVENT_KINDS.CLOSE_POSITION, new ClosePositionHandler(orderService, pubsub)], // close position
     [EVENT_KINDS.GET_ACCOUNT_STATE, { handle: handleGetAccountStateEvent }],
     [EVENT_KINDS.GET_ORDERBOOK, { handle: handleGetOrderbookEvent }],
     [TICK_KINDS.MARK_PRICE, new MarkPriceHandler(pubsub, orderService)],

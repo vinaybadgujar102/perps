@@ -39,3 +39,10 @@ export class OrderNotCancellableError extends Error {
     this.name = "OrderNotCancellableError";
   }
 }
+
+export class PositionNotFoundError extends Error {
+  constructor(_market: string) {
+    super("POSITION_NOT_FOUND");
+    this.name = "PositionNotFoundError";
+  }
+}
