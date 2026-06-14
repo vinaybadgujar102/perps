@@ -7,7 +7,7 @@ export const signUpSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   password: z.string(),
 });
 
@@ -26,9 +26,9 @@ export type AuthUser = {
   name: string;
 };
 
-export type LoginData = {
+export type LoginDataResult = {
   token: string;
   user: AuthUser;
 };
 
-export type SignUpData = Record<string, never>;
+export type SignUpDataResult = Record<string, never>;

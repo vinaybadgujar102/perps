@@ -5,3 +5,10 @@ export const onrampDepositSchema = z.object({
 });
 
 export type OnrampDepositInput = z.infer<typeof onrampDepositSchema>;
+
+export type OnrampDepositResult = {
+  onrampId: string;
+  amountUsd: number;
+  balanceUsd: number;
+  availableMarginUsd: number;
+};

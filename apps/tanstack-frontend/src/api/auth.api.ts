@@ -1,16 +1,16 @@
 import type {
   ApiEnvelope,
-  LoginData,
+  LoginDataResult,
   LoginInput,
-  SignUpData,
+  SignUpDataResult,
   SignUpInput,
 } from "@repo/sharedtypes";
 import { apiClient } from "./axiosClient";
 
 export async function loginApi(
   payload: LoginInput,
-): Promise<ApiEnvelope<LoginData>> {
-  const result = await apiClient.post<ApiEnvelope<LoginData>>(
+): Promise<ApiEnvelope<LoginDataResult>> {
+  const result = await apiClient.post<ApiEnvelope<LoginDataResult>>(
     "/auth/login",
     payload,
   );
@@ -19,8 +19,8 @@ export async function loginApi(
 
 export async function signUpApi(
   payload: SignUpInput,
-): Promise<ApiEnvelope<SignUpData>> {
-  const result = await apiClient.post<ApiEnvelope<SignUpData>>(
+): Promise<ApiEnvelope<SignUpDataResult>> {
+  const result = await apiClient.post<ApiEnvelope<SignUpDataResult>>(
     "/auth/signup",
     payload,
   );

@@ -2,9 +2,10 @@ import { AssetConfig } from "@repo/sharedtypes";
 import { useQuery } from "@tanstack/react-query";
 import { getOrderbookApi } from "#/api/orderbook.api";
 import type { TickerData } from "#/hooks/use-market-subscriptions";
+import { TRADING_MARKET } from "#/lib/market";
+import { queryKeys } from "#/lib/query-keys";
 
-const MARKET = "BTC";
-const { priceScale } = AssetConfig[MARKET];
+const { priceScale } = AssetConfig[TRADING_MARKET];
 
 const MARKET_STATS = {
   pair: "BTC / USD",
@@ -32,12 +33,12 @@ function formatIndexPrice(ticker: TickerData | undefined) {
 
 export function MarketHeader() {
   const orderbookQuery = useQuery({
-    queryKey: ["orderbook", MARKET],
-    queryFn: () => getOrderbookApi(MARKET),
+    queryKey: queryKeys.orderbook(),
+    queryFn: () => getOrderbookApi(TRADING_MARKET),
   });
 
   const tickerQuery = useQuery({
-    queryKey: ["ticker", MARKET],
+    queryKey: queryKeys.ticker(),
     queryFn: () => null as TickerData | null,
     staleTime: Infinity,
     refetchOnMount: false,

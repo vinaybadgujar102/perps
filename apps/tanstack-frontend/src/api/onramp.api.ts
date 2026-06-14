@@ -1,13 +1,6 @@
-import type { ApiEnvelope } from "@repo/sharedtypes";
+import type { ApiEnvelope, OnrampDepositResult } from "@repo/sharedtypes";
 import { apiClient } from "./axiosClient";
 import { getAuthToken } from "#/lib/auth";
-
-export type OnrampDepositResult = {
-  onrampId: string;
-  amountUsd: number;
-  balanceUsd: number;
-  availableMarginUsd: number;
-};
 
 function authHeaders() {
   const token = getAuthToken();

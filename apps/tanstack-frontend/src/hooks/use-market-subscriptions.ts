@@ -1,14 +1,10 @@
-import {
-  depthPushSchema,
-  depthRoom,
-  indexPricePushSchema,
-  indexPriceRoom,
-} from "@repo/sharedtypes";
+import { depthPushSchema, depthRoom, indexPricePushSchema, indexPriceRoom } from "@repo/sharedtypes";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import type { OrderbookData } from "#/api/orderbook.api";
 import { useWebSocket } from "#/hooks/useWebSocket";
 import { mergeDepthDelta } from "#/lib/merge-depth-delta";
+import { queryKeys } from "#/lib/query-keys";
 import { WS_URL } from "#/lib/ws-config";
 
 export type TickerData = {
@@ -49,7 +45,7 @@ export function useMarketSubscriptions(market: string) {
           if (!push.success || push.data.data.market !== activeMarket) return;
 
           queryClient.setQueryData<OrderbookData | undefined>(
-            ["orderbook", activeMarket],
+            queryKeys.orderbook(activeMarket),
             (current) => mergeDepthDelta(current, push.data.data),
           );
           break;
@@ -59,7 +55,7 @@ export function useMarketSubscriptions(market: string) {
           if (!push.success || push.data.data.market !== activeMarket) return;
 
           queryClient.setQueryData<TickerData>(
-            ["ticker", activeMarket],
+            queryKeys.ticker(activeMarket),
             push.data.data,
           );
           break;

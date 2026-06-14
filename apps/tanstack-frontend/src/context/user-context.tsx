@@ -2,10 +2,8 @@ import type { AuthUser } from "@repo/sharedtypes";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
-  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -16,6 +14,7 @@ import {
   saveSession,
   type AuthSession,
 } from "#/lib/auth-storage";
+import { queryKeys } from "#/lib/query-keys";
 
 type UserContextValue = {
   user: AuthUser | null;
@@ -23,6 +22,7 @@ type UserContextValue = {
   isAuthenticated: boolean;
   isLoading: boolean;
   balanceUsd: number | null;
+  availableMarginUsd: number | null;
   isBalanceLoading: boolean;
   setSession: (session: AuthSession) => void;
   logout: () => void;
@@ -41,51 +41,41 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const setSession = useCallback((nextSession: AuthSession) => {
+  const setSession = (nextSession: AuthSession) => {
     saveSession(nextSession.token, nextSession.user);
     setSessionState(nextSession);
-  }, []);
+  };
 
-  const logout = useCallback(() => {
+  const logout = () => {
     clearSession();
     setSessionState(null);
     queryClient.removeQueries({ queryKey: ["account"] });
-  }, [queryClient]);
+  };
 
   const accountQuery = useQuery({
-    queryKey: ["account", session?.user.id],
+    queryKey: queryKeys.account(session?.user.id ?? 0),
     queryFn: () => getAccountApi(session!.user.id),
     enabled: Boolean(session?.user.id),
   });
 
-  const refreshBalance = useCallback(() => {
+  const refreshBalance = () => {
     void queryClient.invalidateQueries({
-      queryKey: ["account", session?.user.id],
+      queryKey: queryKeys.account(session?.user.id ?? 0),
     });
-  }, [queryClient, session?.user.id]);
+  };
 
-  const value = useMemo<UserContextValue>(
-    () => ({
-      user: session?.user ?? null,
-      token: session?.token ?? null,
-      isAuthenticated: Boolean(session),
-      isLoading,
-      balanceUsd: accountQuery.data?.balanceUsd ?? null,
-      isBalanceLoading: accountQuery.isLoading,
-      setSession,
-      logout,
-      refreshBalance,
-    }),
-    [
-      session,
-      isLoading,
-      accountQuery.data?.balanceUsd,
-      accountQuery.isLoading,
-      setSession,
-      logout,
-      refreshBalance,
-    ],
-  );
+  const value: UserContextValue = {
+    user: session?.user ?? null,
+    token: session?.token ?? null,
+    isAuthenticated: Boolean(session),
+    isLoading,
+    balanceUsd: accountQuery.data?.balanceUsd ?? null,
+    availableMarginUsd: accountQuery.data?.availableMarginUsd ?? null,
+    isBalanceLoading: accountQuery.isLoading,
+    setSession,
+    logout,
+    refreshBalance,
+  };
 
   return (
     <UserContext.Provider value={value}>{children}</UserContext.Provider>

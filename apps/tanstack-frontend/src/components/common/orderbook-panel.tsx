@@ -3,8 +3,8 @@ import { AssetConfig } from "@repo/sharedtypes";
 import { getOrderbookApi } from "#/api/orderbook.api";
 import { Button } from "#/components/ui/button";
 import { cn } from "#/lib/utils";
-
-const MARKET = "BTC";
+import { TRADING_MARKET } from "#/lib/market";
+import { queryKeys } from "#/lib/query-keys";
 
 type OrderbookLevel = {
   price: number;
@@ -16,7 +16,7 @@ type DisplayLevel = OrderbookLevel & {
   depthPct: number;
 };
 
-const { priceScale, quantityScale } = AssetConfig[MARKET];
+const { priceScale, quantityScale } = AssetConfig[TRADING_MARKET];
 
 function scalePrice(value: number) {
   return value / 10 ** priceScale;
@@ -98,8 +98,8 @@ function OrderbookRow({
 
 export function OrderbookPanel() {
   const orderbookQuery = useQuery({
-    queryKey: ["orderbook", MARKET],
-    queryFn: () => getOrderbookApi(MARKET),
+    queryKey: queryKeys.orderbook(),
+    queryFn: () => getOrderbookApi(TRADING_MARKET),
   });
 
   const asks = withCumulativeTotals(

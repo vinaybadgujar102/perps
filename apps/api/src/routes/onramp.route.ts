@@ -1,4 +1,10 @@
-import { EVENT_KINDS, onrampDepositSchema, QUEUES } from "@repo/sharedtypes";
+import {
+  EVENT_KINDS,
+  onrampDepositSchema,
+  QUEUES,
+  RESPONSE_KINDS,
+  type TradeEngineResponse,
+} from "@repo/sharedtypes";
 import { Router, type Request, type Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import type z from "zod";
@@ -7,6 +13,13 @@ import { isUser } from "../middlewares/user.middleware";
 import { redis } from ".";
 import { errorResponse, successResponse } from "../utils/responseUtils";
 import { schemaValidator } from "../validators";
+
+type CreateOrderResponse = Extract<
+  TradeEngineResponse,
+  { kind: RESPONSE_KINDS.CREDIT_BALANCE_RESPONSE }
+>;
+
+type CreateOrderResponsePayload = CreateOrderResponse["data"];
 
 const onrampRouter = Router();
 
@@ -32,28 +45,20 @@ onrampRouter.post(
         }),
       });
 
-      const engineResponse = await new Promise<{
-        success: boolean;
-        message: string | null;
-        data: {
-          balanceUsd: number;
-          lockedMarginUsd: number;
-          availableMarginUsd: number;
-          creditedAmountUsd: number;
-          onrampId: string;
-        } | null;
-      }>((resolve, reject) => {
-        const timeoutId = setTimeout(() => {
-          requestMap.delete(requestId);
-          reject(new Error("Request timed out"));
-        }, 10000);
+      const engineResponse = await new Promise<CreateOrderResponsePayload>(
+        (resolve, reject) => {
+          const timeoutId = setTimeout(() => {
+            requestMap.delete(requestId);
+            reject(new Error("Request timed out"));
+          }, 10000);
 
-        requestMap.set(requestId, {
-          timeoutId,
-          resolve,
-          reject,
-        });
-      });
+          requestMap.set(requestId, {
+            timeoutId,
+            resolve,
+            reject,
+          });
+        },
+      );
 
       if (!engineResponse.success || !engineResponse.data) {
         return errorResponse(

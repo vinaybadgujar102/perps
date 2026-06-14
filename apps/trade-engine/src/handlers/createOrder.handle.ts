@@ -35,20 +35,25 @@ export class CreateOrderHandler implements EventHandler<
     };
   }): TradeEngineResponse {
     try {
-      const { fills, depthDelta } = this.orderService.createOrder(event);
+      const { fills, depthDelta } = this.orderService.createOrder(event); // matches , returns fills and depthChanges
       let message: string | null = null;
 
+      // editing repsone message
       if (event.payload.orderType === ORDER_TYPE.MARKET_ORDER) {
         if (fills.length === 0) {
           message = "Order not matched at all";
         } else {
-          const filledQty = fills.reduce((sum, fill) => sum + fill.filledQty, 0);
+          const filledQty = fills.reduce(
+            (sum, fill) => sum + fill.filledQty,
+            0,
+          );
           if (filledQty < event.payload.qty) {
             message = "Order fully/partially filled";
           }
         }
       }
 
+      // publish to pubsub the delta updates
       if (depthDelta.bids.length > 0 || depthDelta.asks.length > 0) {
         this.pubsub.publish({
           kind: RESPONSE_KINDS.DEPTH_UPDATE,

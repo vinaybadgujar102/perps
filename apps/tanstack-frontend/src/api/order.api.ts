@@ -12,6 +12,7 @@ import { unwrapEngineResponse } from "./unwrap-engine-response";
 
 export type CreateOrderResult = {
   message: string;
+  fills: Fill[];
 };
 
 export type CancelOrderResult = {
@@ -38,6 +39,7 @@ export async function createOrderApi(
 
   return {
     message: engine.message ?? "Order placed",
+    fills: engine.data ?? [],
   };
 }
 
