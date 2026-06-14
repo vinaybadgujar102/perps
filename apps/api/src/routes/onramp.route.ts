@@ -1,4 +1,5 @@
 import {
+  BASE_CURRENCY_SCALE_FACTOR,
   EVENT_KINDS,
   onrampDepositSchema,
   QUEUES,
@@ -28,7 +29,12 @@ onrampRouter.post(
   isUser,
   schemaValidator(onrampDepositSchema),
   async (req: Request, res: Response) => {
-    const { amountUsd } = req.body as z.infer<typeof onrampDepositSchema>;
+    const { amountUsd: displayAmountUsd } = req.body as z.infer<
+      typeof onrampDepositSchema
+    >;
+    const scaledAmountUsd = Math.round(
+      displayAmountUsd * BASE_CURRENCY_SCALE_FACTOR,
+    );
     const requestId = crypto.randomUUID();
     const onrampId = crypto.randomUUID();
 
@@ -39,7 +45,7 @@ onrampRouter.post(
           kind: EVENT_KINDS.CREDIT_BALANCE,
           payload: {
             userId: req.user.userId,
-            amountUsd,
+            amountUsd: scaledAmountUsd,
             onrampId,
           },
         }),
@@ -73,9 +79,18 @@ onrampRouter.post(
         StatusCodes.OK,
         {
           onrampId: engineResponse.data.onrampId,
-          amountUsd,
-          balanceUsd: engineResponse.data.balanceUsd,
-          availableMarginUsd: engineResponse.data.availableMarginUsd,
+          amountUsd: displayAmountUsd,
+          balanceUsd:
+            Math.round(
+              (engineResponse.data.balanceUsd / BASE_CURRENCY_SCALE_FACTOR) *
+                100,
+            ) / 100,
+          availableMarginUsd:
+            Math.round(
+              (engineResponse.data.availableMarginUsd /
+                BASE_CURRENCY_SCALE_FACTOR) *
+                100,
+            ) / 100,
         },
         "Deposit completed successfully.",
       );
