@@ -1,3 +1,4 @@
+import { XIcon } from "lucide-react";
 import { toast as sonnerToast, type ExternalToast } from "sonner";
 import { cn } from "#/lib/utils";
 
@@ -9,16 +10,17 @@ type TerminalToastProps = {
   variant: TerminalToastVariant;
   title: string;
   message: string;
+  onClose: () => void;
 };
 
-function TerminalToast({ variant, title, message }: TerminalToastProps) {
+function TerminalToast({ variant, title, message, onClose }: TerminalToastProps) {
   const isError = variant === "error";
 
   return (
     <div
       className={cn(
         "relative flex w-[min(100vw-2rem,18rem)] overflow-hidden border border-border bg-surface-container",
-        "font-[family-name:var(--font-mono)]",
+        "font-mono",
       )}
     >
       <div
@@ -31,7 +33,7 @@ function TerminalToast({ variant, title, message }: TerminalToastProps) {
         <div className="flex min-w-0 flex-col gap-0.5">
           <p
             className={cn(
-              "mono-label text-[9px] leading-none tracking-[0.1em]",
+              "mono-label text-[9px] leading-none tracking-widest",
               isError ? "text-accent" : "text-foreground-muted",
             )}
           >
@@ -41,16 +43,26 @@ function TerminalToast({ variant, title, message }: TerminalToastProps) {
             {message}
           </p>
         </div>
-        <div
-          className={cn(
-            "flex size-3.5 shrink-0 items-center justify-center text-[9px] font-bold leading-none",
-            isError
-              ? "bg-accent text-background"
-              : "border border-foreground text-foreground",
-          )}
-          style={{ borderRadius: "50%" }}
-        >
-          {isError ? "!" : "✓"}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <div
+            className={cn(
+              "flex size-3.5 items-center justify-center text-[9px] font-bold leading-none",
+              isError
+                ? "bg-accent text-background"
+                : "border border-foreground text-foreground",
+            )}
+            style={{ borderRadius: "50%" }}
+          >
+            {isError ? "!" : "✓"}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-input-label transition-colors hover:text-foreground focus:outline-none"
+            aria-label="Close"
+          >
+            <XIcon className="size-3" />
+          </button>
         </div>
       </div>
     </div>
@@ -64,7 +76,14 @@ function showTerminalToast(
   options?: TerminalToastOptions,
 ) {
   return sonnerToast.custom(
-    () => <TerminalToast variant={variant} title={title} message={message} />,
+    (id) => (
+      <TerminalToast
+        variant={variant}
+        title={title}
+        message={message}
+        onClose={() => sonnerToast.dismiss(id)}
+      />
+    ),
     { position: options?.position ?? "top-right" },
   );
 }
