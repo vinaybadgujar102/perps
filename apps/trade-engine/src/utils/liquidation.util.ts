@@ -1,49 +1,13 @@
-import { SIDE, type Side } from "@repo/sharedtypes";
-import { MMR } from "../constants";
+import { RESPONSE_KINDS } from "@repo/sharedtypes";
 import { POSITIONS } from "../inMemoryStates";
 import type { OrderService } from "../services/order.service";
-
-export type LiquidationInput = {
-  qty: number;
-  averageEntryPrice: number;
-  collateral: number;
-};
-
-/**
- * Long liquidation price:
- * LiqPrice = (EntryPrice * Qty - InitialMargin) / (Qty * (1 - MMR))
- */
-export function calculateLongLiquidationPrice(input: LiquidationInput): number {
-  const { qty, averageEntryPrice, collateral } = input;
-
-  return (averageEntryPrice * qty - collateral) / (qty * (1 - MMR));
-}
-
-/**
- * Short liquidation price:
- * LiqPrice = (EntryPrice * Qty + InitialMargin) / (Qty * (1 + MMR))
- */
-export function calculateShortLiquidationPrice(
-  input: LiquidationInput,
-): number {
-  const { qty, averageEntryPrice, collateral } = input;
-
-  return (averageEntryPrice * qty + collateral) / (qty * (1 + MMR));
-}
-
-export function calculateLiquidationPrice(
-  side: Side,
-  input: LiquidationInput,
-): number {
-  return side === SIDE.LONG
-    ? calculateLongLiquidationPrice(input)
-    : calculateShortLiquidationPrice(input);
-}
+import type { PubSub } from "../pubsub/pubsub";
 
 export const liquidatePositions = (
   market: string,
   indexPrice: number,
   orderService: OrderService,
+  pubsub: PubSub,
 ) => {
   const positionsToLiquidate = [...POSITIONS.values()].filter((position) => {
     if (position.size === 0 || position.market !== market) return false;
@@ -55,6 +19,34 @@ export const liquidatePositions = (
   });
 
   for (const position of positionsToLiquidate) {
-    orderService.liquidatePosition(position, indexPrice);
+    const { fills, depthDelta } = orderService.liquidatePosition(
+      position,
+      indexPrice,
+    );
+
+    if (depthDelta.bids.length > 0 || depthDelta.asks.length > 0) {
+      pubsub.publish({
+        kind: RESPONSE_KINDS.DEPTH_UPDATE,
+        payload: {
+          market,
+          timestamp: Date.now(),
+          bids: depthDelta.bids,
+          asks: depthDelta.asks,
+        },
+      });
+    }
+
+    if (fills.length > 0) {
+      pubsub.publish({
+        kind: RESPONSE_KINDS.USER_EVENT,
+        payload: {
+          type: "LIQUIDATION",
+          userId: position.userId,
+          market,
+          liquidationPrice: indexPrice,
+          timestamp: Date.now(),
+        },
+      });
+    }
   }
 };

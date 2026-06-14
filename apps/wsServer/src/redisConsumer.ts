@@ -6,6 +6,8 @@ import {
   QUEUES,
   RESPONSE_KINDS,
   responseQueueSchema,
+  userEventPushSchema,
+  userEventRoom,
 } from "@repo/sharedtypes";
 import { createClient } from "redis";
 import { broadcast } from "./subscriptions";
@@ -43,6 +45,16 @@ export async function startRedisConsumer() {
       if (data.kind === RESPONSE_KINDS.DEPTH_UPDATE) {
         const room = depthRoom(data.payload.market);
         const messageToBroadcast = depthPushSchema.parse({
+          stream: room,
+          data: data.payload,
+        });
+        broadcast(room, JSON.stringify(messageToBroadcast));
+        continue;
+      }
+
+      if (data.kind === RESPONSE_KINDS.USER_EVENT) {
+        const room = userEventRoom(data.payload.userId);
+        const messageToBroadcast = userEventPushSchema.parse({
           stream: room,
           data: data.payload,
         });

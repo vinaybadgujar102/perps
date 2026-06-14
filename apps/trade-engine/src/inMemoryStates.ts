@@ -28,6 +28,7 @@ export class Orderbook {
   bids: PriceLevel[] = [];
   asks: PriceLevel[] = [];
   indexPrice: number = 0;
+  lastTradedPrice: number = 0;
 
   constructor(market: string) {
     this.market = market;
@@ -60,6 +61,19 @@ export class Orderbook {
   setIndexPrice(indexPrice: number) {
     if (indexPrice < 0) throw new Error("Invalid index price");
     this.indexPrice = indexPrice;
+  }
+
+  setLastTradedPrice(price: number) {
+    if (price <= 0) return;
+    this.lastTradedPrice = price;
+  }
+
+  getLastTradedPriceForFunding(): number {
+    if (this.lastTradedPrice > 0) return this.lastTradedPrice;
+    if (this.bids.length > 0 && this.asks.length > 0) {
+      return this.getMarkPrice();
+    }
+    return this.indexPrice;
   }
 
   addOrder(order: OrderEntity): { side: "bids" | "asks"; price: number; qty: number } {

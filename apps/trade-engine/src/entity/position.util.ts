@@ -1,7 +1,7 @@
 import { AssetConfig, SIDE, type Position, type Side } from "@repo/sharedtypes";
 import type { Order } from "../types";
 import { POSITIONS, USERMANAGER } from "../inMemoryStates";
-import { calculateLiquidationPrice } from "../utils/liquidation.util";
+import { calculateLiquidationPrice } from "@repo/sharedtypes";
 import { settleRealizedPnl } from "../utils/pnl.util";
 
 export const positionFactory = (

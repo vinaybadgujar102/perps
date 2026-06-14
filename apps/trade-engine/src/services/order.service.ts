@@ -137,9 +137,11 @@ export class OrderService {
     return { fills, depthDelta, market: payload.market };
   }
 
-  liquidatePosition(position: Position, indexPrice: number): Fill[] {
-    const { fills } = this.executeMarketCloseOrder(position, indexPrice);
-    return fills;
+  liquidatePosition(
+    position: Position,
+    indexPrice: number,
+  ): { fills: Fill[]; depthDelta: DepthDelta } {
+    return this.executeMarketCloseOrder(position, indexPrice);
   }
 
   private executeMarketCloseOrder(
@@ -166,6 +168,9 @@ export class OrderService {
 
   applyFills(fills: Fill[]): void {
     for (const fill of fills) {
+      const orderbook = this.orderBookManager.getOrderbook(fill.market);
+      orderbook.setLastTradedPrice(fill.price);
+
       const makerUser = this.userManager.getUser(fill.makerId);
       const makerOrder = makerUser.getOpenOrder(fill.makerOrderId);
       if (makerOrder) {

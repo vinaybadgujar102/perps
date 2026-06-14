@@ -15,7 +15,12 @@ export class MarkPriceHandler implements EventHandler {
   handle(event: z.infer<typeof markPriceTickSchema>): null {
     for (const [market, newPrice] of Object.entries(event.payload)) {
       const orderbook = GLOBAL_ORDERBOOK.getOrderbook(market);
-      if (orderbook.getIndexPrice() === newPrice) continue;
+
+      const priceChanged = orderbook.getIndexPrice() !== newPrice;
+      if (priceChanged) {
+        orderbook.setIndexPrice(newPrice);
+        liquidatePositions(market, newPrice, this.orderService, this.pubsub);
+      }
 
       this.pubsub.publish({
         kind: RESPONSE_KINDS.INDEX_PRICE_UPDATE,
@@ -25,9 +30,6 @@ export class MarkPriceHandler implements EventHandler {
           timestamp: Date.now(),
         },
       });
-      orderbook.setIndexPrice(newPrice);
-
-      liquidatePositions(market, newPrice, this.orderService);
     }
 
     return null;

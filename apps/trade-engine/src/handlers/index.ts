@@ -22,15 +22,24 @@ import { handleGetOpenPositionsEvent } from "./position.handler";
 import { handleGetOpenOrdersEvent } from "./openOrders.handler";
 import { handleGetOrderbookEvent } from "./orderbook.handler";
 import { OrderService } from "../services/order.service";
-import { GLOBAL_ORDERBOOK, USERMANAGER } from "../inMemoryStates";
+import { GLOBAL_ORDERBOOK, POSITIONS, USERMANAGER } from "../inMemoryStates";
 import { RiskService } from "../services/risk.service";
 import { MatchingEngineService } from "../services/matchingEngineService";
 import { MarkPriceHandler } from "./markPrice.handler";
 import { pubsub } from "../pubsub/pubsub";
+import {
+  FUNDING_INTERVAL_MS,
+  GLOBAL_PERPETUAL_MARKETS,
+} from "../entity/perpetualMarket.entity";
+import { FundingRateService } from "../services/fundingRateService";
 
 export const publisherRedis = await createClient().connect();
 
 GLOBAL_ORDERBOOK.addOrderbook("BTC");
+GLOBAL_PERPETUAL_MARKETS.addMarket(
+  "BTC",
+  GLOBAL_ORDERBOOK.getOrderbook("BTC"),
+);
 
 pubsub.subscribe(async (message) => {
   await publisherRedis.xAdd(QUEUES.RESPONSE_QUEUE, "*", {
@@ -45,18 +54,57 @@ const orderService = new OrderService(
   GLOBAL_ORDERBOOK,
 );
 
+const fundingRateService = new FundingRateService();
+
+function runFundingSettlement() {
+  const marketsToUpdate: Record<string, true> = {};
+
+  for (const position of POSITIONS.values()) {
+    marketsToUpdate[position.market] = true;
+  }
+
+  for (const market in marketsToUpdate) {
+    const orderbook = GLOBAL_ORDERBOOK.getOrderbook(market);
+    const perpetualMarket = GLOBAL_PERPETUAL_MARKETS.getMarket(market);
+
+    perpetualMarket.markPrice = orderbook.getIndexPrice();
+    perpetualMarket.indexPrice = orderbook.getIndexPrice();
+    perpetualMarket.fundingRate = fundingRateService.calculateFundingRate(
+      orderbook.getIndexPrice(),
+      orderbook.getLastTradedPriceForFunding(),
+    );
+    perpetualMarket.nextFundingTime = Date.now() + FUNDING_INTERVAL_MS;
+  }
+
+  for (const position of POSITIONS.values()) {
+    const perpetualMarket = GLOBAL_PERPETUAL_MARKETS.getMarket(position.market);
+
+    const fee = fundingRateService.calculateFundingRateFees(
+      position.size,
+      perpetualMarket.fundingRate,
+    );
+    const user = USERMANAGER.getUser(position.userId);
+    user.applyRealizedPnl(-fee);
+  }
+}
+
+setInterval(runFundingSettlement, FUNDING_INTERVAL_MS);
+
 export const dispatcher = new EventDispatcher(
   new Map<string, EventHandler<any>>([
-    [EVENT_KINDS.CREATE_USER, new CreateUserHandler()], // create user
-    [EVENT_KINDS.CREDIT_BALANCE, { handle: handleCreditBalanceEvent }], // add money
-    [EVENT_KINDS.CREATE_ORDER, new CreateOrderHandler(orderService, pubsub)], // create order
-    [EVENT_KINDS.GET_OPEN_POSITIONS, { handle: handleGetOpenPositionsEvent }], // get positiosn
-    [EVENT_KINDS.GET_OPEN_ORDERS, { handle: handleGetOpenOrdersEvent }], // get orders
-    [EVENT_KINDS.CANCEL_ORDER, new CancelOrderHandler(orderService, pubsub)], // cancel order
-    [EVENT_KINDS.CLOSE_POSITION, new ClosePositionHandler(orderService, pubsub)], // close position
+    [EVENT_KINDS.CREATE_USER, new CreateUserHandler()],
+    [EVENT_KINDS.CREDIT_BALANCE, { handle: handleCreditBalanceEvent }],
+    [EVENT_KINDS.CREATE_ORDER, new CreateOrderHandler(orderService, pubsub)],
+    [EVENT_KINDS.GET_OPEN_POSITIONS, { handle: handleGetOpenPositionsEvent }],
+    [EVENT_KINDS.GET_OPEN_ORDERS, { handle: handleGetOpenOrdersEvent }],
+    [EVENT_KINDS.CANCEL_ORDER, new CancelOrderHandler(orderService, pubsub)],
+    [EVENT_KINDS.CLOSE_POSITION, new ClosePositionHandler(orderService, pubsub)],
     [EVENT_KINDS.GET_ACCOUNT_STATE, { handle: handleGetAccountStateEvent }],
     [EVENT_KINDS.GET_ORDERBOOK, { handle: handleGetOrderbookEvent }],
-    [TICK_KINDS.MARK_PRICE, new MarkPriceHandler(pubsub, orderService)],
+    [
+      TICK_KINDS.MARK_PRICE,
+      new MarkPriceHandler(pubsub, orderService),
+    ],
   ]),
 );
 

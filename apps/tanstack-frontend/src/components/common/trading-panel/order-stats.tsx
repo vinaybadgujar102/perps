@@ -1,12 +1,17 @@
 import { formatUsd } from "#/lib/format";
-import { marketConfig } from "#/lib/market";
+import { formatApiPrice, marketConfig } from "#/lib/market";
 
 type OrderStatsProps = {
   estimatedCollateral: number | null;
   notional: number | null;
+  estimatedLiquidationPrice: number | null;
 };
 
-export function OrderStats({ estimatedCollateral, notional }: OrderStatsProps) {
+export function OrderStats({
+  estimatedCollateral,
+  notional,
+  estimatedLiquidationPrice,
+}: OrderStatsProps) {
   return (
     <div className="flex flex-col gap-2 p-4 text-xs">
       <div className="flex justify-between">
@@ -17,6 +22,14 @@ export function OrderStats({ estimatedCollateral, notional }: OrderStatsProps) {
         <div className="flex justify-between">
           <span className="text-input-label">NOTIONAL</span>
           <span className="font-mono tabular-nums">{formatUsd(notional)} USD</span>
+        </div>
+      ) : null}
+      {estimatedLiquidationPrice != null ? (
+        <div className="flex justify-between">
+          <span className="text-input-label">EST. LIQ. PRICE</span>
+          <span className="font-mono tabular-nums">
+            {formatApiPrice(estimatedLiquidationPrice)}
+          </span>
         </div>
       ) : null}
     </div>

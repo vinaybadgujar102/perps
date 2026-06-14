@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export * from "./enums";
+export * from "./trading/liquidation";
 import {
   EVENT_KINDS,
   ORDER_TYPE,
@@ -245,6 +246,8 @@ export const indexPriceUpdateSchema = z.object({
     market: z.string(),
     indexPrice: z.number(),
     timestamp: z.number(),
+    fundingRate: z.number().optional(),
+    nextFundingTime: z.number().optional(),
   }),
 });
 
@@ -272,6 +275,32 @@ export const indexPricePushSchema = z.object({
   data: z.object({
     market: z.string(),
     indexPrice: z.number(),
+    timestamp: z.number(),
+    fundingRate: z.number().optional(),
+    nextFundingTime: z.number().optional(),
+  }),
+});
+
+export const userEventRoom = (userId: number) => `user.${userId}`;
+
+export const userEventUpdateSchema = z.object({
+  kind: z.literal(RESPONSE_KINDS.USER_EVENT),
+  payload: z.object({
+    type: z.literal("LIQUIDATION"),
+    userId: z.number(),
+    market: z.string(),
+    liquidationPrice: z.number(),
+    timestamp: z.number(),
+  }),
+});
+
+export const userEventPushSchema = z.object({
+  stream: z.string(),
+  data: z.object({
+    type: z.literal("LIQUIDATION"),
+    userId: z.number(),
+    market: z.string(),
+    liquidationPrice: z.number(),
     timestamp: z.number(),
   }),
 });
@@ -326,6 +355,7 @@ export const responseQueueSchema = z.discriminatedUnion("kind", [
   closePositionResponseSchema,
   indexPriceUpdateSchema,
   depthUpdateSchema,
+  userEventUpdateSchema,
 ]);
 
 export type ResponseQueueMessage = z.infer<typeof responseQueueSchema>;
@@ -352,6 +382,7 @@ export const eventSchema = z.discriminatedUnion("kind", [
   closePositionResponseSchema,
   indexPriceUpdateSchema,
   depthUpdateSchema,
+  userEventUpdateSchema,
 ]);
 
 export const AssetConfig: Record<

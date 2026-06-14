@@ -1,4 +1,9 @@
-import { depthPushSchema, depthRoom, indexPricePushSchema, indexPriceRoom } from "@repo/sharedtypes";
+import {
+  depthPushSchema,
+  depthRoom,
+  indexPricePushSchema,
+  indexPriceRoom,
+} from "@repo/sharedtypes";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import type { OrderbookData } from "#/api/orderbook.api";
@@ -11,6 +16,8 @@ export type TickerData = {
   market: string;
   indexPrice: number;
   timestamp: number;
+  fundingRate?: number;
+  nextFundingTime?: number;
 };
 
 function roomsForMarket(market: string) {
