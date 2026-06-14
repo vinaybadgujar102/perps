@@ -49,7 +49,15 @@ export class OrderService {
     const depthDelta = new DepthDeltaCollector();
     depthDelta.merge(matchDelta);
 
+    // if order is limit order and has available quantity
+    // reserve collateral and add the order to orderbook
     if (order.getAvailableQty() && order.isLimitOrder()) {
+      this.riskService.reserveOrderCollateral(
+        user,
+        order,
+        order.getAvailableQty(),
+      );
+
       const orderbook = this.orderBookManager.getOrderbook(order.market);
       const addDelta = orderbook.addOrder(order);
       depthDelta.mergeSide(addDelta.side, {
@@ -80,6 +88,12 @@ export class OrderService {
     );
 
     user.removeOpenOrder(event.payload.orderId);
+
+    this.riskService.releaseOrderCollateral(
+      user,
+      openOrder,
+      removeResult.cancelledQty,
+    );
 
     const depthDelta = new DepthDeltaCollector();
     depthDelta.mergeSide(removeResult.side, {
@@ -116,6 +130,16 @@ export class OrderService {
 
   applyFills(fills: Fill[]): void {
     for (const fill of fills) {
+      const makerUser = this.userManager.getUser(fill.makerId);
+      const makerOrder = makerUser.getOpenOrder(fill.makerOrderId);
+      if (makerOrder) {
+        this.riskService.releaseOrderCollateral(
+          makerUser,
+          makerOrder,
+          fill.filledQty,
+        );
+      }
+
       createPosition({
         userId: fill.takerId,
         orderId: fill.takerOrderId,
@@ -134,9 +158,6 @@ export class OrderService {
         fillPrice: fill.price,
       });
 
-      // remove the filled order from maker user's open orders
-      const makerUser = this.userManager.getUser(fill.makerId);
-      const makerOrder = makerUser.getOpenOrder(fill.makerOrderId);
       if (makerOrder?.isOrderFullyFilled()) {
         makerUser.removeOpenOrder(fill.makerOrderId);
       }

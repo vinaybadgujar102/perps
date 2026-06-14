@@ -48,9 +48,9 @@ export const dispatcher = new EventDispatcher(
     [EVENT_KINDS.CREATE_USER, new CreateUserHandler()], // create user
     [EVENT_KINDS.CREDIT_BALANCE, { handle: handleCreditBalanceEvent }], // add money
     [EVENT_KINDS.CREATE_ORDER, new CreateOrderHandler(orderService, pubsub)], // create order
+    [EVENT_KINDS.GET_OPEN_POSITIONS, { handle: handleGetOpenPositionsEvent }], // get positiosn
     [EVENT_KINDS.CANCEL_ORDER, new CancelOrderHandler(orderService, pubsub)],
     [EVENT_KINDS.GET_ACCOUNT_STATE, { handle: handleGetAccountStateEvent }],
-    [EVENT_KINDS.GET_OPEN_POSITIONS, { handle: handleGetOpenPositionsEvent }],
     [EVENT_KINDS.GET_ORDERBOOK, { handle: handleGetOrderbookEvent }],
     [TICK_KINDS.MARK_PRICE, new MarkPriceHandler(pubsub, orderService)],
   ]),
