@@ -4,7 +4,7 @@ import {
   type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type z from "zod";
-import { USERMANAGER } from "../inMemoryStates";
+import { USERMANAGER } from "../appState";
 
 export const handleGetAccountStateEvent = (
   data: z.infer<typeof getAccountStatePayloadSchema>,

@@ -2,8 +2,11 @@ import { UserNotFoundError } from "../errors";
 import { User } from "./User.class";
 
 export class UserManager {
-  private users = new Map<number, User>();
+  users: Map<number, User>;
 
+  constructor(initialUser: Map<number, User>) {
+    this.users = initialUser;
+  }
   hasUser(userId: number): boolean {
     return this.users.has(userId);
   }
@@ -18,5 +21,9 @@ export class UserManager {
     const user = new User(userId);
     this.users.set(userId, user);
     return user;
+  }
+
+  getAllUsers(): [number, User][] {
+    return Array.from(this.users.entries());
   }
 }

@@ -32,6 +32,15 @@ export class PerpetualMarketManager {
     this.markets[symbol] = new PerpetualMarket(symbol, orderbook);
   }
 
+  ensureMarket(symbol: string, orderbook: Orderbook) {
+    const existing = this.markets[symbol];
+    if (existing) {
+      return existing;
+    }
+    this.markets[symbol] = new PerpetualMarket(symbol, orderbook);
+    return this.markets[symbol];
+  }
+
   getMarket(symbol: string) {
     const market = this.markets[symbol];
     if (!market) {

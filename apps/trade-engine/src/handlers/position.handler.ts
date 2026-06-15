@@ -5,7 +5,7 @@ import {
   type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type z from "zod";
-import { POSITIONS } from "../inMemoryStates";
+import { POSITIONS } from "../appState";
 
 export const handleGetOpenPositionsEvent = (
   data: z.infer<typeof getOpenPositionsPayloadSchema>,

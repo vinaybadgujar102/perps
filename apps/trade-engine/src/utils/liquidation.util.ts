@@ -1,5 +1,5 @@
 import { RESPONSE_KINDS } from "@repo/sharedtypes";
-import { POSITIONS } from "../inMemoryStates";
+import { POSITIONS } from "../appState";
 import type { OrderService } from "../services/order.service";
 import type { PubSub } from "../pubsub/pubsub";
 

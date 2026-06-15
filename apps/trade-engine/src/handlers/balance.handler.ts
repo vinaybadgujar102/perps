@@ -4,13 +4,14 @@ import {
   type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type z from "zod";
-import { USERMANAGER } from "../inMemoryStates";
+import { USERMANAGER } from "../appState";
 
 export const handleCreditBalanceEvent = (
   data: z.infer<typeof creditBalancePayloadSchema>,
 ): TradeEngineResponse => {
   const { userId, amountUsd, onrampId } = data.payload;
 
+  // can we encapsulate this into a resusable function?
   if (!USERMANAGER.hasUser(userId)) {
     return {
       requestId: data.requestId,

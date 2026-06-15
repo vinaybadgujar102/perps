@@ -5,6 +5,8 @@ import {
 } from "@repo/sharedtypes";
 import type { z } from "zod/mini";
 
+import type { SnapshotOrder } from "../types";
+
 export class OrderEntity {
   readonly id: string;
   readonly market: string;
@@ -29,6 +31,23 @@ export class OrderEntity {
     this.side = payload.side;
     this.orderType = payload.orderType;
     this.timestamp = Date.now();
+  }
+
+  static fromSnapshot(data: SnapshotOrder): OrderEntity {
+    const order = new OrderEntity(
+      {
+        id: data.id,
+        market: data.market,
+        side: data.side,
+        qty: data.qty,
+        orderType: data.orderType,
+        price: data.price,
+      },
+      data.userId,
+    );
+    order.filledQty = data.filledQty;
+    order.timestamp = data.timestamp;
+    return order;
   }
 
   getAvailableQty(): number {
