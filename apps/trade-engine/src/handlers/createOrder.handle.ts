@@ -1,7 +1,6 @@
 import type z from "zod";
 import type { EventHandler } from "../dispatcher/eventdispatcher";
 import {
-  ORDER_STATUS,
   ORDER_TYPE,
   RESPONSE_KINDS,
   type createOrderPayloadSchema,
@@ -11,26 +10,9 @@ import {
 } from "@repo/sharedtypes";
 import type { OrderService } from "../services/order.service";
 import { mapErrorToResponse } from "../utils/mapErrorToResponse";
+import { deriveOrderStatus } from "../utils/order.util";
 import type { PubSub } from "../pubsub/pubsub";
 import { GLOBAL_ORDERBOOK } from "../inMemoryStates";
-
-function deriveOrderStatus(
-  orderType: ORDER_TYPE,
-  qty: number,
-  filledQty: number,
-): ORDER_STATUS {
-  if (filledQty === 0) {
-    return orderType === ORDER_TYPE.MARKET_ORDER
-      ? ORDER_STATUS.FILLED
-      : ORDER_STATUS.OPEN;
-  }
-
-  if (filledQty < qty) {
-    return ORDER_STATUS.PARTIALLY_FILLED;
-  }
-
-  return ORDER_STATUS.FILLED;
-}
 
 export class CreateOrderHandler implements EventHandler<
   z.infer<typeof createOrderPayloadSchema>

@@ -74,6 +74,21 @@ export const persistedOrderSchema = z.object({
 
 export type PersistedOrder = z.infer<typeof persistedOrderSchema>;
 
+export const persistedClosedPositionSchema = z.object({
+  positionId: z.string(),
+  userId: z.number(),
+  market: z.string(),
+  openingOrderId: z.string(),
+  side: z.enum(SIDE),
+  size: z.number(),
+  averageEntryPrice: z.number(),
+  realizedPnl: z.number(),
+  openedAt: z.number(),
+  closedAt: z.number(),
+});
+
+export type PersistedClosedPosition = z.infer<typeof persistedClosedPositionSchema>;
+
 export const createOrderResponseSchema = z.object({
   kind: z.literal(RESPONSE_KINDS.CREATE_ORDER_RESPONSE),
   requestId: z.string(),
@@ -258,6 +273,8 @@ export const closePositionResponseSchema = z.object({
     success: z.boolean(),
     message: z.string().nullable(),
     data: z.array(fillSchema).nullable(),
+    order: persistedOrderSchema.nullable().optional(),
+    closedPosition: persistedClosedPositionSchema.nullable().optional(),
   }),
 });
 
