@@ -1,5 +1,5 @@
 import type { Fill, ORDER_TYPE, Position, Side } from "@repo/sharedtypes";
-
+import { User as UserClass } from "./utils/User.class";
 export type { Fill };
 import { z } from "zod";
 
@@ -38,4 +38,10 @@ export type Order = {
   orderType: ORDER_TYPE;
   side: Side;
   timestamp: number;
+};
+
+export type Snapshot = {
+  users: [number, UserClass][];
+  positions: [string, Position][];
+  lastProcessedId: string;
 };

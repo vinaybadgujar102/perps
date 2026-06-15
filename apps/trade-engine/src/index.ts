@@ -1,33 +1,12 @@
-import { eventSchema, QUEUES, type Position } from "@repo/sharedtypes";
+import { eventSchema, QUEUES } from "@repo/sharedtypes";
 import { createClient } from "redis";
 import { handleIncomingEvents } from "./handlers";
-import { POSITIONS, USERMANAGER } from "./inMemoryStates";
-import type { User } from "./utils/User.class";
+import { snapShotService } from "./services/snapshotting.service";
 
-type Snapshot = {
-  users: [number, User][];
-  positions: [string, Position][];
-  lastProcessedId: string;
-};
-export async function writeSnapshot() {
-  const snapshot: Snapshot = {
-    users: USERMANAGER.getAllUsers(),
-    positions: Array.from(POSITIONS.entries()),
-    lastProcessedId: lastId,
-  };
+await snapShotService.loadSnapshotIfExists();
 
-  await Bun.write("snapshot.json", JSON.stringify(snapshot));
-}
-
-export async function readSnapshot() {
-  const content = Bun.file("snapshot.json");
-  const snapshot = (await content.json()) as Snapshot;
-  return snapshot;
-}
-
-export const latestSnapshot = await readSnapshot();
 const subscriberRedis = await createClient().connect();
-let lastId = latestSnapshot.lastProcessedId;
+let lastId = snapShotService.getLatestSnapshot().lastProcessedId;
 
 while (true) {
   try {
@@ -39,6 +18,7 @@ while (true) {
     const message = res[0]?.messages?.[0];
     if (!message) continue;
     lastId = message.id;
+    snapShotService.setLastProcessedId(lastId);
     const parsedData = JSON.parse(message.message.data);
     const data = eventSchema.parse(parsedData);
     console.log(data);

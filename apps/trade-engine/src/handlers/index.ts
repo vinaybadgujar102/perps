@@ -32,6 +32,7 @@ import {
   GLOBAL_PERPETUAL_MARKETS,
 } from "../entity/perpetualMarket.entity";
 import { FundingRateService } from "../services/fundingRateService";
+import { snapShotService } from "../services/snapshotting.service";
 
 export const publisherRedis = await createClient().connect();
 
@@ -88,6 +89,7 @@ function runFundingSettlement() {
   }
 }
 
+setInterval(() => void snapShotService.createSnapshot(), 10000);
 setInterval(runFundingSettlement, FUNDING_INTERVAL_MS);
 
 export const dispatcher = new EventDispatcher(
