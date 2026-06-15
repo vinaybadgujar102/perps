@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@repo/database": "workspace:*",
-    "@repo/sharedtypes": "workspace:*"
+    "@repo/sharedtypes": "workspace:*",
+    "redis": "^5.12.1"
   }
 }

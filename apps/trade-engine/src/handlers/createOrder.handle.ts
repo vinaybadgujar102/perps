@@ -1,6 +1,7 @@
 import type z from "zod";
 import type { EventHandler } from "../dispatcher/eventdispatcher";
 import {
+  ORDER_STATUS,
   ORDER_TYPE,
   RESPONSE_KINDS,
   type createOrderPayloadSchema,
@@ -9,10 +10,27 @@ import {
   type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type { OrderService } from "../services/order.service";
-import { successResponse } from "../utils/handlerResponse.util";
 import { mapErrorToResponse } from "../utils/mapErrorToResponse";
 import type { PubSub } from "../pubsub/pubsub";
 import { GLOBAL_ORDERBOOK } from "../inMemoryStates";
+
+function deriveOrderStatus(
+  orderType: ORDER_TYPE,
+  qty: number,
+  filledQty: number,
+): ORDER_STATUS {
+  if (filledQty === 0) {
+    return orderType === ORDER_TYPE.MARKET_ORDER
+      ? ORDER_STATUS.FILLED
+      : ORDER_STATUS.OPEN;
+  }
+
+  if (filledQty < qty) {
+    return ORDER_STATUS.PARTIALLY_FILLED;
+  }
+
+  return ORDER_STATUS.FILLED;
+}
 
 export class CreateOrderHandler implements EventHandler<
   z.infer<typeof createOrderPayloadSchema>
@@ -69,12 +87,39 @@ export class CreateOrderHandler implements EventHandler<
 
       console.log(GLOBAL_ORDERBOOK);
 
-      return successResponse(
-        event.requestId,
-        RESPONSE_KINDS.CREATE_ORDER_RESPONSE,
-        fills,
-        message,
+      const orderFills = fills.filter(
+        (fill) => fill.takerOrderId === event.payload.id,
       );
+      const filledQty = orderFills.reduce(
+        (sum, fill) => sum + fill.filledQty,
+        0,
+      );
+
+      return {
+        requestId: event.requestId,
+        kind: RESPONSE_KINDS.CREATE_ORDER_RESPONSE,
+        data: {
+          success: true,
+          message,
+          data: fills,
+          order: {
+            orderId: event.payload.id,
+            userId: event.userId,
+            market: event.payload.market,
+            side: event.payload.side,
+            orderType: event.payload.orderType,
+            qty: event.payload.qty,
+            filledQty,
+            price: event.payload.price,
+            status: deriveOrderStatus(
+              event.payload.orderType,
+              event.payload.qty,
+              filledQty,
+            ),
+            placedAt: Date.now(),
+          },
+        },
+      } as TradeEngineResponse;
     } catch (error) {
       return mapErrorToResponse(
         error,
