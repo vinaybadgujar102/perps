@@ -7,7 +7,7 @@ export function deriveOrderStatus(
 ): ORDER_STATUS {
   if (filledQty === 0) {
     return orderType === ORDER_TYPE.MARKET_ORDER
-      ? ORDER_STATUS.FILLED
+      ? ORDER_STATUS.CANCELLED
       : ORDER_STATUS.OPEN;
   }
 

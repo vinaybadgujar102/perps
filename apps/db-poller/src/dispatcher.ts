@@ -1,4 +1,4 @@
-import type { eventSchema } from "@repo/sharedtypes";
+import { eventSchema } from "@repo/sharedtypes";
 import type z from "zod";
 
 export interface handler<T = z.infer<typeof eventSchema>> {
