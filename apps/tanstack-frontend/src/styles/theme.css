@@ -1,0 +1,33 @@
+@theme {
+  --color-background: #0a0a0a;
+  --color-surface: #131313;
+  --color-surface-container: #1f2020;
+
+  --color-foreground: #e4e2e1;
+  --color-foreground-muted: #c4c7c7;
+
+  --color-primary: #c9c6c5;
+  --color-accent: #ff3d00;
+  --color-negative: #64748b;
+
+  --color-trading-green: #00ff41;
+  --color-input-label: #8c8c8c;
+  --color-border: #262626;
+
+  --font-display: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --spacing-unit: 4px;
+
+  --animate-shimmer: shimmer 3s linear infinite;
+
+  @keyframes shimmer {
+    from {
+      transform: translateX(-100%);
+    }
+
+    to {
+      transform: translateX(100%);
+    }
+  }
+}
