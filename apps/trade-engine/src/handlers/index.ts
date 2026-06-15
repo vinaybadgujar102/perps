@@ -22,7 +22,8 @@ import { handleGetOpenPositionsEvent } from "./position.handler";
 import { handleGetOpenOrdersEvent } from "./openOrders.handler";
 import { handleGetOrderbookEvent } from "./orderbook.handler";
 import { OrderService } from "../services/order.service";
-import { GLOBAL_ORDERBOOK, POSITIONS, USERMANAGER } from "../inMemoryStates";
+import { GLOBAL_ORDERBOOK } from "../inMemoryStates";
+import { POSITIONS, USERMANAGER } from "../appState";
 import { RiskService } from "../services/risk.service";
 import { MatchingEngineService } from "../services/matchingEngineService";
 import { MarkPriceHandler } from "./markPrice.handler";
@@ -33,14 +34,12 @@ import {
 } from "../entity/perpetualMarket.entity";
 import { FundingRateService } from "../services/fundingRateService";
 import { snapShotService } from "../services/snapshotting.service";
+import { SNAPSHOTING_INTERVAL_MS } from "../constants";
 
 export const publisherRedis = await createClient().connect();
 
-GLOBAL_ORDERBOOK.addOrderbook("BTC");
-GLOBAL_PERPETUAL_MARKETS.addMarket(
-  "BTC",
-  GLOBAL_ORDERBOOK.getOrderbook("BTC"),
-);
+const btcOrderbook = GLOBAL_ORDERBOOK.ensureOrderbook("BTC");
+GLOBAL_PERPETUAL_MARKETS.ensureMarket("BTC", btcOrderbook);
 
 pubsub.subscribe(async (message) => {
   await publisherRedis.xAdd(QUEUES.RESPONSE_QUEUE, "*", {
@@ -88,8 +87,10 @@ function runFundingSettlement() {
     user.applyRealizedPnl(-fee);
   }
 }
-
-setInterval(() => void snapShotService.createSnapshot(), 10000);
+setInterval(
+  () => void snapShotService.createSnapshot(),
+  SNAPSHOTING_INTERVAL_MS,
+);
 setInterval(runFundingSettlement, FUNDING_INTERVAL_MS);
 
 export const dispatcher = new EventDispatcher(
@@ -100,13 +101,13 @@ export const dispatcher = new EventDispatcher(
     [EVENT_KINDS.GET_OPEN_POSITIONS, { handle: handleGetOpenPositionsEvent }],
     [EVENT_KINDS.GET_OPEN_ORDERS, { handle: handleGetOpenOrdersEvent }],
     [EVENT_KINDS.CANCEL_ORDER, new CancelOrderHandler(orderService, pubsub)],
-    [EVENT_KINDS.CLOSE_POSITION, new ClosePositionHandler(orderService, pubsub)],
+    [
+      EVENT_KINDS.CLOSE_POSITION,
+      new ClosePositionHandler(orderService, pubsub),
+    ],
     [EVENT_KINDS.GET_ACCOUNT_STATE, { handle: handleGetAccountStateEvent }],
     [EVENT_KINDS.GET_ORDERBOOK, { handle: handleGetOrderbookEvent }],
-    [
-      TICK_KINDS.MARK_PRICE,
-      new MarkPriceHandler(pubsub, orderService),
-    ],
+    [TICK_KINDS.MARK_PRICE, new MarkPriceHandler(pubsub, orderService)],
   ]),
 );
 

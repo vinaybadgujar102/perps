@@ -5,7 +5,7 @@ import {
 } from "@repo/sharedtypes";
 import type { EventHandler } from "../dispatcher/eventdispatcher";
 import type z from "zod";
-import { USERMANAGER } from "../inMemoryStates";
+import { USERMANAGER } from "../appState";
 import {
   errorResponse,
   successResponse,

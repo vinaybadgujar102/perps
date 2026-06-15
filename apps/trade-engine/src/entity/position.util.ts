@@ -1,6 +1,6 @@
 import { AssetConfig, SIDE, type Position, type Side } from "@repo/sharedtypes";
 import type { Order } from "../types";
-import { POSITIONS, USERMANAGER } from "../inMemoryStates";
+import { POSITIONS, USERMANAGER } from "../appState";
 import { calculateLiquidationPrice } from "@repo/sharedtypes";
 import { settleRealizedPnl } from "../utils/pnl.util";
 

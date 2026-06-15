@@ -6,7 +6,7 @@ import {
   type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type z from "zod";
-import { USERMANAGER } from "../inMemoryStates";
+import { USERMANAGER } from "../appState";
 import { mapErrorToResponse } from "../utils/mapErrorToResponse";
 
 export const handleGetOpenOrdersEvent = (

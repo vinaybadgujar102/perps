@@ -9,7 +9,8 @@ import {
 } from "@repo/sharedtypes";
 import { OrderNotFoundError, PositionNotFoundError } from "../errors";
 import type { UserManager } from "../utils/UserManager.class";
-import { OrderbookManager, POSITIONS } from "../inMemoryStates";
+import { OrderbookManager } from "../inMemoryStates";
+import { POSITIONS } from "../appState";
 import { createPosition, generatePositionKey } from "../entity/position.util";
 import type { MatchingEngineService } from "./matchingEngineService";
 import type { RiskService } from "./risk.service";

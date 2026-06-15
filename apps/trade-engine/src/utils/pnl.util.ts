@@ -1,4 +1,5 @@
-import { GLOBAL_ORDERBOOK, USERMANAGER } from "../inMemoryStates";
+import { GLOBAL_ORDERBOOK } from "../inMemoryStates";
+import { USERMANAGER } from "../appState";
 
 export function getMarkPrice(market: string): number | null {
   const book = GLOBAL_ORDERBOOK.getOrderbook(market);

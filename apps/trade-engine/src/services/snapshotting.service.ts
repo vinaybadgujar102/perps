@@ -1,6 +1,11 @@
 import path from "node:path";
 import { POSITIONS, USERMANAGER } from "../appState";
-import type { Snapshot } from "../types";
+import { GLOBAL_ORDERBOOK } from "../inMemoryStates";
+import {
+  snapshotSchema,
+  type Snapshot,
+  type SnapshotOrder,
+} from "../types";
 
 export const SNAPSHOT_PATH = path.join(import.meta.dir, "../../snapshot.json");
 
@@ -16,6 +21,8 @@ export class SnapshottingService implements SnapshotService {
   private latestSnapshot: Snapshot = {
     users: [],
     positions: [],
+    orders: [],
+    orderbooks: [],
     lastProcessedId: "",
   };
 
@@ -24,9 +31,51 @@ export class SnapshottingService implements SnapshotService {
   }
 
   async createSnapshot() {
+    const orders: SnapshotOrder[] = [];
+    const seenOrderIds = new Set<string>();
+
+    for (const market of GLOBAL_ORDERBOOK.getMarkets()) {
+      const orderbook = GLOBAL_ORDERBOOK.getOrderbook(market);
+      for (const levels of [orderbook.bids, orderbook.asks]) {
+        for (const level of levels) {
+          for (const order of level.orders) {
+            if (seenOrderIds.has(order.id)) continue;
+            if (!order.isLimitOrder() || order.getAvailableQty() <= 0) continue;
+            seenOrderIds.add(order.id);
+            orders.push({
+              id: order.id,
+              market: order.market,
+              qty: order.qty,
+              filledQty: order.filledQty,
+              price: order.price,
+              userId: order.userId,
+              side: order.side,
+              orderType: order.orderType as SnapshotOrder["orderType"],
+              timestamp: order.timestamp,
+            });
+          }
+        }
+      }
+    }
+
+    const orderbooks = GLOBAL_ORDERBOOK.getMarkets().map((market) => {
+      const book = GLOBAL_ORDERBOOK.getOrderbook(market);
+      return {
+        market,
+        indexPrice: book.indexPrice,
+        lastTradedPrice: book.lastTradedPrice,
+      };
+    });
+
+    const users: Snapshot["users"] = USERMANAGER.getAllUsers().map(
+      ([userId, user]) => [userId, { balance: user.balance, lockedBalance: user.lockedBalance }],
+    );
+
     const snapshot: Snapshot = {
-      users: USERMANAGER.getAllUsers(),
+      users,
       positions: Array.from(POSITIONS.entries()),
+      orders,
+      orderbooks,
       lastProcessedId: this.latestSnapshot.lastProcessedId,
     };
 
@@ -46,8 +95,8 @@ export class SnapshottingService implements SnapshotService {
 
   async applySnapshot(snapshotPath: string = SNAPSHOT_PATH) {
     const content = Bun.file(snapshotPath);
-    const snapshot = (await content.json()) as Snapshot;
-    this.latestSnapshot = snapshot;
+    const parsed = await content.json();
+    this.latestSnapshot = snapshotSchema.parse(parsed) as unknown as Snapshot;
   }
 
   getLatestSnapshot() {

@@ -1,4 +1,4 @@
-import { SIDE, type Position } from "@repo/sharedtypes";
+import { SIDE } from "@repo/sharedtypes";
 import {
   OrderbookNotFoundError,
   OrderNotCancellableError,
@@ -6,7 +6,6 @@ import {
   UnauthorizedOrderError,
 } from "./errors";
 import type { PriceLevel } from "./orderbook.types";
-import { UserManager } from "./utils/UserManager.class";
 import type { OrderEntity } from "./entity/order.entity";
 
 // export type OrderBook = Record<
@@ -18,10 +17,6 @@ import type { OrderEntity } from "./entity/order.entity";
 //   BTC: { bids: [], asks: [], indexPrice: 0 },
 //   SOL: { bids: [], asks: [], indexPrice: 0 },
 // };
-
-export const POSITIONS: Map<string, Position> = new Map();
-
-export const USERMANAGER = new UserManager();
 
 export class Orderbook {
   market: string;
@@ -76,7 +71,11 @@ export class Orderbook {
     return this.indexPrice;
   }
 
-  addOrder(order: OrderEntity): { side: "bids" | "asks"; price: number; qty: number } {
+  addOrder(order: OrderEntity): {
+    side: "bids" | "asks";
+    price: number;
+    qty: number;
+  } {
     const availableQty = order.getAvailableQty();
     const bookSide = order.side === SIDE.LONG ? this.bids : this.asks;
     const side = order.side === SIDE.LONG ? "bids" : "asks";
@@ -96,18 +95,14 @@ export class Orderbook {
     };
 
     if (order.side === SIDE.LONG) {
-      const index = this.bids.findIndex(
-        (level) => order.price > level.price,
-      );
+      const index = this.bids.findIndex((level) => order.price > level.price);
       if (index === -1) {
         this.bids.push(newPriceLevel);
       } else {
         this.bids.splice(index, 0, newPriceLevel);
       }
     } else {
-      const index = this.asks.findIndex(
-        (level) => order.price < level.price,
-      );
+      const index = this.asks.findIndex((level) => order.price < level.price);
       if (index === -1) {
         this.asks.push(newPriceLevel);
       } else {
@@ -140,7 +135,12 @@ export class Orderbook {
   removeOrderById(
     orderId: string,
     userId: number,
-  ): { side: "bids" | "asks"; price: number; qty: number; cancelledQty: number } {
+  ): {
+    side: "bids" | "asks";
+    price: number;
+    qty: number;
+    cancelledQty: number;
+  } {
     for (const side of ["bids", "asks"] as const) {
       const book = side === "bids" ? this.bids : this.asks;
 
@@ -148,7 +148,9 @@ export class Orderbook {
         const level = book[i];
         if (!level) continue;
 
-        const orderIndex = level.orders.findIndex((order) => order.id === orderId);
+        const orderIndex = level.orders.findIndex(
+          (order) => order.id === orderId,
+        );
         if (orderIndex === -1) continue;
 
         const order = level.orders[orderIndex];
@@ -186,13 +188,19 @@ export class Orderbook {
 export class OrderbookManager {
   private orderbook: Record<string, Orderbook> = {};
 
-  addOrderbook(market: string) {
+  getMarkets(): string[] {
+    return Object.keys(this.orderbook);
+  }
+
+  ensureOrderbook(market: string): Orderbook {
     const existingOrderbook = this.orderbook[market];
     if (existingOrderbook) {
-      throw new Error("Orderbook already exists!");
+      return existingOrderbook;
     }
 
-    this.orderbook[market] = new Orderbook(market);
+    const orderbook = new Orderbook(market);
+    this.orderbook[market] = orderbook;
+    return orderbook;
   }
 
   getOrderbook(market: string) {
