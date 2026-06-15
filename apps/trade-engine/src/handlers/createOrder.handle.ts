@@ -12,6 +12,7 @@ import type { OrderService } from "../services/order.service";
 import { successResponse } from "../utils/handlerResponse.util";
 import { mapErrorToResponse } from "../utils/mapErrorToResponse";
 import type { PubSub } from "../pubsub/pubsub";
+import { GLOBAL_ORDERBOOK } from "../inMemoryStates";
 
 export class CreateOrderHandler implements EventHandler<
   z.infer<typeof createOrderPayloadSchema>
@@ -65,6 +66,8 @@ export class CreateOrderHandler implements EventHandler<
           },
         });
       }
+
+      console.log(GLOBAL_ORDERBOOK);
 
       return successResponse(
         event.requestId,

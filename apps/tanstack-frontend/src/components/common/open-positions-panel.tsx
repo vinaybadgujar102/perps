@@ -5,6 +5,7 @@ import { RefreshCw } from "lucide-react";
 import type { OpenPosition } from "#/api/position.api";
 import { Button } from "#/components/ui/button";
 import { useUser } from "#/context/user-context";
+import { useClosePosition } from "#/hooks/use-close-position";
 import type { TickerData } from "#/hooks/use-market-subscriptions";
 import { usePositions } from "#/hooks/use-positions";
 import { formatUsd } from "#/lib/format";
@@ -35,9 +36,17 @@ type PositionRowProps = {
   position: OpenPosition;
   markPrice: number | null;
   isActiveMarket: boolean;
+  isClosing: boolean;
+  onClose: (market: string) => void;
 };
 
-function PositionRow({ position, markPrice, isActiveMarket }: PositionRowProps) {
+function PositionRow({
+  position,
+  markPrice,
+  isActiveMarket,
+  isClosing,
+  onClose,
+}: PositionRowProps) {
   const unrealizedPnl =
     markPrice == null
       ? null
@@ -95,6 +104,18 @@ function PositionRow({ position, markPrice, isActiveMarket }: PositionRowProps) 
       >
         {formatSignedUsd(position.realizedPnl)}
       </td>
+      <td className="px-4 py-2 text-right">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-7 px-2 text-xs text-accent hover:text-accent"
+          disabled={isClosing}
+          onClick={() => onClose(position.market)}
+        >
+          {isClosing ? "Closing…" : "Close"}
+        </Button>
+      </td>
     </tr>
   );
 }
@@ -102,6 +123,7 @@ function PositionRow({ position, markPrice, isActiveMarket }: PositionRowProps) 
 export function OpenPositionsPanel() {
   const { isAuthenticated } = useUser();
   const positionsQuery = usePositions();
+  const closePosition = useClosePosition();
 
   const tickerQuery = useQuery({
     queryKey: queryKeys.ticker(),
@@ -119,6 +141,10 @@ export function OpenPositionsPanel() {
       : positionsQuery.error
         ? "Unable to load positions"
         : null;
+
+  const handleClose = (market: string) => {
+    closePosition.mutate(market);
+  };
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-surface/20">
@@ -204,6 +230,7 @@ export function OpenPositionsPanel() {
                 <th className="px-4 py-2 text-right font-normal">Liq. price</th>
                 <th className="px-4 py-2 text-right font-normal">Unrealized</th>
                 <th className="px-4 py-2 text-right font-normal">Realized</th>
+                <th className="px-4 py-2 text-right font-normal">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -215,6 +242,11 @@ export function OpenPositionsPanel() {
                     position.market === TRADING_MARKET ? markPrice : null
                   }
                   isActiveMarket={position.market === TRADING_MARKET}
+                  isClosing={
+                    closePosition.isPending &&
+                    closePosition.variables === position.market
+                  }
+                  onClose={handleClose}
                 />
               ))}
             </tbody>

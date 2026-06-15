@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 /**
- * Dev script: seeds and maintains a multi-level BTC orderbook with realistic
- * resting liquidity. Bids always stay below asks — no matching.
+ * Dev script: seeds a multi-level BTC orderbook and simulates realistic
+ * activity — passive liquidity updates plus actual trades between sim users.
  *
- * Requires: Redis + trade-engine (+ wsServer for live depth UI).
+ * Requires: Redis + trade-engine (+ wsServer for live depth/trade UI).
  *
  * Usage:
  *   bun run simulate:orderbook
@@ -19,6 +19,7 @@
  *   SIM_PRICE_STEP      default 1000 ($10.00 between levels)
  *   SIM_MIN_QTY         default 5   (0.05 BTC with quantityScale=2)
  *   SIM_MAX_QTY         default 40  (0.40 BTC)
+ *   SIM_TRADE_PROB      default 0.35 (chance each tick executes a cross)
  */
 
 import { createClient, type RedisClientType } from "redis";
@@ -41,6 +42,7 @@ const SPREAD = Number(process.env.SIM_SPREAD ?? 3_000);
 const PRICE_STEP = Number(process.env.SIM_PRICE_STEP ?? 1_000);
 const MIN_QTY = Number(process.env.SIM_MIN_QTY ?? 5);
 const MAX_QTY = Number(process.env.SIM_MAX_QTY ?? 40);
+const TRADE_PROB = Number(process.env.SIM_TRADE_PROB ?? 0.35);
 const MARKET = "BTC";
 
 const { priceScale, quantityScale } = AssetConfig[MARKET];
@@ -59,6 +61,18 @@ type PendingRequest = {
   timeoutId: ReturnType<typeof setTimeout>;
 };
 
+type TradeFill = {
+  id: string;
+  makerId: number;
+  takerId: number;
+  makerOrderId: string;
+  takerOrderId: string;
+  filledQty: number;
+  price: number;
+  takerSide: SIDE;
+  makerSide: SIDE;
+};
+
 type RestingOrder = {
   id: string;
   userId: number;
@@ -74,12 +88,14 @@ const simUserIds = Array.from(
   (_, i) => SIM_USER_BASE + i,
 );
 
+let tradeCount = 0;
+let totalFilledQty = 0;
+
 function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 function randomQty(levelIndex: number) {
-  // Larger size near the touch, thinner further away — typical book shape.
   const touchWeight = Math.max(0.35, 1 - levelIndex * 0.07);
   const base = MIN_QTY + (MAX_QTY - MIN_QTY) * touchWeight;
   return Math.max(MIN_QTY, Math.round(base * (0.75 + Math.random() * 0.5)));
@@ -87,6 +103,12 @@ function randomQty(levelIndex: number) {
 
 function pickSimUser() {
   return simUserIds[randomInt(0, simUserIds.length - 1)]!;
+}
+
+function pickTakerUser(excludeUserId: number) {
+  const candidates = simUserIds.filter((id) => id !== excludeUserId);
+  if (candidates.length === 0) return simUserIds[0]!;
+  return candidates[randomInt(0, candidates.length - 1)]!;
 }
 
 function bidPriceAtLevel(levelIndex: number) {
@@ -130,6 +152,14 @@ function bestAskPrice() {
   return asks.length > 0 ? Math.min(...asks.map((o) => o.price)) : null;
 }
 
+function ordersAtPrice(side: SIDE, price: number) {
+  return restingOrders.filter((o) => o.side === side && o.price === price);
+}
+
+function availableQtyAtPrice(side: SIDE, price: number) {
+  return ordersAtPrice(side, price).reduce((sum, o) => sum + o.qty, 0);
+}
+
 function assertNoCross(side: SIDE, price: number) {
   const bestBid = bestBidPrice();
   const bestAsk = bestAskPrice();
@@ -142,6 +172,30 @@ function assertNoCross(side: SIDE, price: number) {
   if (side === SIDE.SHORT && bestBid !== null && price <= bestBid) {
     throw new Error(
       `Ask ${formatPrice(price)} would cross best bid ${formatPrice(bestBid)}`,
+    );
+  }
+}
+
+function applyFillsToLocalBook(fills: TradeFill[]) {
+  for (const fill of fills) {
+    const maker = restingOrders.find((o) => o.id === fill.makerOrderId);
+    if (!maker) continue;
+
+    maker.qty -= fill.filledQty;
+    if (maker.qty <= 0) {
+      const index = restingOrders.findIndex((o) => o.id === maker.id);
+      if (index !== -1) restingOrders.splice(index, 1);
+    }
+  }
+}
+
+function logTrade(fills: TradeFill[]) {
+  for (const fill of fills) {
+    tradeCount += 1;
+    totalFilledQty += fill.filledQty;
+    const action = fill.takerSide === SIDE.LONG ? "BUY" : "SELL";
+    console.log(
+      `[trade] ${action} ${formatQty(fill.filledQty)} BTC @ $${formatPrice(fill.price)} | taker=${fill.takerId} maker=${fill.makerId}`,
     );
   }
 }
@@ -222,18 +276,17 @@ async function ensureSimUser(publisher: RedisClientType, userId: number) {
   );
 }
 
-async function placeOrder(
+async function createOrder(
   publisher: RedisClientType,
   userId: number,
   side: SIDE,
   price: number,
   qty: number,
-): Promise<RestingOrder> {
-  assertNoCross(side, price);
-
+  orderType: ORDER_TYPE = ORDER_TYPE.LIMIT_ORDER,
+): Promise<{ fills: TradeFill[]; resting: RestingOrder | null }> {
   const orderId = crypto.randomUUID();
   const fills =
-    unwrapEngine<Array<{ filledQty: number }> | null>(
+    unwrapEngine<TradeFill[] | null>(
       await dispatch(publisher, {
         kind: EVENT_KINDS.CREATE_ORDER,
         userId,
@@ -242,21 +295,54 @@ async function placeOrder(
           market: MARKET,
           side,
           qty,
-          orderType: ORDER_TYPE.LIMIT_ORDER,
+          orderType,
           price,
         },
       }),
     ) ?? [];
 
+  applyFillsToLocalBook(fills);
+
+  const matchedQty = fills.reduce((sum, fill) => sum + fill.filledQty, 0);
+  const remainingQty = qty - matchedQty;
+
+  let resting: RestingOrder | null = null;
+  if (remainingQty > 0 && orderType === ORDER_TYPE.LIMIT_ORDER) {
+    resting = { id: orderId, userId, side, price, qty: remainingQty };
+    restingOrders.push(resting);
+  }
+
+  return { fills, resting };
+}
+
+async function placeRestingOrder(
+  publisher: RedisClientType,
+  userId: number,
+  side: SIDE,
+  price: number,
+  qty: number,
+): Promise<RestingOrder> {
+  assertNoCross(side, price);
+
+  const { fills, resting } = await createOrder(
+    publisher,
+    userId,
+    side,
+    price,
+    qty,
+  );
+
   if (fills.length > 0) {
     throw new Error(
-      `Unexpected match at ${side} ${formatPrice(price)} — ${fills.length} fill(s)`,
+      `Unexpected match at passive ${side} ${formatPrice(price)} — ${fills.length} fill(s)`,
     );
   }
 
-  const order: RestingOrder = { id: orderId, userId, side, price, qty };
-  restingOrders.push(order);
-  return order;
+  if (!resting) {
+    throw new Error(`Passive order did not rest on book: ${side} ${formatPrice(price)}`);
+  }
+
+  return resting;
 }
 
 async function cancelOrder(publisher: RedisClientType, orderId: string) {
@@ -275,12 +361,74 @@ async function cancelOrder(publisher: RedisClientType, orderId: string) {
   if (index !== -1) restingOrders.splice(index, 1);
 }
 
+async function executeTrade(publisher: RedisClientType) {
+  const bestBid = bestBidPrice();
+  const bestAsk = bestAskPrice();
+  if (bestBid === null || bestAsk === null) return;
+
+  const takerSide = Math.random() < 0.5 ? SIDE.LONG : SIDE.SHORT;
+
+  if (takerSide === SIDE.LONG) {
+    const makers = ordersAtPrice(SIDE.SHORT, bestAsk);
+    if (makers.length === 0) return;
+
+    const maker = makers[randomInt(0, makers.length - 1)]!;
+    const available = availableQtyAtPrice(SIDE.SHORT, bestAsk);
+    const tradeQty = Math.min(
+      randomQty(0),
+      available,
+      maker.qty,
+    );
+    if (tradeQty < MIN_QTY) return;
+
+    const takerUserId = pickTakerUser(maker.userId);
+    const { fills } = await createOrder(
+      publisher,
+      takerUserId,
+      SIDE.LONG,
+      bestAsk,
+      tradeQty,
+    );
+
+    if (fills.length === 0) {
+      console.log(`[trade] no fill — BUY user ${takerUserId} @ ${formatPrice(bestAsk)}`);
+      return;
+    }
+
+    logTrade(fills);
+    return;
+  }
+
+  const makers = ordersAtPrice(SIDE.LONG, bestBid);
+  if (makers.length === 0) return;
+
+  const maker = makers[randomInt(0, makers.length - 1)]!;
+  const available = availableQtyAtPrice(SIDE.LONG, bestBid);
+  const tradeQty = Math.min(randomQty(0), available, maker.qty);
+  if (tradeQty < MIN_QTY) return;
+
+  const takerUserId = pickTakerUser(maker.userId);
+  const { fills } = await createOrder(
+    publisher,
+    takerUserId,
+    SIDE.SHORT,
+    bestBid,
+    tradeQty,
+  );
+
+  if (fills.length === 0) {
+    console.log(`[trade] no fill — SELL user ${takerUserId} @ ${formatPrice(bestBid)}`);
+    return;
+  }
+
+  logTrade(fills);
+}
+
 async function bootstrapBook(publisher: RedisClientType) {
   console.log("Seeding initial depth...");
 
-  // Place asks first (farther from mid), then bids — guarantees no cross on seed.
   for (let level = DEPTH_LEVELS - 1; level >= 0; level--) {
-    const ask = await placeOrder(
+    const ask = await placeRestingOrder(
       publisher,
       pickSimUser(),
       SIDE.SHORT,
@@ -288,13 +436,13 @@ async function bootstrapBook(publisher: RedisClientType) {
       randomQty(level),
     );
     console.log(
-      `  ask L${level} ${formatPrice(ask.price)} x ${formatQty(ask.qty)} BTC`,
+      `  ask L${level} ${formatPrice(ask.price)} x ${formatQty(ask.qty)} BTC (user ${ask.userId})`,
     );
     await sleep(50);
   }
 
   for (let level = 0; level < DEPTH_LEVELS; level++) {
-    const bid = await placeOrder(
+    const bid = await placeRestingOrder(
       publisher,
       pickSimUser(),
       SIDE.LONG,
@@ -302,7 +450,7 @@ async function bootstrapBook(publisher: RedisClientType) {
       randomQty(level),
     );
     console.log(
-      `  bid L${level} ${formatPrice(bid.price)} x ${formatQty(bid.qty)} BTC`,
+      `  bid L${level} ${formatPrice(bid.price)} x ${formatQty(bid.qty)} BTC (user ${bid.userId})`,
     );
     await sleep(50);
   }
@@ -319,7 +467,7 @@ function logBookSnapshot() {
   const askCount = restingOrders.filter((o) => o.side === SIDE.SHORT).length;
 
   console.log(
-    `[book] bids=${bidCount} asks=${askCount} | best ${bid !== null ? formatPrice(bid) : "--"} / ${ask !== null ? formatPrice(ask) : "--"} | resting=${restingOrders.length}`,
+    `[book] bids=${bidCount} asks=${askCount} | best ${bid !== null ? formatPrice(bid) : "--"} / ${ask !== null ? formatPrice(ask) : "--"} | resting=${restingOrders.length} | trades=${tradeCount} vol=${formatQty(totalFilledQty)} BTC`,
   );
 }
 
@@ -330,9 +478,9 @@ async function addLiquidity(publisher: RedisClientType) {
     side === SIDE.LONG ? bidPriceAtLevel(level) : askPriceAtLevel(level);
   const qty = randomQty(level);
 
-  const order = await placeOrder(publisher, pickSimUser(), side, price, qty);
+  const order = await placeRestingOrder(publisher, pickSimUser(), side, price, qty);
   console.log(
-    `[+] ${side === SIDE.LONG ? "bid" : "ask"} ${formatPrice(order.price)} x ${formatQty(order.qty)} BTC`,
+    `[+] ${side === SIDE.LONG ? "bid" : "ask"} ${formatPrice(order.price)} x ${formatQty(order.qty)} BTC (user ${order.userId})`,
   );
 }
 
@@ -363,7 +511,7 @@ async function refreshTouch(publisher: RedisClientType) {
   await cancelOrder(publisher, toReplace.id);
 
   const newQty = randomQty(0);
-  const order = await placeOrder(
+  const order = await placeRestingOrder(
     publisher,
     pickSimUser(),
     side,
@@ -372,7 +520,7 @@ async function refreshTouch(publisher: RedisClientType) {
   );
 
   console.log(
-    `[~] touch ${side === SIDE.LONG ? "bid" : "ask"} ${formatPrice(order.price)} x ${formatQty(order.qty)} BTC`,
+    `[~] touch ${side === SIDE.LONG ? "bid" : "ask"} ${formatPrice(order.price)} x ${formatQty(order.qty)} BTC (user ${order.userId})`,
   );
 }
 
@@ -400,7 +548,7 @@ async function shiftLevel(publisher: RedisClientType) {
       : askPriceAtLevel(nextLevel);
   const newQty = randomQty(nextLevel);
 
-  const replaced = await placeOrder(
+  const replaced = await placeRestingOrder(
     publisher,
     pickSimUser(),
     side,
@@ -413,7 +561,54 @@ async function shiftLevel(publisher: RedisClientType) {
   );
 }
 
+async function replenishIfThin(publisher: RedisClientType) {
+  const bidLevels = new Set(
+    restingOrders.filter((o) => o.side === SIDE.LONG).map((o) => o.price),
+  ).size;
+  const askLevels = new Set(
+    restingOrders.filter((o) => o.side === SIDE.SHORT).map((o) => o.price),
+  ).size;
+
+  const minLevels = Math.max(3, Math.floor(DEPTH_LEVELS / 2));
+
+  for (let level = bidLevels; level < minLevels; level++) {
+    const price = bidPriceAtLevel(level);
+    if (ordersAtPrice(SIDE.LONG, price).length > 0) continue;
+    const order = await placeRestingOrder(
+      publisher,
+      pickSimUser(),
+      SIDE.LONG,
+      price,
+      randomQty(level),
+    );
+    console.log(
+      `[↺] refill bid L${level} ${formatPrice(order.price)} x ${formatQty(order.qty)} BTC`,
+    );
+  }
+
+  for (let level = askLevels; level < minLevels; level++) {
+    const price = askPriceAtLevel(level);
+    if (ordersAtPrice(SIDE.SHORT, price).length > 0) continue;
+    const order = await placeRestingOrder(
+      publisher,
+      pickSimUser(),
+      SIDE.SHORT,
+      price,
+      randomQty(level),
+    );
+    console.log(
+      `[↺] refill ask L${level} ${formatPrice(order.price)} x ${formatQty(order.qty)} BTC`,
+    );
+  }
+}
+
 async function simulateTick(publisher: RedisClientType) {
+  if (Math.random() < TRADE_PROB) {
+    await executeTrade(publisher);
+    await replenishIfThin(publisher);
+    return;
+  }
+
   const roll = Math.random();
 
   if (roll < 0.35) {
@@ -436,7 +631,7 @@ async function main() {
 
   void startResponseListener(consumer);
 
-  console.log("Orderbook simulator started");
+  console.log("Orderbook + trade simulator started");
   console.log(
     [
       `market=${MARKET}`,
@@ -445,6 +640,7 @@ async function main() {
       `step=${formatPrice(PRICE_STEP)}`,
       `levels=${DEPTH_LEVELS}`,
       `users=${simUserIds.join(",")}`,
+      `tradeProb=${TRADE_PROB}`,
       `interval~${INTERVAL_MS}ms`,
     ].join(" | "),
   );

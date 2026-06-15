@@ -1,5 +1,5 @@
 import {
-  closePositionsParamsSchema,
+  closePositionParamsSchema,
   closePositionPayloadSchema,
   EVENT_KINDS,
   QUEUES,
@@ -68,9 +68,9 @@ positionRouter.get("/", isUser, async (req: Request, res: Response) => {
 positionRouter.post(
   "/:market/close",
   isUser,
-  schemaValidator(closePositionsParamsSchema, "params"),
+  schemaValidator(closePositionParamsSchema, "params"),
   async (req: Request, res: Response) => {
-    const { market } = req.params as z.infer<typeof closePositionsParamsSchema>;
+    const { market } = req.params as z.infer<typeof closePositionParamsSchema>;
     const requestId = crypto.randomUUID();
 
     const payload: z.infer<typeof closePositionPayloadSchema> = {

@@ -48,3 +48,27 @@ export function unscaleCollateralFromApi(collateralUser: number) {
 export function qtyInputPlaceholder() {
   return `0.${"0".repeat(marketConfig.quantityScale)}`;
 }
+
+export function priceInputPlaceholder() {
+  return `0.${"0".repeat(marketConfig.priceScale)}`;
+}
+
+/** Keeps only numeric input with at most `maxDecimals` digits after the decimal. */
+export function sanitizeScaledDecimalInput(
+  raw: string,
+  maxDecimals: number,
+): string {
+  if (raw === "") return "";
+
+  const cleaned = raw.replace(/[^\d.]/g, "");
+  const dotIndex = cleaned.indexOf(".");
+
+  if (dotIndex === -1) return cleaned;
+
+  const whole = cleaned.slice(0, dotIndex);
+  const fraction = cleaned.slice(dotIndex + 1).replace(/\./g, "");
+
+  if (maxDecimals === 0) return whole;
+
+  return `${whole}.${fraction.slice(0, maxDecimals)}`;
+}
