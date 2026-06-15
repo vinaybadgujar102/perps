@@ -1,5 +1,5 @@
 import path from "node:path";
-import { POSITIONS, USERMANAGER } from "../inMemoryStates";
+import { POSITIONS, USERMANAGER } from "../appState";
 import type { Snapshot } from "../types";
 
 export const SNAPSHOT_PATH = path.join(import.meta.dir, "../../snapshot.json");
@@ -35,8 +35,12 @@ export class SnapshottingService implements SnapshotService {
   }
 
   async loadSnapshotIfExists() {
-    if (await Bun.file(SNAPSHOT_PATH).exists()) {
+    if (!(await Bun.file(SNAPSHOT_PATH).exists())) return;
+
+    try {
       await this.applySnapshot();
+    } catch (error) {
+      console.error("Failed to load snapshot, starting with empty state:", error);
     }
   }
 

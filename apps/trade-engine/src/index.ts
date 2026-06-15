@@ -1,9 +1,8 @@
+import "./bootstrap";
 import { eventSchema, QUEUES } from "@repo/sharedtypes";
 import { createClient } from "redis";
 import { handleIncomingEvents } from "./handlers";
 import { snapShotService } from "./services/snapshotting.service";
-
-await snapShotService.loadSnapshotIfExists();
 
 const subscriberRedis = await createClient().connect();
 let lastId = snapShotService.getLatestSnapshot().lastProcessedId;
