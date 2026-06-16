@@ -25,6 +25,5 @@ while (true) {
     await handleIncomingEvents(data);
   } catch (error) {
     console.error(error);
-    continue;
   }
 }
