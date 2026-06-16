@@ -13,7 +13,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@clerk/clerk-react": "^5.61.3",
     "@repo/sharedtypes": "workspace:*",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "latest",

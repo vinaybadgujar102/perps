@@ -48,4 +48,11 @@ export enum SIDE {
   SHORT = "SHORT",
 }
 
+export enum ORDER_STATUS {
+  OPEN = "OPEN",
+  PARTIALLY_FILLED = "PARTIALLY_FILLED",
+  FILLED = "FILLED",
+  CANCELLED = "CANCELLED",
+}
+
 export type Side = SIDE;

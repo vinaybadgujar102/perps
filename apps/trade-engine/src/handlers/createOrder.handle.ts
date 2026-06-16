@@ -9,8 +9,8 @@ import {
   type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type { OrderService } from "../services/order.service";
-import { successResponse } from "../utils/handlerResponse.util";
 import { mapErrorToResponse } from "../utils/mapErrorToResponse";
+import { deriveOrderStatus } from "../utils/order.util";
 import type { PubSub } from "../pubsub/pubsub";
 import { GLOBAL_ORDERBOOK } from "../inMemoryStates";
 
@@ -69,12 +69,39 @@ export class CreateOrderHandler implements EventHandler<
 
       console.log(GLOBAL_ORDERBOOK);
 
-      return successResponse(
-        event.requestId,
-        RESPONSE_KINDS.CREATE_ORDER_RESPONSE,
-        fills,
-        message,
+      const orderFills = fills.filter(
+        (fill) => fill.takerOrderId === event.payload.id,
       );
+      const filledQty = orderFills.reduce(
+        (sum, fill) => sum + fill.filledQty,
+        0,
+      );
+
+      return {
+        requestId: event.requestId,
+        kind: RESPONSE_KINDS.CREATE_ORDER_RESPONSE,
+        data: {
+          success: true,
+          message,
+          data: fills,
+          order: {
+            orderId: event.payload.id,
+            userId: event.userId,
+            market: event.payload.market,
+            side: event.payload.side,
+            orderType: event.payload.orderType,
+            qty: event.payload.qty,
+            filledQty,
+            price: event.payload.price,
+            status: deriveOrderStatus(
+              event.payload.orderType,
+              event.payload.qty,
+              filledQty,
+            ),
+            placedAt: Date.now(),
+          },
+        },
+      } as TradeEngineResponse;
     } catch (error) {
       return mapErrorToResponse(
         error,

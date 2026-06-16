@@ -6,8 +6,6 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 
-import ClerkProvider from "../integrations/clerk/provider";
-
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import { UserProvider } from "#/context/user-context";
 
@@ -51,24 +49,22 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans antialiased bg-background">
-        <ClerkProvider>
-          <UserProvider>
-            {children}
-            <Toaster />
-            <TanStackDevtools
-              config={{
-                position: "bottom-right",
-              }}
-              plugins={[
-                {
-                  name: "Tanstack Router",
-                  render: <TanStackRouterDevtoolsPanel />,
-                },
-                TanStackQueryDevtools,
-              ]}
-            />
-          </UserProvider>
-        </ClerkProvider>
+        <UserProvider>
+          {children}
+          <Toaster />
+          <TanStackDevtools
+            config={{
+              position: "bottom-right",
+            }}
+            plugins={[
+              {
+                name: "Tanstack Router",
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+              TanStackQueryDevtools,
+            ]}
+          />
+        </UserProvider>
         <Scripts />
       </body>
     </html>

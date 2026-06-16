@@ -1,14 +1,17 @@
 import type z from "zod";
 import type { EventHandler } from "../dispatcher/eventdispatcher";
 import {
+  ORDER_TYPE,
   RESPONSE_KINDS,
+  SIDE,
   type closePositionPayloadSchema,
   type EVENT_KINDS,
   type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import type { OrderService } from "../services/order.service";
-import { successResponse } from "../utils/handlerResponse.util";
 import { mapErrorToResponse } from "../utils/mapErrorToResponse";
+import { deriveOrderStatus } from "../utils/order.util";
+import { calculateRealizedPnl } from "../utils/pnl.util";
 import type { PubSub } from "../pubsub/pubsub";
 
 export class ClosePositionHandler implements EventHandler<
@@ -28,8 +31,14 @@ export class ClosePositionHandler implements EventHandler<
     };
   }): TradeEngineResponse {
     try {
-      const { fills, depthDelta, market } =
-        this.orderService.closePosition(event);
+      const {
+        fills,
+        depthDelta,
+        market,
+        closeOrder,
+        positionBeforeClose,
+        indexPrice,
+      } = this.orderService.closePosition(event);
 
       const message =
         fills.length === 0
@@ -48,12 +57,65 @@ export class ClosePositionHandler implements EventHandler<
         });
       }
 
-      return successResponse(
-        event.requestId,
-        RESPONSE_KINDS.CLOSE_POSITION_RESPONSE,
-        fills,
-        message,
+      const orderFills = fills.filter(
+        (fill) => fill.takerOrderId === closeOrder.id,
       );
+      const filledQty = orderFills.reduce(
+        (sum, fill) => sum + fill.filledQty,
+        0,
+      );
+
+      let closedPosition = null;
+
+      if (positionBeforeClose) {
+        const closedQty = Math.abs(positionBeforeClose.size);
+        const finalPnl = calculateRealizedPnl({
+          markPrice: indexPrice,
+          averageEntryPrice: positionBeforeClose.averageEntryPrice,
+          closedQty,
+          signedPositionSizeBeforeClose: positionBeforeClose.size,
+        });
+
+        closedPosition = {
+          positionId: positionBeforeClose.id,
+          userId: positionBeforeClose.userId,
+          market: positionBeforeClose.market,
+          openingOrderId: positionBeforeClose.orderId,
+          side: positionBeforeClose.size > 0 ? SIDE.LONG : SIDE.SHORT,
+          size: closedQty,
+          averageEntryPrice: positionBeforeClose.averageEntryPrice,
+          realizedPnl: positionBeforeClose.realizedPnl + finalPnl,
+          openedAt: positionBeforeClose.createdAt.getTime(),
+          closedAt: Date.now(),
+        };
+      }
+
+      return {
+        requestId: event.requestId,
+        kind: RESPONSE_KINDS.CLOSE_POSITION_RESPONSE,
+        data: {
+          success: true,
+          message,
+          data: fills,
+          order: {
+            orderId: closeOrder.id,
+            userId: closeOrder.userId,
+            market: closeOrder.market,
+            side: closeOrder.side,
+            orderType: ORDER_TYPE.MARKET_ORDER,
+            qty: closeOrder.qty,
+            filledQty,
+            price: closeOrder.price,
+            status: deriveOrderStatus(
+              ORDER_TYPE.MARKET_ORDER,
+              closeOrder.qty,
+              filledQty,
+            ),
+            placedAt: Date.now(),
+          },
+          closedPosition,
+        },
+      } as TradeEngineResponse;
     } catch (error) {
       return mapErrorToResponse(
         error,

@@ -35,6 +35,16 @@ export type ClosePositionResult = {
   fills: Fill[];
   depthDelta: DepthDelta;
   market: string;
+  closeOrder: {
+    id: string;
+    userId: number;
+    market: string;
+    side: SIDE;
+    qty: number;
+    price: number;
+  };
+  positionBeforeClose: Position | null;
+  indexPrice: number;
 };
 
 export class OrderService {
@@ -130,12 +140,22 @@ export class OrderService {
 
     const orderbook = this.orderBookManager.getOrderbook(payload.market);
     const indexPrice = orderbook.getIndexPrice();
-    const { fills, depthDelta } = this.executeMarketCloseOrder(
+    const positionBeforeClose = { ...position };
+    const { fills, depthDelta, closeOrder } = this.executeMarketCloseOrder(
       position,
       indexPrice,
     );
 
-    return { fills, depthDelta, market: payload.market };
+    const fullyClosed = fills.length > 0 && !POSITIONS.has(positionKey);
+
+    return {
+      fills,
+      depthDelta,
+      market: payload.market,
+      closeOrder,
+      positionBeforeClose: fullyClosed ? positionBeforeClose : null,
+      indexPrice,
+    };
   }
 
   liquidatePosition(
@@ -148,7 +168,18 @@ export class OrderService {
   private executeMarketCloseOrder(
     position: Position,
     indexPrice: number,
-  ): { fills: Fill[]; depthDelta: DepthDelta } {
+  ): {
+    fills: Fill[];
+    depthDelta: DepthDelta;
+    closeOrder: {
+      id: string;
+      userId: number;
+      market: string;
+      side: SIDE;
+      qty: number;
+      price: number;
+    };
+  } {
     const isLong = position.size > 0;
     const order = new OrderEntity(
       {
@@ -164,7 +195,18 @@ export class OrderService {
 
     const { fills, depthDelta } = this.matchingEngineService.matchOrder(order);
     this.applyFills(fills);
-    return { fills, depthDelta };
+    return {
+      fills,
+      depthDelta,
+      closeOrder: {
+        id: order.id,
+        userId: order.userId,
+        market: order.market,
+        side: order.side,
+        qty: order.qty,
+        price: order.price,
+      },
+    };
   }
 
   applyFills(fills: Fill[]): void {

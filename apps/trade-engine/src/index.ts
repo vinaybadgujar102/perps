@@ -5,7 +5,7 @@ import { handleIncomingEvents } from "./handlers";
 import { snapShotService } from "./services/snapshotting.service";
 
 const subscriberRedis = await createClient().connect();
-let lastId = snapShotService.getLatestSnapshot().lastProcessedId ?? "0";
+let lastId = snapShotService.getLatestSnapshot().lastProcessedId || "0";
 
 while (true) {
   try {

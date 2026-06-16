@@ -4,6 +4,7 @@ export * from "./enums";
 export * from "./trading/liquidation";
 import {
   EVENT_KINDS,
+  ORDER_STATUS,
   ORDER_TYPE,
   RESPONSE_KINDS,
   SIDE,
@@ -58,6 +59,36 @@ export const markPriceTickSchema = z.object({
   payload: z.record(z.string(), z.number()),
 });
 
+export const persistedOrderSchema = z.object({
+  orderId: z.string(),
+  userId: z.number(),
+  market: z.string(),
+  side: z.enum(SIDE),
+  orderType: z.enum(ORDER_TYPE),
+  qty: z.number(),
+  filledQty: z.number(),
+  price: z.number(),
+  status: z.enum(ORDER_STATUS),
+  placedAt: z.number(),
+});
+
+export type PersistedOrder = z.infer<typeof persistedOrderSchema>;
+
+export const persistedClosedPositionSchema = z.object({
+  positionId: z.string(),
+  userId: z.number(),
+  market: z.string(),
+  openingOrderId: z.string(),
+  side: z.enum(SIDE),
+  size: z.number(),
+  averageEntryPrice: z.number(),
+  realizedPnl: z.number(),
+  openedAt: z.number(),
+  closedAt: z.number(),
+});
+
+export type PersistedClosedPosition = z.infer<typeof persistedClosedPositionSchema>;
+
 export const createOrderResponseSchema = z.object({
   kind: z.literal(RESPONSE_KINDS.CREATE_ORDER_RESPONSE),
   requestId: z.string(),
@@ -65,6 +96,7 @@ export const createOrderResponseSchema = z.object({
     success: z.boolean(),
     message: z.string().nullable(),
     data: z.array(fillSchema).nullable(),
+    order: persistedOrderSchema.nullable().optional(),
   }),
 });
 
@@ -241,6 +273,8 @@ export const closePositionResponseSchema = z.object({
     success: z.boolean(),
     message: z.string().nullable(),
     data: z.array(fillSchema).nullable(),
+    order: persistedOrderSchema.nullable().optional(),
+    closedPosition: persistedClosedPositionSchema.nullable().optional(),
   }),
 });
 
