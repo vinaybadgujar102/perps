@@ -6,9 +6,13 @@ import {
   createOrderPayloadSchema,
   createOrderSchema,
   EVENT_KINDS,
+  ORDER_STATUS,
+  ORDER_TYPE,
   QUEUES,
+  SIDE,
 } from "@repo/sharedtypes";
 import type z from "zod";
+import { prisma } from "@repo/database";
 import { requestMap } from "..";
 import { redis } from ".";
 import { errorResponse, successResponse } from "../utils/responseUtils";
@@ -38,6 +42,34 @@ async function dispatchToEngine<T>(
     });
   });
 }
+
+orderRouter.get("/history", isUser, async (req: Request, res: Response) => {
+  const orders = await prisma.order.findMany({
+    where: { userId: req.user.userId },
+    orderBy: { placedAt: "desc" },
+    take: 100,
+  });
+
+  return successResponse(
+    res,
+    StatusCodes.OK,
+    {
+      orders: orders.map((order) => ({
+        orderId: order.orderId,
+        userId: order.userId,
+        market: order.marketSymbol,
+        side: order.side as SIDE,
+        orderType: order.orderType as ORDER_TYPE,
+        qty: order.qty,
+        filledQty: order.filledQty,
+        price: order.price,
+        status: order.status as ORDER_STATUS,
+        placedAt: order.placedAt.getTime(),
+      })),
+    },
+    "Order history loaded successfully.",
+  );
+});
 
 orderRouter.get("/", isUser, async (req: Request, res: Response) => {
   const requestId = crypto.randomUUID();

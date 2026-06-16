@@ -8,16 +8,12 @@ export class PerpetualMarket {
   symbol: string;
   orderbook: Orderbook;
   fundingRate: number;
-  markPrice: number;
-  indexPrice: number;
   nextFundingTime: number;
 
   constructor(symbol: string, orderbook: Orderbook) {
     this.symbol = symbol;
     this.orderbook = orderbook;
     this.fundingRate = 0;
-    this.markPrice = 0;
-    this.indexPrice = 0;
     this.nextFundingTime = Date.now() + FUNDING_INTERVAL_MS;
   }
 }
