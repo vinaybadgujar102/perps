@@ -20,6 +20,8 @@ export function usePlaceOrder(onQtyCleared?: () => void) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.orderbook() });
       void queryClient.invalidateQueries({ queryKey: queryKeys.positions() });
       void queryClient.invalidateQueries({ queryKey: queryKeys.openOrders() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.orderHistory() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.fills() });
       onQtyCleared?.();
     },
     onError: (error) => {

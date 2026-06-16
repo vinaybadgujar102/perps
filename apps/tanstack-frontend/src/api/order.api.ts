@@ -6,6 +6,8 @@ import type {
   CreateOrderInput,
   Fill,
   OpenOrder,
+  OrderHistoryListData,
+  PersistedOrder,
 } from "@repo/sharedtypes";
 import { apiClient } from "./axiosClient";
 import { getAuthToken } from "#/lib/auth";
@@ -20,7 +22,14 @@ export type CancelOrderResult = {
   message: string;
 };
 
-export type { OpenOrder };
+export type { OpenOrder, PersistedOrder };
+
+function unwrapListResponse<T>(envelope: ApiEnvelope<T>): T {
+  if (!envelope.success || !envelope.data) {
+    throw new Error(envelope.message || "Request failed");
+  }
+  return envelope.data;
+}
 
 function authHeaders() {
   const token = getAuthToken();
@@ -72,4 +81,14 @@ export async function getOpenOrdersApi(): Promise<OpenOrder[]> {
 
   const engine = unwrapEngineResponse<OpenOrder[]>(result.data);
   return engine.data ?? [];
+}
+
+export async function getOrderHistoryApi(): Promise<PersistedOrder[]> {
+  const result = await apiClient.get<ApiEnvelope<OrderHistoryListData>>(
+    "/order/history",
+    { headers: authHeaders() },
+  );
+
+  const data = unwrapListResponse(result.data);
+  return data.orders;
 }

@@ -52,6 +52,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
     queryClient.removeQueries({ queryKey: ["account"] });
     queryClient.removeQueries({ queryKey: queryKeys.positions() });
     queryClient.removeQueries({ queryKey: queryKeys.openOrders() });
+    queryClient.removeQueries({ queryKey: queryKeys.orderHistory() });
+    queryClient.removeQueries({ queryKey: queryKeys.closedPositions() });
+    queryClient.removeQueries({ queryKey: queryKeys.fills() });
   };
 
   const accountQuery = useQuery({

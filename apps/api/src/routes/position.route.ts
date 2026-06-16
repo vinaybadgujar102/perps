@@ -3,7 +3,9 @@ import {
   closePositionPayloadSchema,
   EVENT_KINDS,
   QUEUES,
+  SIDE,
 } from "@repo/sharedtypes";
+import { prisma } from "@repo/database";
 import { Router, type Request, type Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import type z from "zod";
@@ -36,6 +38,34 @@ async function dispatchToEngine<T>(
     });
   });
 }
+
+positionRouter.get("/closed", isUser, async (req: Request, res: Response) => {
+  const closedPositions = await prisma.closedPosition.findMany({
+    where: { userId: req.user.userId },
+    orderBy: { closedAt: "desc" },
+    take: 100,
+  });
+
+  return successResponse(
+    res,
+    StatusCodes.OK,
+    {
+      closedPositions: closedPositions.map((position) => ({
+        positionId: position.positionId,
+        userId: position.userId,
+        market: position.marketSymbol,
+        openingOrderId: position.openingOrderId,
+        side: position.side as SIDE,
+        size: position.size,
+        averageEntryPrice: position.averageEntryPrice,
+        realizedPnl: position.realizedPnl,
+        openedAt: position.openedAt.getTime(),
+        closedAt: position.closedAt.getTime(),
+      })),
+    },
+    "Closed positions loaded successfully.",
+  );
+});
 
 positionRouter.get("/", isUser, async (req: Request, res: Response) => {
   const requestId = crypto.randomUUID();

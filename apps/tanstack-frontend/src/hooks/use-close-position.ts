@@ -15,6 +15,9 @@ export function useClosePosition() {
       refreshBalance();
       void queryClient.invalidateQueries({ queryKey: queryKeys.orderbook() });
       void queryClient.invalidateQueries({ queryKey: queryKeys.positions() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.orderHistory() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.closedPositions() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.fills() });
     },
     onError: (error) => {
       terminalToast.error(

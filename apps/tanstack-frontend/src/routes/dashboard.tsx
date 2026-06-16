@@ -18,14 +18,14 @@ function RouteComponent() {
   useUserEvents();
 
   return (
-    <div className="text-foreground h-screen flex flex-col">
+    <div className="text-foreground flex min-h-screen flex-col">
       <SiteHeader />
-      <section className="flex flex-1 overflow-hidden">
+      <section className="flex min-h-[32rem] flex-1 flex-col lg:flex-row">
         <ChartSection />
         <OrderbookPanel />
         <TradingPanel />
       </section>
-      <footer className="h-44 shrink-0 border-t border-border">
+      <footer className="flex h-64 shrink-0 flex-col overflow-hidden border-t border-border lg:h-72">
         <TradingFooter />
       </footer>
     </div>
