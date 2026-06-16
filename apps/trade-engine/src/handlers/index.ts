@@ -1,6 +1,8 @@
 import {
   EVENT_KINDS,
   QUEUES,
+  SIDE,
+  SIDE,
   TICK_KINDS,
   type eventSchema,
 } from "@repo/sharedtypes";
@@ -67,8 +69,6 @@ function runFundingSettlement() {
     const orderbook = GLOBAL_ORDERBOOK.getOrderbook(market);
     const perpetualMarket = GLOBAL_PERPETUAL_MARKETS.getMarket(market);
 
-    perpetualMarket.markPrice = orderbook.getIndexPrice();
-    perpetualMarket.indexPrice = orderbook.getIndexPrice();
     perpetualMarket.fundingRate = fundingRateService.calculateFundingRate(
       orderbook.getIndexPrice(),
       orderbook.getLastTradedPriceForFunding(),
@@ -83,14 +83,12 @@ function runFundingSettlement() {
       position.size,
       perpetualMarket.fundingRate,
     );
+
     const user = USERMANAGER.getUser(position.userId);
-    user.applyRealizedPnl(-fee);
+    user.balance -= fee;
   }
 }
-setInterval(
-  () => void snapShotService.createSnapshot(),
-  SNAPSHOTING_INTERVAL_MS,
-);
+setInterval(() => snapShotService.createSnapshot(), SNAPSHOTING_INTERVAL_MS);
 setInterval(runFundingSettlement, FUNDING_INTERVAL_MS);
 
 export const dispatcher = new EventDispatcher(
