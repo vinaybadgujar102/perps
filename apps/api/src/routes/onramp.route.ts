@@ -26,9 +26,9 @@ type CreateOrderResponsePayload = CreateOrderResponse["data"];
 const onrampRouter = Router();
 
 onrampRouter.post(
-  "/createOrder",
+  "/createPaymentOrder",
   isUser,
-  schemaValidator(onrampDepositSchema),
+  schemaValidator(onrampDepositSchema), // we only recieve the amount from the user
   async (req, res) => {
     const body = req.body as z.infer<typeof onrampDepositSchema>;
 
