@@ -14,6 +14,7 @@ import { isUser } from "../middlewares/user.middleware";
 import { redis } from ".";
 import { errorResponse, successResponse } from "../utils/responseUtils";
 import { schemaValidator } from "../validators";
+import { razorpayInstance } from "../config/razorpay.config";
 
 type CreateOrderResponse = Extract<
   TradeEngineResponse,
@@ -23,6 +24,47 @@ type CreateOrderResponse = Extract<
 type CreateOrderResponsePayload = CreateOrderResponse["data"];
 
 const onrampRouter = Router();
+
+onrampRouter.post(
+  "/createOrder",
+  isUser,
+  schemaValidator(onrampDepositSchema),
+  async (req, res) => {
+    const body = req.body as z.infer<typeof onrampDepositSchema>;
+
+    try {
+      const order = await razorpayInstance.orders.create({
+        amount: body.amountUsd * 100,
+        currency: "USD",
+      });
+
+      if (!order) {
+        return errorResponse(
+          res,
+          StatusCodes.INTERNAL_SERVER_ERROR,
+          "Couldnt create order",
+        );
+      }
+
+      return successResponse(
+        res,
+        StatusCodes.OK,
+        {
+          order_id: order.id,
+          currency: order.currency,
+          amount: order.amount,
+        },
+        "Order created",
+      );
+    } catch (error) {
+      return errorResponse(
+        res,
+        StatusCodes.GATEWAY_TIMEOUT,
+        "Request timed out. Please try again.",
+      );
+    }
+  },
+);
 
 onrampRouter.post(
   "/",

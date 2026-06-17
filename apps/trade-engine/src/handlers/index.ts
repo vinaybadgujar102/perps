@@ -1,8 +1,6 @@
 import {
   EVENT_KINDS,
   QUEUES,
-  SIDE,
-  SIDE,
   TICK_KINDS,
   type eventSchema,
 } from "@repo/sharedtypes";
