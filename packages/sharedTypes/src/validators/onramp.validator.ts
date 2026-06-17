@@ -12,3 +12,18 @@ export type OnrampDepositResult = {
   balanceUsd: number;
   availableMarginUsd: number;
 };
+
+export type RazorPayPaymentsObject = {
+  amount: number;
+  amount_due: number;
+  amount_paid: number;
+  attempts: number;
+  created_at: number;
+  currency: string;
+  entity: string;
+  id: string;
+  notes: string[];
+  offer_id: string | null;
+  receipt: string | null;
+  status: string;
+};

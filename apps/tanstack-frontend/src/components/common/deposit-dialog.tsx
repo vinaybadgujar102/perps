@@ -2,11 +2,12 @@ import { useState } from "react";
 import { XIcon } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import { createOnrampDepositApi } from "#/api/onramp.api";
+import { createPaymentOrder } from "#/api/onramp.api";
 import { Dialog, DialogContent, DialogTitle } from "#/components/ui/dialog";
 import { terminalToast } from "#/components/ui/terminal-toast";
 import { useUser } from "#/context/user-context";
 import { formatUsd } from "#/lib/format";
+import RenderRazorpay from "../payment/razorpayPop";
 
 type DepositDialogProps = {
   open: boolean;
@@ -18,15 +19,9 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
   const [depositAmountInput, setDepositAmountInput] = useState("");
 
   const depositMutation = useMutation({
-    mutationFn: createOnrampDepositApi,
+    mutationFn: createPaymentOrder,
     onSuccess: (result) => {
-      refreshBalance();
-      onOpenChange(false);
       setDepositAmountInput("");
-      terminalToast.success(
-        "SUCCESS",
-        `Deposited ${formatUsd(result.amountUsd)} USD`,
-      );
     },
     onError: (error) => {
       terminalToast.error(
@@ -117,6 +112,14 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
           >
             {depositMutation.isPending ? "Depositing..." : "Deposit Funds"}
           </button>
+          {depositMutation.isSuccess && depositMutation.data && (
+            <RenderRazorpay
+              amount={depositMutation.data.amount}
+              orderId={depositMutation.data.id}
+              keyId={"rzp_test_T2Rqr71c2I3V7o"}
+              currency={depositMutation.data.currency}
+            />
+          )}
         </div>
       </DialogContent>
     </Dialog>
