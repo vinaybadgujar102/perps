@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useCapturePaymentMutation } from "#/hooks/payments/use-capture-payment";
+import { useEffect } from "react";
 
 // Function to load script and append in DOM tree.
 const loadScript = (src: string) =>
@@ -27,6 +28,8 @@ export const RenderRazorpay = ({
   currency: string;
   amount: number;
 }) => {
+  const { mutateAsync: captureOrder } = useCapturePaymentMutation();
+
   const display = async (options: any) => {
     const scriptResponse = await loadScript(
       "https://checkout.razorpay.com/v1/checkout.js",
@@ -37,6 +40,16 @@ export const RenderRazorpay = ({
     }
 
     const rzp = new window.Razorpay(options);
+
+    rzp.on("payment.failed", async (response) => {
+      await captureOrder({
+        orderId: response.error.metadata.order_id,
+        paymentId: response.error.metadata.payment_id,
+        status: "failed",
+      });
+    });
+
+    rzp.on("payment.captured", (response) => {});
 
     rzp.open();
   };
@@ -51,8 +64,16 @@ export const RenderRazorpay = ({
       name: "Perps",
       description: "Perpetuals Markets",
       order_id: orderId,
+      handler: async (response: any) => {
+        console.log("Payment success", response);
+        await captureOrder({
+          orderId: response.razorpay_order_id,
+          status: "success",
+          paymentId: response.razorpay_payment_id,
+        });
+      },
     });
-  });
+  }, [orderId]);
 
   return null;
 };

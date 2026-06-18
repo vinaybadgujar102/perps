@@ -4,6 +4,11 @@ export const onrampDepositSchema = z.object({
   amountUsd: z.number().positive(),
 });
 
+export const onRampCaptureSchema = z.object({
+  orderId: z.string(),
+  paymentId: z.string(),
+  status: z.string(),
+});
 export type OnrampDepositInput = z.infer<typeof onrampDepositSchema>;
 
 export type OnrampDepositResult = {

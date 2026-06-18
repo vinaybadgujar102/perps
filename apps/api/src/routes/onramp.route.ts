@@ -1,6 +1,7 @@
 import {
   BASE_CURRENCY_SCALE_FACTOR,
   EVENT_KINDS,
+  onRampCaptureSchema,
   onrampDepositSchema,
   QUEUES,
   RESPONSE_KINDS,
@@ -15,6 +16,7 @@ import { redis } from ".";
 import { errorResponse, successResponse } from "../utils/responseUtils";
 import { schemaValidator } from "../validators";
 import { razorpayInstance } from "../config/razorpay.config";
+import { PaymentStatus, prisma } from "@repo/database";
 
 type CreateOrderResponse = Extract<
   TradeEngineResponse,
@@ -46,16 +48,14 @@ onrampRouter.post(
         );
       }
 
-      return successResponse(
-        res,
-        StatusCodes.OK,
-        {
-          order_id: order.id,
-          currency: order.currency,
-          amount: order.amount,
+      await prisma.payment.create({
+        data: {
+          orderId: order.id,
+          amount: Number(order.amount),
         },
-        "Order created",
-      );
+      });
+
+      return successResponse(res, StatusCodes.OK, order, "Order created");
     } catch (error) {
       return errorResponse(
         res,
@@ -143,6 +143,27 @@ onrampRouter.post(
         "Request timed out. Please try again.",
       );
     }
+  },
+);
+
+onrampRouter.post(
+  "/capturePayment",
+  schemaValidator(onRampCaptureSchema),
+  async (req, res) => {
+    const body = req.body as z.infer<typeof onRampCaptureSchema>;
+    await prisma.payment.update({
+      where: {
+        orderId: body.orderId,
+      },
+      data: {
+        paymentId: body.paymentId,
+        status:
+          body.status === "failed"
+            ? PaymentStatus.FAILED
+            : PaymentStatus.SUCCESS,
+      },
+    });
+    return successResponse(res, StatusCodes.OK, {}, "Success");
   },
 );
 

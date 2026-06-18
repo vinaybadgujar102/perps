@@ -10,7 +10,11 @@ import {
   SIDE,
   TICK_KINDS,
 } from "./enums";
-import { fillSchema, openOrderSchema, type Fill } from "./validators/order.validator";
+import {
+  fillSchema,
+  openOrderSchema,
+  type Fill,
+} from "./validators/order.validator";
 
 //------------------------------------------------//
 /**
@@ -87,7 +91,9 @@ export const persistedClosedPositionSchema = z.object({
   closedAt: z.number(),
 });
 
-export type PersistedClosedPosition = z.infer<typeof persistedClosedPositionSchema>;
+export type PersistedClosedPosition = z.infer<
+  typeof persistedClosedPositionSchema
+>;
 
 export type OrderHistoryListData = {
   orders: PersistedOrder[];

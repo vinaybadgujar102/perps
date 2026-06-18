@@ -36,3 +36,24 @@ export const createPaymentOrder = async (amountUsd: number) => {
 
   return result.data.data;
 };
+
+export const capturePayment = async ({
+  orderId,
+  status,
+  paymentId,
+}: {
+  orderId: string;
+  status: string;
+  paymentId: string;
+}) => {
+  try {
+    const response = await apiClient.post(
+      "/onramp/capturePayment",
+      { orderId, paymentId, status },
+      { headers: authHeaders() },
+    );
+    return response.data.data;
+  } catch (error) {
+    console.log(error);
+  }
+};
