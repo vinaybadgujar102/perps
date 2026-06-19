@@ -29,6 +29,7 @@ export class ClosePositionEventHandler implements handler {
           qty: order.qty,
           filledQty: order.filledQty,
           price: order.price,
+          leverage: order.leverage,
           placedAt: new Date(order.placedAt),
         },
         update: {},

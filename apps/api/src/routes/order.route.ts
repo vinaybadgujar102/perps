@@ -63,6 +63,7 @@ orderRouter.get("/history", isUser, async (req: Request, res: Response) => {
         qty: order.qty,
         filledQty: order.filledQty,
         price: order.price,
+        leverage: order.leverage,
         status: order.status as ORDER_STATUS,
         placedAt: order.placedAt.getTime(),
       })),

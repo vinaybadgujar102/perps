@@ -297,6 +297,7 @@ async function createOrder(
           qty,
           orderType,
           price,
+          leverage: 20,
         },
       }),
     ) ?? [];

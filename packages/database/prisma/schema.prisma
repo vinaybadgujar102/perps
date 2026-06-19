@@ -58,6 +58,7 @@ model Order {
   qty             Int
   filledQty       Int              @default(0)
   price           Int
+  leverage        Int              @default(20)
   placedAt        DateTime
   closedPositions ClosedPosition[]
   makerFills      Fill[]           @relation("MakerFills")

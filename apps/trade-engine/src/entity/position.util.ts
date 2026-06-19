@@ -1,4 +1,4 @@
-import { AssetConfig, SIDE, type Position, type Side } from "@repo/sharedtypes";
+import { SIDE, type Position, type Side } from "@repo/sharedtypes";
 import type { Order } from "../types";
 import { POSITIONS, USERMANAGER } from "../appState";
 import { calculateLiquidationPrice } from "@repo/sharedtypes";
@@ -33,6 +33,7 @@ type CreatePositionParams = {
   side: Side;
   filledQty: number;
   fillPrice: number;
+  leverage: number;
 };
 
 function positionSideFromSize(size: number): Side {
@@ -58,17 +59,15 @@ export const createPosition = ({
   side,
   filledQty,
   fillPrice,
+  leverage,
 }: CreatePositionParams): void => {
   const positionMapKey = generatePositionKey(userId.toString(), market);
-
-  const assetConfig = AssetConfig[market]!;
-  const maxLeverage = assetConfig.maxLeverage;
 
   const signedFilledSize = filledQty * (side === SIDE.LONG ? 1 : -1);
 
   const fillNotional = filledQty * fillPrice;
 
-  const fillMargin = fillNotional / maxLeverage;
+  const fillMargin = fillNotional / leverage;
 
   const currentPosition = POSITIONS.get(positionMapKey);
 
@@ -193,7 +192,7 @@ export const createPosition = ({
       releasedCollateral,
     }) ?? 0;
 
-  const updatedCollateral = (Math.abs(updatedSize) * fillPrice) / maxLeverage;
+  const updatedCollateral = (Math.abs(updatedSize) * fillPrice) / leverage;
 
   const updatedPosition: Position = {
     ...currentPosition,

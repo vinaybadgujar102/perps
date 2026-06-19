@@ -23,6 +23,7 @@ export const handleGetOpenOrdersEvent = (
         price: order.price,
         qty: order.qty,
         filledQty: order.filledQty,
+        leverage: order.leverage,
       }));
 
     return {

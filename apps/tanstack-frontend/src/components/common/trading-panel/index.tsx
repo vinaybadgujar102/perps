@@ -27,6 +27,7 @@ import { OrderFields, type OrderFieldsForm } from "./order-fields";
 import { OrderStats } from "./order-stats";
 import { OrderTypeToggle } from "./order-type-toggle";
 import { SubmitButtons } from "./submit-buttons";
+import { Slider } from "#/components/ui/slider";
 
 export function TradingPanel() {
   const {
@@ -39,6 +40,7 @@ export function TradingPanel() {
 
   const [orderType, setOrderType] = useState(ORDER_TYPE.LIMIT_ORDER);
   const [orderSide, setOrderSide] = useState<Side>(SIDE.LONG);
+  const [leverage, setLeverage] = useState(marketConfig.maxLeverage);
   const [priceTouched, setPriceTouched] = useState(false);
   const pendingSideRef = useRef<Side>(SIDE.LONG);
 
@@ -81,7 +83,11 @@ export function TradingPanel() {
       prices,
     );
     const apiQty = toApiQty(displayQty);
-    const estimatedCollateral = estimateCollateral(effectivePrice, displayQty);
+    const estimatedCollateral = estimateCollateral(
+      effectivePrice,
+      displayQty,
+      leverage,
+    );
     const bookMissing = isMarketBookMissing(orderType, side, prices);
 
     const validationMessage = getOrderValidationMessage({
@@ -120,6 +126,7 @@ export function TradingPanel() {
       qty: apiQty,
       orderType,
       price: effectivePrice,
+      leverage,
     });
   };
 
@@ -133,14 +140,18 @@ export function TradingPanel() {
     prices,
   );
   const apiQty = toApiQty(displayQty);
-  const estimatedCollateral = estimateCollateral(effectivePrice, displayQty);
+  const estimatedCollateral = estimateCollateral(
+    effectivePrice,
+    displayQty,
+    leverage,
+  );
   const notional = estimateNotional(effectivePrice, displayQty);
   const estimatedLiquidationPrice =
     effectivePrice != null && apiQty != null && apiQty > 0
       ? calculateLiquidationPrice(orderSide, {
           qty: apiQty,
           averageEntryPrice: effectivePrice,
-          collateral: (effectivePrice * apiQty) / marketConfig.maxLeverage,
+          collateral: (effectivePrice * apiQty) / leverage,
         })
       : null;
   const marketBookMissing = isMarketBookMissing(orderType, orderSide, prices);
@@ -229,6 +240,26 @@ export function TradingPanel() {
             effectivePrice={effectivePrice}
             onPriceTouched={() => setPriceTouched(true)}
           />
+
+          <div className="flex flex-col gap-2 px-4">
+            <div className="flex items-center justify-between text-xs">
+              <span className="nav-label text-[10px] font-semibold tracking-widest text-input-label">
+                LEVERAGE
+              </span>
+              <span className="font-mono tabular-nums">{leverage}x</span>
+            </div>
+            <Slider
+              min={1}
+              max={marketConfig.maxLeverage}
+              step={1}
+              value={[leverage]}
+              disabled={!isAuthenticated}
+              onValueChange={(value) => {
+                const next = value[0];
+                if (next != null) setLeverage(next);
+              }}
+            />
+          </div>
 
           {validationMessage ? (
             <p className="px-4 text-xs text-accent">{validationMessage}</p>

@@ -33,6 +33,7 @@ export class CreateOrderHandler implements EventHandler<
       qty: number;
       orderType: ORDER_TYPE;
       price: number;
+      leverage: number;
     };
   }): TradeEngineResponse {
     try {
@@ -93,6 +94,7 @@ export class CreateOrderHandler implements EventHandler<
             qty: event.payload.qty,
             filledQty,
             price: event.payload.price,
+            leverage: event.payload.leverage,
             status: deriveOrderStatus(
               event.payload.orderType,
               event.payload.qty,

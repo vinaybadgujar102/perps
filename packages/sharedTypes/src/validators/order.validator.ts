@@ -23,6 +23,7 @@ export const createOrderSchema = z.object({
   qty: z.number(),
   orderType: z.enum(ORDER_TYPE),
   price: z.number(),
+  leverage: z.number().int(),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
@@ -57,6 +58,7 @@ export const openOrderSchema = z.object({
   price: z.number(),
   qty: z.number(),
   filledQty: z.number(),
+  leverage: z.number().int(),
 });
 
 export type OpenOrder = z.infer<typeof openOrderSchema>;

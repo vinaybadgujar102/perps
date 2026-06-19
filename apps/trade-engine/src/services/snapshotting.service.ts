@@ -52,6 +52,7 @@ export class SnapshottingService implements SnapshotService {
               side: order.side,
               orderType: order.orderType as SnapshotOrder["orderType"],
               timestamp: order.timestamp,
+              leverage: order.leverage,
             });
           }
         }

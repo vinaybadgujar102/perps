@@ -16,6 +16,7 @@ export class OrderEntity {
   readonly userId: number;
   readonly side: SIDE;
   readonly orderType: string;
+  readonly leverage: number;
   timestamp: number;
 
   constructor(
@@ -30,6 +31,7 @@ export class OrderEntity {
     this.userId = userId;
     this.side = payload.side;
     this.orderType = payload.orderType;
+    this.leverage = payload.leverage;
     this.timestamp = Date.now();
   }
 
@@ -42,6 +44,7 @@ export class OrderEntity {
         qty: data.qty,
         orderType: data.orderType,
         price: data.price,
+        leverage: data.leverage,
       },
       data.userId,
     );

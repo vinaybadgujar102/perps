@@ -55,6 +55,7 @@ export const createOrderPayloadSchema = z.object({
     qty: z.number(),
     orderType: z.enum(ORDER_TYPE),
     price: z.number(),
+    leverage: z.number().int(),
   }),
 });
 
@@ -72,6 +73,7 @@ export const persistedOrderSchema = z.object({
   qty: z.number(),
   filledQty: z.number(),
   price: z.number(),
+  leverage: z.number().int(),
   status: z.enum(ORDER_STATUS),
   placedAt: z.number(),
 });
@@ -441,22 +443,7 @@ export const eventSchema = z.discriminatedUnion("kind", [
   userEventUpdateSchema,
 ]);
 
-export const AssetConfig: Record<
-  string,
-  {
-    symbol: string;
-    priceScale: number;
-    quantityScale: number;
-    maxLeverage: number;
-  }
-> = {
-  BTC: {
-    symbol: "BTC",
-    priceScale: 2,
-    quantityScale: 2,
-    maxLeverage: 20,
-  },
-};
+export { AssetConfig } from "./assetConfig";
 
 export type Position = {
   id: string;

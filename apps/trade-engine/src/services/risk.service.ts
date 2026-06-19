@@ -1,13 +1,16 @@
-import { AssetConfig } from "@repo/sharedtypes";
 import type { OrderEntity } from "../entity/order.entity";
 import { InsufficientMarginError } from "../errors";
 import type { User } from "../utils/User.class";
 
 export class RiskService {
-  computeRequiredCollateral(market: string, price: number, qty: number) {
-    const assetConfig = AssetConfig[market]!;
+  computeRequiredCollateral(
+    market: string,
+    price: number,
+    qty: number,
+    leverage: number,
+  ) {
     const positionalValue = price * qty;
-    return positionalValue / assetConfig.maxLeverage;
+    return positionalValue / leverage;
   }
 
   validateCollateral(user: User, order: OrderEntity) {
@@ -15,6 +18,7 @@ export class RiskService {
       order.market,
       order.price,
       order.qty,
+      order.leverage,
     );
 
     if (user.getAvailableBalance() < requiredCollateral) {
@@ -27,6 +31,7 @@ export class RiskService {
       order.market,
       order.price,
       qty,
+      order.leverage,
     );
     user.lockFunds(requiredCollateral);
   }
@@ -36,6 +41,7 @@ export class RiskService {
       order.market,
       order.price,
       qty,
+      order.leverage,
     );
     user.unlockFunds(releasedCollateral);
   }

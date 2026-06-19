@@ -1,5 +1,6 @@
 import type z from "zod";
 import {
+  AssetConfig,
   ORDER_TYPE,
   SIDE,
   type cancelOrderPayloadSchema,
@@ -42,6 +43,7 @@ export type ClosePositionResult = {
     side: SIDE;
     qty: number;
     price: number;
+    leverage: number;
   };
   positionBeforeClose: Position | null;
   indexPrice: number;
@@ -85,7 +87,7 @@ export class OrderService {
       user.addOpenOrder(order);
     }
 
-    this.applyFills(fills);
+    this.applyFills(fills, order);
     return { fills, depthDelta: depthDelta.toDelta() };
   }
 
@@ -178,6 +180,7 @@ export class OrderService {
       side: SIDE;
       qty: number;
       price: number;
+      leverage: number;
     };
   } {
     const isLong = position.size > 0;
@@ -189,12 +192,13 @@ export class OrderService {
         qty: Math.abs(position.size),
         orderType: ORDER_TYPE.MARKET_ORDER,
         price: indexPrice,
+        leverage: AssetConfig[position.market]!.maxLeverage,
       },
       position.userId,
     );
 
     const { fills, depthDelta } = this.matchingEngineService.matchOrder(order);
-    this.applyFills(fills);
+    this.applyFills(fills, order);
     return {
       fills,
       depthDelta,
@@ -205,11 +209,12 @@ export class OrderService {
         side: order.side,
         qty: order.qty,
         price: order.price,
+        leverage: order.leverage,
       },
     };
   }
 
-  applyFills(fills: Fill[]): void {
+  applyFills(fills: Fill[], takerOrder: OrderEntity): void {
     for (const fill of fills) {
       const orderbook = this.orderBookManager.getOrderbook(fill.market);
       orderbook.setLastTradedPrice(fill.price);
@@ -231,6 +236,7 @@ export class OrderService {
         side: fill.takerSide,
         filledQty: fill.filledQty,
         fillPrice: fill.price,
+        leverage: takerOrder.leverage,
       });
 
       createPosition({
@@ -240,6 +246,7 @@ export class OrderService {
         side: fill.makerSide,
         filledQty: fill.filledQty,
         fillPrice: fill.price,
+        leverage: makerOrder?.leverage ?? takerOrder.leverage,
       });
 
       if (makerOrder?.isOrderFullyFilled()) {

@@ -1,6 +1,5 @@
 import { ORDER_TYPE, SIDE, type Side } from "@repo/sharedtypes";
 import {
-  marketConfig,
   scalePriceToApi,
   scaleQtyToApi,
   unscalePriceFromApi,
@@ -68,17 +67,19 @@ export function toApiQty(displayQty: number): number | null {
 export function estimateCollateral(
   effectivePrice: number | null,
   displayQty: number,
+  leverage: number,
 ): number | null {
   if (
     effectivePrice == null ||
     !Number.isFinite(displayQty) ||
-    displayQty <= 0
+    displayQty <= 0 ||
+    leverage <= 0
   ) {
     return null;
   }
 
   return (
-    (unscalePriceFromApi(effectivePrice) * displayQty) / marketConfig.maxLeverage
+    (unscalePriceFromApi(effectivePrice) * displayQty) / leverage
   );
 }
 

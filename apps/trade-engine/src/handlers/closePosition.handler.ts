@@ -106,6 +106,7 @@ export class ClosePositionHandler implements EventHandler<
             qty: closeOrder.qty,
             filledQty,
             price: closeOrder.price,
+            leverage: closeOrder.leverage,
             status: deriveOrderStatus(
               ORDER_TYPE.MARKET_ORDER,
               closeOrder.qty,

@@ -55,6 +55,7 @@ export type SnapshotOrder = {
   side: Side;
   orderType: ORDER_TYPE;
   timestamp: number;
+  leverage: number;
 };
 
 export type SnapshotOrderbook = {
@@ -86,6 +87,7 @@ const snapshotOrderSchema = z.object({
   side: z.nativeEnum(SIDE),
   orderType: z.nativeEnum(ORDER_TYPE_ENUM),
   timestamp: z.number(),
+  leverage: z.number().int(),
 });
 
 const snapshotOrderbookSchema = z.object({

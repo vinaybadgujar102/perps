@@ -1,5 +1,5 @@
 import { formatUsd } from "#/lib/format";
-import { formatApiPrice, marketConfig } from "#/lib/market";
+import { formatApiPrice } from "#/lib/market";
 
 type OrderStatsProps = {
   estimatedCollateral: number | null;
@@ -14,10 +14,6 @@ export function OrderStats({
 }: OrderStatsProps) {
   return (
     <div className="flex flex-col gap-2 p-4 text-xs">
-      <div className="flex justify-between">
-        <span className="text-input-label">LEVERAGE</span>
-        <span>{marketConfig.maxLeverage.toFixed(2)}x</span>
-      </div>
       {estimatedCollateral != null && notional != null ? (
         <div className="flex justify-between">
           <span className="text-input-label">NOTIONAL</span>
