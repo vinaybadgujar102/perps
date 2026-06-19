@@ -1,9 +1,6 @@
 import { useCapturePaymentMutation } from "#/hooks/payments/use-capture-payment";
-import { useNavigate } from "@tanstack/react-router";
+import { setPaymentFlashToast } from "#/lib/payment-flash";
 import { useEffect } from "react";
-import { terminalToast } from "../ui/terminal-toast";
-import { toast } from "sonner";
-import { templateLiteral } from "zod";
 
 // Function to load script and append in DOM tree.
 const loadScript = (src: string) =>
@@ -21,21 +18,52 @@ const loadScript = (src: string) =>
     document.body.appendChild(script);
   });
 
+type RazorpayInstance = {
+  open: () => void;
+  close: () => void;
+  on: (event: string, handler: (response: RazorpayPaymentResponse) => void) => void;
+};
+
+type RazorpayPaymentResponse = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+  error?: {
+    metadata: {
+      order_id: string;
+      payment_id: string;
+    };
+  };
+};
+
 export const RenderRazorpay = ({
   orderId,
   keyId,
   currency,
   amount,
+  onComplete,
 }: {
   orderId: string;
   keyId: string;
   currency: string;
   amount: number;
+  onComplete?: () => void;
 }) => {
   const { mutateAsync: captureOrder } = useCapturePaymentMutation();
-  const navigate = useNavigate();
 
-  const display = async (options: any) => {
+  const reloadToDashboard = (toast?: {
+    variant: "success" | "error";
+    title: string;
+    message: string;
+  }) => {
+    if (toast) {
+      setPaymentFlashToast(toast);
+    }
+    onComplete?.();
+    window.location.assign("/dashboard");
+  };
+
+  const display = async () => {
     const scriptResponse = await loadScript(
       "https://checkout.razorpay.com/v1/checkout.js",
     );
@@ -44,49 +72,56 @@ export const RenderRazorpay = ({
       return;
     }
 
-    const rzp = new window.Razorpay(options);
-
-    rzp.on("payment.failed", async (response) => {
-      await captureOrder({
-        orderId: response.error.metadata.order_id,
-        paymentId: response.error.metadata.payment_id,
-        status: "failed",
-      });
-
-      terminalToast.error(404, "Payment Failed! Please try again!");
-      navigate({ to: "/dashboard" });
-    });
-
-    rzp.on("payment.captured", (response) => {});
-
-    rzp.open();
-  };
-
-  useEffect(() => {
-    display({
+    const rzp = new window.Razorpay({
       key: keyId,
       amount,
       currency,
       name: "Perps",
       description: "Perpetuals Markets",
       order_id: orderId,
-      handler: async (response: any) => {
-        console.log("Payment success", response);
-        const data = await captureOrder({
+      modal: {
+        ondismiss: () => {
+          onComplete?.();
+          window.location.reload();
+        },
+      },
+      handler: async (response: RazorpayPaymentResponse) => {
+        await captureOrder({
           orderId: response.razorpay_order_id,
           status: "success",
           paymentId: response.razorpay_payment_id,
           signature: response.razorpay_signature,
         });
 
-        terminalToast.success(
-          "Payment successfull",
-          "See your updated balance in wallet",
-        );
-
-        navigate({ to: "/dashboard" });
+        reloadToDashboard({
+          variant: "success",
+          title: "Payment successful",
+          message: "See your updated balance in wallet",
+        });
       },
+    }) as RazorpayInstance;
+
+    rzp.on("payment.failed", async (response) => {
+      if (response.error?.metadata) {
+        await captureOrder({
+          orderId: response.error.metadata.order_id,
+          paymentId: response.error.metadata.payment_id,
+          status: "failed",
+        });
+      }
+
+      reloadToDashboard({
+        variant: "error",
+        title: "Payment failed",
+        message: "Please try again",
+      });
     });
+
+    rzp.open();
+  };
+
+  useEffect(() => {
+    display();
   }, [orderId]);
 
   return null;

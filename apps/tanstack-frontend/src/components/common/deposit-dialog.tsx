@@ -18,8 +18,14 @@ type DepositDialogProps = {
 export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
   const { balanceUsd, isBalanceLoading, refreshBalance } = useUser();
   const [depositAmountInput, setDepositAmountInput] = useState("");
-  const { mutateAsync, data, isSuccess, isPending, error } =
+  const { mutateAsync, data, isSuccess, isPending, error, reset } =
     useDepositMutation();
+
+  const handlePaymentComplete = () => {
+    reset();
+    setDepositAmountInput("");
+    onOpenChange(false);
+  };
 
   const handleDeposit = async () => {
     const amountUsd = Number(depositAmountInput);
@@ -108,6 +114,7 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
               orderId={data.id}
               keyId={"rzp_test_T2Rqr71c2I3V7o"}
               currency={data.currency}
+              onComplete={handlePaymentComplete}
             />
           )}
         </div>

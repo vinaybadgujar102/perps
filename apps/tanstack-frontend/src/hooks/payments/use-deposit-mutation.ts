@@ -3,7 +3,7 @@ import { terminalToast } from "#/components/ui/terminal-toast";
 import { useMutation } from "@tanstack/react-query";
 
 export const useDepositMutation = () => {
-  const { data, mutateAsync, isSuccess, isPending, error } = useMutation({
+  const { data, mutateAsync, isSuccess, isPending, error, reset } = useMutation({
     mutationFn: createPaymentOrder,
     onSuccess: () => {},
     onError: (error) => {
@@ -20,5 +20,6 @@ export const useDepositMutation = () => {
     isSuccess,
     isPending,
     error,
+    reset,
   };
 };
