@@ -13,7 +13,6 @@ import {
   formatApiPrice,
   formatApiQty,
   TRADING_MARKET,
-  unscaleCollateralFromApi,
 } from "#/lib/market";
 import { calculateUnrealizedPnl } from "#/lib/pnl";
 import { queryKeys } from "#/lib/query-keys";
@@ -83,7 +82,7 @@ function PositionRow({
         {formatApiPrice(position.averageEntryPrice)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
-        {formatUsd(unscaleCollateralFromApi(position.collateralUser))}
+        {formatUsd(position.collateralUser)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
         {formatApiPrice(position.estimatedLiquidationPrice)}

@@ -1,4 +1,8 @@
-import { AssetConfig } from "@repo/sharedtypes";
+import {
+  AssetConfig,
+  unscaleNotionalFromApi,
+  unscalePnlFromApi,
+} from "@repo/sharedtypes";
 
 export const TRADING_MARKET = "BTC";
 
@@ -39,10 +43,11 @@ export function formatApiQty(apiQty: number) {
 }
 
 export function unscaleCollateralFromApi(collateralUser: number) {
-  return (
-    collateralUser /
-    10 ** (marketConfig.priceScale + marketConfig.quantityScale)
-  );
+  return unscaleNotionalFromApi(collateralUser, TRADING_MARKET);
+}
+
+export function unscalePnlFromApiValue(pnl: number) {
+  return unscalePnlFromApi(pnl, TRADING_MARKET);
 }
 
 export function qtyInputPlaceholder() {

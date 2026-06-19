@@ -17,10 +17,15 @@ import {
 } from "./validators/order.validator";
 
 //------------------------------------------------//
-/**
- * Currency scaling factor. 100 cents (base unit) = 1$
- */
-export const BASE_CURRENCY_SCALE_FACTOR = 100;
+export {
+  BASE_CURRENCY_SCALE_FACTOR,
+  engineUsdToDisplay,
+  getNotionalScaleFactor,
+  scaleDisplayUsdToEngine,
+  scalePaymentCentsToEngine,
+  unscaleNotionalFromApi,
+  unscalePnlFromApi,
+} from "./scaling";
 
 export const createUserPayloadSchema = z.object({
   requestId: z.string(),

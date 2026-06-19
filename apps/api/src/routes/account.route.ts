@@ -1,5 +1,4 @@
 import {
-  BASE_CURRENCY_SCALE_FACTOR,
   EVENT_KINDS,
   getAccountParamsSchema,
   QUEUES,
@@ -13,6 +12,7 @@ import { requestMap } from "..";
 import { isUser } from "../middlewares/user.middleware";
 import { redis } from ".";
 import { errorResponse, successResponse } from "../utils/responseUtils";
+import { toDisplayUsd } from "../utils/scaling";
 import { schemaValidator } from "../validators";
 
 type GetAccountStateResponse = Extract<
@@ -72,24 +72,13 @@ accountRouter.get(
           ? {
               ...engineResponse,
               data: {
-                balanceUsd:
-                  Math.round(
-                    (engineResponse.data.balanceUsd /
-                      BASE_CURRENCY_SCALE_FACTOR) *
-                      100,
-                  ) / 100,
-                lockedMarginUsd:
-                  Math.round(
-                    (engineResponse.data.lockedMarginUsd /
-                      BASE_CURRENCY_SCALE_FACTOR) *
-                      100,
-                  ) / 100,
-                availableMarginUsd:
-                  Math.round(
-                    (engineResponse.data.availableMarginUsd /
-                      BASE_CURRENCY_SCALE_FACTOR) *
-                      100,
-                  ) / 100,
+                balanceUsd: toDisplayUsd(engineResponse.data.balanceUsd),
+                lockedMarginUsd: toDisplayUsd(
+                  engineResponse.data.lockedMarginUsd,
+                ),
+                availableMarginUsd: toDisplayUsd(
+                  engineResponse.data.availableMarginUsd,
+                ),
               },
             }
           : engineResponse;

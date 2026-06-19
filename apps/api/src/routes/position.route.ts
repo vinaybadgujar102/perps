@@ -13,6 +13,7 @@ import { requestMap } from "..";
 import { isUser } from "../middlewares/user.middleware";
 import { redis } from ".";
 import { errorResponse, successResponse } from "../utils/responseUtils";
+import { toDisplayCollateral, toDisplayPnl } from "../utils/scaling";
 import { schemaValidator } from "../validators";
 
 const positionRouter = Router();
@@ -58,7 +59,7 @@ positionRouter.get("/closed", isUser, async (req: Request, res: Response) => {
         side: position.side as SIDE,
         size: position.size,
         averageEntryPrice: position.averageEntryPrice,
-        realizedPnl: position.realizedPnl,
+        realizedPnl: toDisplayPnl(position.realizedPnl, position.marketSymbol),
         openedAt: position.openedAt.getTime(),
         closedAt: position.closedAt.getTime(),
       })),
@@ -79,11 +80,39 @@ positionRouter.get("/", isUser, async (req: Request, res: Response) => {
   };
 
   try {
-    const data = await dispatchToEngine(payload, requestId);
+    const data = await dispatchToEngine<{
+      success: boolean;
+      message: string | null;
+      data: Array<{
+        market: string;
+        side: SIDE;
+        size: number;
+        averageEntryPrice: number;
+        collateralUser: number;
+        estimatedLiquidationPrice: number;
+        realizedPnl: number;
+      }> | null;
+    }>(payload, requestId);
+
+    const clientData =
+      data.success && data.data
+        ? {
+            ...data,
+            data: data.data.map((position) => ({
+              ...position,
+              collateralUser: toDisplayCollateral(
+                position.collateralUser,
+                position.market,
+              ),
+              realizedPnl: toDisplayPnl(position.realizedPnl, position.market),
+            })),
+          }
+        : data;
+
     return successResponse(
       res,
       StatusCodes.OK,
-      data,
+      clientData,
       "Positions loaded successfully.",
     );
   } catch {
