@@ -48,14 +48,15 @@ export const capturePayment = async ({
   signature?: string;
   paymentId: string;
 }) => {
-  try {
-    const response = await apiClient.post(
-      "/onramp/capturePayment",
-      { orderId, paymentId, status, signature },
-      { headers: authHeaders() },
-    );
-    return response.data.data;
-  } catch (error) {
-    console.log(error);
+  const response = await apiClient.post<ApiEnvelope<OnrampDepositResult>>(
+    "/onramp/capturePayment",
+    { orderId, paymentId, status, signature },
+    { headers: authHeaders() },
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || "Payment capture failed");
   }
+
+  return response.data.data;
 };

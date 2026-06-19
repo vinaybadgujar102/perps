@@ -115,6 +115,7 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
               keyId={"rzp_test_T2Rqr71c2I3V7o"}
               currency={data.currency}
               onComplete={handlePaymentComplete}
+              onPaymentSuccess={refreshBalance}
             />
           )}
         </div>

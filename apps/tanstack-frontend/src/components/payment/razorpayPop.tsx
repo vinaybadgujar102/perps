@@ -42,12 +42,14 @@ export const RenderRazorpay = ({
   currency,
   amount,
   onComplete,
+  onPaymentSuccess,
 }: {
   orderId: string;
   keyId: string;
   currency: string;
   amount: number;
   onComplete?: () => void;
+  onPaymentSuccess?: () => void;
 }) => {
   const { mutateAsync: captureOrder } = useCapturePaymentMutation();
 
@@ -86,18 +88,31 @@ export const RenderRazorpay = ({
         },
       },
       handler: async (response: RazorpayPaymentResponse) => {
-        await captureOrder({
-          orderId: response.razorpay_order_id,
-          status: "success",
-          paymentId: response.razorpay_payment_id,
-          signature: response.razorpay_signature,
-        });
+        try {
+          await captureOrder({
+            orderId: response.razorpay_order_id,
+            status: "success",
+            paymentId: response.razorpay_payment_id,
+            signature: response.razorpay_signature,
+          });
 
-        reloadToDashboard({
-          variant: "success",
-          title: "Payment successful",
-          message: "See your updated balance in wallet",
-        });
+          onPaymentSuccess?.();
+
+          reloadToDashboard({
+            variant: "success",
+            title: "Payment successful",
+            message: "See your updated balance in wallet",
+          });
+        } catch (error) {
+          reloadToDashboard({
+            variant: "error",
+            title: "Deposit failed",
+            message:
+              error instanceof Error
+                ? error.message
+                : "Payment went through but balance could not be credited",
+          });
+        }
       },
     }) as RazorpayInstance;
 
