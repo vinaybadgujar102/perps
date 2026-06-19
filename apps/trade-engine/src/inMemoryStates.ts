@@ -113,6 +113,9 @@ export class Orderbook {
     return { side, price: order.price, qty: availableQty };
   }
 
+  /**
+   * @returns boolean: true if price level is completely removed from the orderbook
+   */
   cleanupPriceLevel(
     book: PriceLevel[],
     priceLevel: PriceLevel,
