@@ -1,8 +1,17 @@
 import Razorpay from "razorpay";
 
+const keyId = process.env.RAZORPAY_TEST_API_KEY;
+const keySecret = process.env.RAZORPAY_TEST_SECRET_KEY;
+
+if (!keyId || !keySecret) {
+  throw new Error(
+    "RAZORPAY_TEST_API_KEY and RAZORPAY_TEST_SECRET_KEY must be set",
+  );
+}
+
 export const razorpayInstance = new Razorpay({
-  key_id: process.env.RAZORPAY_TEST_API_KEY,
-  key_secret: process.env.RAZORPAY_TEST_SECRET_KEY,
+  key_id: keyId,
+  key_secret: keySecret,
 });
 
 export const createDepositOrder = async (deposit_amount: number) => {
@@ -15,6 +24,7 @@ export const createDepositOrder = async (deposit_amount: number) => {
     })
     .catch((e) => {
       console.log(e);
+      throw e;
     });
 
   console.log(payment);

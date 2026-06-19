@@ -181,6 +181,16 @@ onrampRouter.post(
         );
       }
 
+      // Idempotency check
+      if (existingPayment.status === PaymentStatus.SUCCESS) {
+        return successResponse(
+          res,
+          StatusCodes.OK,
+          {},
+          "Payment already processed",
+        );
+      }
+
       // Payment failed on Razorpay side
       if (body.status !== "success") {
         await prisma.payment.update({
@@ -194,16 +204,6 @@ onrampRouter.post(
         });
 
         return errorResponse(res, StatusCodes.BAD_REQUEST, "Payment failed");
-      }
-
-      // Idempotency check
-      if (existingPayment.status === PaymentStatus.SUCCESS) {
-        return successResponse(
-          res,
-          StatusCodes.OK,
-          {},
-          "Payment already processed",
-        );
       }
 
       const generatedSignature = crypto
