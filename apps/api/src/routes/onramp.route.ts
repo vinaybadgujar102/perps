@@ -28,16 +28,17 @@ type CreateOrderResponsePayload = CreateOrderResponse["data"];
 
 const onrampRouter = Router();
 
+// creates paymnet object
 onrampRouter.post(
   "/createPaymentOrder",
   isUser,
   schemaValidator(onrampDepositSchema), // we only recieve the amount from the user
   async (req, res) => {
-    const body = req.body as z.infer<typeof onrampDepositSchema>;
+    const { amountUsd } = req.body as z.infer<typeof onrampDepositSchema>;
 
     try {
       const order = await razorpayInstance.orders.create({
-        amount: body.amountUsd * 100,
+        amount: amountUsd * 100,
         currency: "USD",
       });
 
@@ -52,6 +53,7 @@ onrampRouter.post(
       await prisma.payment.create({
         data: {
           orderId: order.id,
+          status: PaymentStatus.CREATED,
           amount: Number(order.amount),
         },
       });

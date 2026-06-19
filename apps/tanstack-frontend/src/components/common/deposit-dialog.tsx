@@ -8,6 +8,7 @@ import { terminalToast } from "#/components/ui/terminal-toast";
 import { useUser } from "#/context/user-context";
 import { formatUsd } from "#/lib/format";
 import RenderRazorpay from "../payment/razorpayPop";
+import { useDepositMutation } from "#/hooks/payments/use-deposit-mutation";
 
 type DepositDialogProps = {
   open: boolean;
@@ -17,27 +18,16 @@ type DepositDialogProps = {
 export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
   const { balanceUsd, isBalanceLoading, refreshBalance } = useUser();
   const [depositAmountInput, setDepositAmountInput] = useState("");
+  const { mutateAsync, data, isSuccess, isPending, error } =
+    useDepositMutation();
 
-  const depositMutation = useMutation({
-    mutationFn: createPaymentOrder,
-    onSuccess: (result) => {
-      setDepositAmountInput("");
-    },
-    onError: (error) => {
-      terminalToast.error(
-        "ERROR",
-        error instanceof Error ? error.message : "Deposit failed",
-      );
-    },
-  });
-
-  const handleDeposit = () => {
+  const handleDeposit = async () => {
     const amountUsd = Number(depositAmountInput);
     if (!Number.isFinite(amountUsd) || amountUsd <= 0) {
       terminalToast.error("ERROR", "Enter a valid deposit amount.");
       return;
     }
-    depositMutation.mutate(amountUsd);
+    await mutateAsync(amountUsd);
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -107,17 +97,17 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
           <button
             type="button"
             onClick={handleDeposit}
-            disabled={depositMutation.isPending || !depositAmountInput}
+            disabled={isPending || !depositAmountInput}
             className="w-full bg-accent py-4 text-xs font-bold tracking-[0.2em] text-black uppercase transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {depositMutation.isPending ? "Depositing..." : "Deposit Funds"}
+            {isPending ? "Depositing..." : "Deposit Funds"}
           </button>
-          {depositMutation.isSuccess && depositMutation.data && (
+          {isSuccess && data && (
             <RenderRazorpay
-              amount={depositMutation.data.amount}
-              orderId={depositMutation.data.id}
+              amount={data.amount}
+              orderId={data.id}
               keyId={"rzp_test_T2Rqr71c2I3V7o"}
-              currency={depositMutation.data.currency}
+              currency={data.currency}
             />
           )}
         </div>
