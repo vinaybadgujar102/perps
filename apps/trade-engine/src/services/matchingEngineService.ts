@@ -35,6 +35,7 @@ export class MatchingEngineService {
       let totalFilledQty = 0;
       for (const makerOrder of priceLevel.orders) {
         if (order.isOrderFullyFilled()) break;
+        if (makerOrder.userId === order.userId) continue;
 
         const filledQty = Math.min(
           makerOrder.getAvailableQty(),
@@ -98,6 +99,7 @@ export class MatchingEngineService {
       let totalFilledQty = 0;
       for (const makerOrder of priceLevel.orders) {
         if (order.isOrderFullyFilled()) break;
+        if (makerOrder.userId === order.userId) continue;
 
         const filledQty = Math.min(
           makerOrder.getAvailableQty(),
