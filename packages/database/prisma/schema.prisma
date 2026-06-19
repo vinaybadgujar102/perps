@@ -28,6 +28,7 @@ model User {
   closedPositions ClosedPosition[]
   makerFills      Fill[]           @relation("MakerFills")
   takerFills      Fill[]           @relation("TakerFills")
+  payments        Payment[]
 }
 
 model Market {
@@ -112,6 +113,8 @@ model Payment {
   paymentId String? // the payment id from the razorpay which will help us to reconcile later. each order can have multiple payment tries
   status    PaymentStatus @default(CREATED) // status of the payment
   amount    Int
+  userId    Int
+  user      User          @relation(fields: [userId], references: [id])
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 }

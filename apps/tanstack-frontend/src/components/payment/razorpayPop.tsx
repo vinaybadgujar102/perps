@@ -1,6 +1,9 @@
 import { useCapturePaymentMutation } from "#/hooks/payments/use-capture-payment";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { terminalToast } from "../ui/terminal-toast";
+import { toast } from "sonner";
+import { templateLiteral } from "zod";
 
 // Function to load script and append in DOM tree.
 const loadScript = (src: string) =>
@@ -49,14 +52,15 @@ export const RenderRazorpay = ({
         paymentId: response.error.metadata.payment_id,
         status: "failed",
       });
+
+      terminalToast.error(404, "Payment Failed! Please try again!");
+      navigate({ to: "/dashboard" });
     });
 
     rzp.on("payment.captured", (response) => {});
 
     rzp.open();
   };
-
-  const handlePayment = () => {};
 
   useEffect(() => {
     display({
@@ -74,6 +78,11 @@ export const RenderRazorpay = ({
           paymentId: response.razorpay_payment_id,
           signature: response.razorpay_signature,
         });
+
+        terminalToast.success(
+          "Payment successfull",
+          "See your updated balance in wallet",
+        );
 
         navigate({ to: "/dashboard" });
       },
