@@ -41,15 +41,17 @@ export const capturePayment = async ({
   orderId,
   status,
   paymentId,
+  signature,
 }: {
   orderId: string;
   status: string;
+  signature?: string;
   paymentId: string;
 }) => {
   try {
     const response = await apiClient.post(
       "/onramp/capturePayment",
-      { orderId, paymentId, status },
+      { orderId, paymentId, status, signature },
       { headers: authHeaders() },
     );
     return response.data.data;

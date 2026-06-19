@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import {
   BASE_CURRENCY_SCALE_FACTOR,
   EVENT_KINDS,
@@ -151,18 +152,34 @@ onrampRouter.post(
   schemaValidator(onRampCaptureSchema),
   async (req, res) => {
     const body = req.body as z.infer<typeof onRampCaptureSchema>;
-    await prisma.payment.update({
-      where: {
-        orderId: body.orderId,
-      },
-      data: {
-        paymentId: body.paymentId,
-        status:
-          body.status === "failed"
-            ? PaymentStatus.FAILED
-            : PaymentStatus.SUCCESS,
-      },
-    });
+    if (body.status === "success") {
+      const signature = crypto
+        .createHmac("sha256", process.env.RAZORPAY_TEST_SECRET_KEY!)
+        .update(body.orderId + "|" + body.paymentId)
+        .digest("hex");
+      if (signature === body.signature) {
+        await prisma.payment.update({
+          where: {
+            orderId: body.orderId,
+          },
+          data: {
+            paymentId: body.paymentId,
+            status: PaymentStatus.SUCCESS,
+          },
+        });
+      } else {
+        await prisma.payment.update({
+          where: {
+            orderId: body.orderId,
+          },
+          data: {
+            paymentId: body.paymentId,
+            status: PaymentStatus.FAILED,
+          },
+        });
+      }
+    }
+
     return successResponse(res, StatusCodes.OK, {}, "Success");
   },
 );

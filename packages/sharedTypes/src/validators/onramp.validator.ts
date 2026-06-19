@@ -8,6 +8,7 @@ export const onRampCaptureSchema = z.object({
   orderId: z.string(),
   paymentId: z.string(),
   status: z.string(),
+  signature: z.string().optional(),
 });
 export type OnrampDepositInput = z.infer<typeof onrampDepositSchema>;
 

@@ -1,4 +1,5 @@
 import { useCapturePaymentMutation } from "#/hooks/payments/use-capture-payment";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 // Function to load script and append in DOM tree.
@@ -29,6 +30,7 @@ export const RenderRazorpay = ({
   amount: number;
 }) => {
   const { mutateAsync: captureOrder } = useCapturePaymentMutation();
+  const navigate = useNavigate();
 
   const display = async (options: any) => {
     const scriptResponse = await loadScript(
@@ -66,11 +68,14 @@ export const RenderRazorpay = ({
       order_id: orderId,
       handler: async (response: any) => {
         console.log("Payment success", response);
-        await captureOrder({
+        const data = await captureOrder({
           orderId: response.razorpay_order_id,
           status: "success",
           paymentId: response.razorpay_payment_id,
+          signature: response.razorpay_signature,
         });
+
+        navigate({ to: "/dashboard" });
       },
     });
   }, [orderId]);
