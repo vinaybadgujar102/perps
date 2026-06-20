@@ -1,13 +1,19 @@
 import type { QueryConfig } from "pg";
 import { pgPool } from "./config/pgClient";
 
-export const insertTrade = async (market: string, price: number) => {
+export const insertTrade = async (
+  fillId: string,
+  market: string,
+  price: number,
+  time: Date,
+) => {
   const query: QueryConfig = {
     text: `
-      INSERT INTO trades (time, market, price)
-      VALUES (NOW(), $1, $2)
+      INSERT INTO trades (time, market, price, fill_id)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (fill_id) DO NOTHING
     `,
-    values: [market, price],
+    values: [time, market, price, fillId],
   };
 
   await pgPool.query(query);
