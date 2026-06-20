@@ -6,7 +6,8 @@ import { Button } from "#/components/ui/button";
 import { useUser } from "#/context/user-context";
 import { useCancelOrder } from "#/hooks/use-cancel-order";
 import { useOpenOrders } from "#/hooks/use-open-orders";
-import { formatApiPrice, formatApiQty, TRADING_MARKET } from "#/lib/market";
+import { useTradingMarket } from "#/contexts/trading-market-context";
+import { formatApiPrice, formatApiQty } from "#/lib/market";
 import { cn } from "#/lib/utils";
 
 function formatOrderType(orderType: ORDER_TYPE) {
@@ -52,16 +53,16 @@ function OrderRow({
         {formatOrderType(order.orderType)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
-        {formatApiPrice(order.price)}
+        {formatApiPrice(order.price, order.market)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
-        {formatApiQty(order.qty)}
+        {formatApiQty(order.qty, order.market)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
-        {formatApiQty(order.filledQty)}
+        {formatApiQty(order.filledQty, order.market)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
-        {formatApiQty(remainingQty)}
+        {formatApiQty(remainingQty, order.market)}
       </td>
       <td className="px-4 py-2 text-right">
         <Button
@@ -80,6 +81,7 @@ function OrderRow({
 }
 
 export function OpenOrdersPanel() {
+  const { market } = useTradingMarket();
   const { isAuthenticated } = useUser();
   const openOrdersQuery = useOpenOrders();
   const cancelOrder = useCancelOrder();
@@ -184,7 +186,7 @@ export function OpenOrdersPanel() {
                 <OrderRow
                   key={order.id}
                   order={order}
-                  isActiveMarket={order.market === TRADING_MARKET}
+                  isActiveMarket={order.market === market}
                   isCancelling={
                     cancelOrder.isPending &&
                     cancelOrder.variables === order.id

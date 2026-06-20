@@ -4,8 +4,9 @@ import { ORDER_TYPE, SIDE, calculateLiquidationPrice, type Side } from "@repo/sh
 import { terminalToast } from "#/components/ui/terminal-toast";
 import { useUser } from "#/context/user-context";
 import { usePlaceOrder } from "#/hooks/use-place-order";
-import { useTradingMarket } from "#/hooks/use-trading-market";
-import { TRADING_MARKET, marketConfig, sanitizeScaledDecimalInput } from "#/lib/market";
+import { useTradingMarket } from "#/contexts/trading-market-context";
+import { useMarketOrderbook } from "#/hooks/use-trading-market";
+import { sanitizeScaledDecimalInput } from "#/lib/market";
 import {
   defaultLimitPriceDisplay,
   estimateCollateral,
@@ -30,17 +31,18 @@ import { SubmitButtons } from "./submit-buttons";
 import { Slider } from "#/components/ui/slider";
 
 export function TradingPanel() {
+  const { market, config } = useTradingMarket();
   const {
     isAuthenticated,
     availableMarginUsd,
     isBalanceLoading,
   } = useUser();
   const { bestBid, bestAsk, lastPrice, isLoading: isOrderbookLoading } =
-    useTradingMarket();
+    useMarketOrderbook();
 
   const [orderType, setOrderType] = useState(ORDER_TYPE.LIMIT_ORDER);
   const [orderSide, setOrderSide] = useState<Side>(SIDE.LONG);
-  const [leverage, setLeverage] = useState(marketConfig.maxLeverage);
+  const [leverage, setLeverage] = useState(config.maxLeverage);
   const [priceTouched, setPriceTouched] = useState(false);
   const pendingSideRef = useRef<Side>(SIDE.LONG);
 
@@ -81,12 +83,14 @@ export function TradingPanel() {
       side,
       value.price,
       prices,
+      market,
     );
-    const apiQty = toApiQty(displayQty);
+    const apiQty = toApiQty(displayQty, market);
     const estimatedCollateral = estimateCollateral(
       effectivePrice,
       displayQty,
       leverage,
+      market,
     );
     const bookMissing = isMarketBookMissing(orderType, side, prices);
 
@@ -121,7 +125,7 @@ export function TradingPanel() {
     }
 
     placeOrder.mutate({
-      market: TRADING_MARKET,
+      market,
       side,
       qty: apiQty,
       orderType,
@@ -138,14 +142,16 @@ export function TradingPanel() {
     orderSide,
     priceInput,
     prices,
+    market,
   );
-  const apiQty = toApiQty(displayQty);
+  const apiQty = toApiQty(displayQty, market);
   const estimatedCollateral = estimateCollateral(
     effectivePrice,
     displayQty,
     leverage,
+    market,
   );
-  const notional = estimateNotional(effectivePrice, displayQty);
+  const notional = estimateNotional(effectivePrice, displayQty, market);
   const estimatedLiquidationPrice =
     effectivePrice != null && apiQty != null && apiQty > 0
       ? calculateLiquidationPrice(orderSide, {
@@ -179,15 +185,23 @@ export function TradingPanel() {
   });
 
   useEffect(() => {
+    setLeverage(config.maxLeverage);
+    setPriceTouched(false);
+    tradingForm.setFieldValue("price", "");
+    tradingForm.setFieldValue("qty", "");
+  }, [market, config.maxLeverage, tradingForm]);
+
+  useEffect(() => {
     if (priceTouched || orderType !== ORDER_TYPE.LIMIT_ORDER) return;
-    const next = defaultLimitPriceDisplay(orderSide, prices);
+    const next = defaultLimitPriceDisplay(orderSide, prices, market);
     if (next) {
       tradingForm.setFieldValue(
         "price",
-        sanitizeScaledDecimalInput(next, marketConfig.priceScale),
+        sanitizeScaledDecimalInput(next, config.priceScale),
       );
     }
   }, [
+    market,
     orderSide,
     lastPrice,
     bestBid,
@@ -195,6 +209,7 @@ export function TradingPanel() {
     priceTouched,
     orderType,
     tradingForm,
+    config.priceScale,
   ]);
 
   const handleSubmit = (side: Side) => {
@@ -235,6 +250,7 @@ export function TradingPanel() {
             form={tradingForm as unknown as OrderFieldsForm}
             orderType={orderType}
             orderSide={orderSide}
+            market={market}
             isAuthenticated={isAuthenticated}
             prices={prices}
             effectivePrice={effectivePrice}
@@ -250,7 +266,7 @@ export function TradingPanel() {
             </div>
             <Slider
               min={1}
-              max={marketConfig.maxLeverage}
+              max={config.maxLeverage}
               step={1}
               value={[leverage]}
               disabled={!isAuthenticated}
@@ -266,6 +282,7 @@ export function TradingPanel() {
           ) : null}
 
           <OrderStats
+            market={market}
             estimatedCollateral={estimatedCollateral}
             notional={notional}
             estimatedLiquidationPrice={estimatedLiquidationPrice}

@@ -7,13 +7,16 @@ export function calculateUnrealizedPnl({
   markPrice,
   averageEntryPrice,
   size,
+  market,
 }: {
   markPrice: number;
   averageEntryPrice: number;
   size: number;
+  market: string;
 }): number {
   return (
-    (unscalePriceFromApi(markPrice) - unscalePriceFromApi(averageEntryPrice)) *
-    unscaleQtyFromApi(size)
+    (unscalePriceFromApi(markPrice, market) -
+      unscalePriceFromApi(averageEntryPrice, market)) *
+    unscaleQtyFromApi(size, market)
   );
 }

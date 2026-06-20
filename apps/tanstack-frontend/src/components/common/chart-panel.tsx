@@ -5,8 +5,9 @@ import {
   type IChartApi,
 } from "lightweight-charts";
 import { Button } from "#/components/ui/button";
-import { cn } from "#/lib/utils";
+import { useTradingMarket } from "#/contexts/trading-market-context";
 import { buildDemoCandles } from "#/lib/demo-candles";
+import { cn } from "#/lib/utils";
 
 const CHART_COLORS = {
   background: "#0a0a0a",
@@ -20,6 +21,7 @@ const CHART_COLORS = {
 type ChartView = "chart" | "depth";
 
 export function ChartPanel() {
+  const { market } = useTradingMarket();
   const chartRef = useRef<HTMLDivElement | null>(null);
   const apiRef = useRef<IChartApi | null>(null);
   const [view, setView] = useState<ChartView>("chart");
@@ -49,14 +51,14 @@ export function ChartPanel() {
       wickUpColor: CHART_COLORS.up,
       wickDownColor: CHART_COLORS.down,
     });
-    series.setData(buildDemoCandles());
+    series.setData(buildDemoCandles(market));
 
     apiRef.current = chart;
     return () => {
       apiRef.current?.remove();
       apiRef.current = null;
     };
-  }, [view]);
+  }, [view, market]);
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col border-t border-border bg-background">
