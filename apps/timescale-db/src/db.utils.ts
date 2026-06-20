@@ -28,7 +28,17 @@ GROUP BY bucket, market,
 `,
   };
 
+  const continousAggregationPolicyQuery = {
+    text: `
+    SELECT add_continous_aggregate_policy('one_min_candles',
+    start_offset => INTERVAL '1 hour',
+    end_offset => INTERVAL '1 minute',
+    schedule_interval => INTERVAL '1 minute'
+)
+`,
+  };
   await pgPool.query(createOneMinCandlequery);
+  await pgPool.query(continousAggregationPolicyQuery);
 };
 
 export const createFiveMinCandle = async () => {
@@ -47,5 +57,15 @@ GROUP by bucket, market
 `,
   };
 
+  const continousAggregationPolicyQuery = {
+    text: `SELECT add_continuous_aggregate_policy(
+  'five_min_candles',
+  start_offset => INTERVAL '7 days',
+  end_offset => INTERVAL '5 minutes',
+  schedule_interval => INTERVAL '5 minutes'
+);`,
+  };
+
   await pgPool.query(createFiveMinCandle);
+  await pgPool.query(continousAggregationPolicyQuery);
 };
