@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { AssetConfig } from "@repo/sharedtypes";
 import { getOrderbookApi } from "#/api/orderbook.api";
 import { Button } from "#/components/ui/button";
+import { useTradingMarket } from "#/contexts/trading-market-context";
 import { cn } from "#/lib/utils";
-import { TRADING_MARKET } from "#/lib/market";
 import { queryKeys } from "#/lib/query-keys";
 
 type OrderbookLevel = {
@@ -16,22 +15,22 @@ type DisplayLevel = OrderbookLevel & {
   depthPct: number;
 };
 
-const { priceScale, quantityScale } = AssetConfig[TRADING_MARKET];
-
-function scalePrice(value: number) {
+function scalePrice(value: number, priceScale: number) {
   return value / 10 ** priceScale;
 }
 
-function scaleSize(value: number) {
+function scaleSize(value: number, quantityScale: number) {
   return value / 10 ** quantityScale;
 }
 
 function toDisplayLevels(
   levels: { price: number; qty: number }[],
+  priceScale: number,
+  quantityScale: number,
 ): OrderbookLevel[] {
   return levels.map((level) => ({
-    price: scalePrice(level.price),
-    size: scaleSize(level.qty),
+    price: scalePrice(level.price, priceScale),
+    size: scaleSize(level.qty, quantityScale),
   }));
 }
 
@@ -51,23 +50,27 @@ function withCumulativeTotals(levels: OrderbookLevel[]): DisplayLevel[] {
   }));
 }
 
-function formatPrice(value: number) {
+function formatPrice(value: number, priceScale: number) {
   return value.toLocaleString("en-US", {
     minimumFractionDigits: priceScale,
     maximumFractionDigits: priceScale,
   });
 }
 
-function formatSize(value: number) {
+function formatSize(value: number, quantityScale: number) {
   return value.toFixed(quantityScale);
 }
 
 function OrderbookRow({
   level,
   side,
+  priceScale,
+  quantityScale,
 }: {
   level: DisplayLevel;
   side: "ask" | "bid";
+  priceScale: number;
+  quantityScale: number;
 }) {
   return (
     <div className="relative grid grid-cols-3 gap-2 px-2 py-0.5 font-mono text-[11px]">
@@ -84,26 +87,29 @@ function OrderbookRow({
           side === "ask" ? "text-accent" : "text-trading-green",
         )}
       >
-        {formatPrice(level.price)}
+        {formatPrice(level.price, priceScale)}
       </span>
       <span className="relative z-10 text-right tabular-nums text-foreground">
-        {formatSize(level.size)}
+        {formatSize(level.size, quantityScale)}
       </span>
       <span className="relative z-10 text-right tabular-nums text-foreground">
-        {formatSize(level.total)}
+        {formatSize(level.total, quantityScale)}
       </span>
     </div>
   );
 }
 
 export function OrderbookPanel() {
+  const { market, config } = useTradingMarket();
+  const { priceScale, quantityScale } = config;
+
   const orderbookQuery = useQuery({
-    queryKey: queryKeys.orderbook(),
-    queryFn: () => getOrderbookApi(TRADING_MARKET),
+    queryKey: queryKeys.orderbook(market),
+    queryFn: () => getOrderbookApi(market),
   });
 
   const lastTradeQuery = useQuery({
-    queryKey: queryKeys.lastTrade(),
+    queryKey: queryKeys.lastTrade(market),
     queryFn: () => null,
     staleTime: Infinity,
     refetchOnMount: false,
@@ -111,18 +117,18 @@ export function OrderbookPanel() {
   });
 
   const asks = withCumulativeTotals(
-    toDisplayLevels(orderbookQuery.data?.asks ?? []),
+    toDisplayLevels(orderbookQuery.data?.asks ?? [], priceScale, quantityScale),
   );
   const bids = withCumulativeTotals(
-    toDisplayLevels(orderbookQuery.data?.bids ?? []),
+    toDisplayLevels(orderbookQuery.data?.bids ?? [], priceScale, quantityScale),
   );
 
   const lastTradedPrice =
     lastTradeQuery.data?.price != null
-      ? scalePrice(lastTradeQuery.data.price)
+      ? scalePrice(lastTradeQuery.data.price, priceScale)
       : orderbookQuery.data?.bestBid && orderbookQuery.data?.bestAsk
-        ? (scalePrice(orderbookQuery.data.bestBid.price) +
-            scalePrice(orderbookQuery.data.bestAsk.price)) /
+        ? (scalePrice(orderbookQuery.data.bestBid.price, priceScale) +
+            scalePrice(orderbookQuery.data.bestAsk.price, priceScale)) /
           2
         : null;
 
@@ -138,8 +144,8 @@ export function OrderbookPanel() {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-4">
         <div className="mb-2 grid grid-cols-3 gap-2 px-2 text-[9px] text-input-label tracking-wider">
           <span>PRICE (USD)</span>
-          <span className="text-right">SIZE (BTC)</span>
-          <span className="text-right">TOTAL (BTC)</span>
+          <span className="text-right">SIZE ({market})</span>
+          <span className="text-right">TOTAL ({market})</span>
         </div>
 
         {orderbookQuery.isLoading ? (
@@ -166,17 +172,29 @@ export function OrderbookPanel() {
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="flex flex-1 flex-col-reverse justify-start overflow-hidden">
               {asks.map((level) => (
-                <OrderbookRow key={level.price} level={level} side="ask" />
+                <OrderbookRow
+                  key={level.price}
+                  level={level}
+                  side="ask"
+                  priceScale={priceScale}
+                  quantityScale={quantityScale}
+                />
               ))}
             </div>
 
             <div className="my-2 border-y border-border py-2 text-center font-mono text-2xl font-bold text-trading-green">
-              {lastTradedPrice !== null ? formatPrice(lastTradedPrice) : "--"}
+              {lastTradedPrice !== null ? formatPrice(lastTradedPrice, priceScale) : "--"}
             </div>
 
             <div className="flex flex-1 flex-col justify-start overflow-hidden">
               {bids.map((level) => (
-                <OrderbookRow key={level.price} level={level} side="bid" />
+                <OrderbookRow
+                  key={level.price}
+                  level={level}
+                  side="bid"
+                  priceScale={priceScale}
+                  quantityScale={quantityScale}
+                />
               ))}
             </div>
           </div>

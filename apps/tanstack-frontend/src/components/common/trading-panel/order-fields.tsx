@@ -9,7 +9,7 @@ import {
 } from "#/components/ui/field";
 import {
   formatDisplayPrice,
-  marketConfig,
+  getMarketConfig,
   priceInputPlaceholder,
   qtyInputPlaceholder,
   sanitizeScaledDecimalInput,
@@ -46,6 +46,7 @@ type OrderFieldsProps = {
   form: OrderFieldsForm;
   orderType: ORDER_TYPE;
   orderSide: Side;
+  market: string;
   isAuthenticated: boolean;
   prices: MarketPrices;
   effectivePrice: number | null;
@@ -56,12 +57,13 @@ export function OrderFields({
   form,
   orderType,
   orderSide,
+  market,
   isAuthenticated,
   prices,
   effectivePrice,
   onPriceTouched,
 }: OrderFieldsProps) {
-  const { priceScale, quantityScale } = marketConfig;
+  const { priceScale, quantityScale } = getMarketConfig(market);
 
   return (
     <FieldGroup className="flex flex-col gap-6 border-b border-b-border p-4 pb-8">
@@ -101,8 +103,8 @@ export function OrderFields({
                   }}
                   placeholder={
                     prices.lastPrice != null
-                      ? defaultLimitPriceDisplay(orderSide, prices)
-                      : priceInputPlaceholder()
+                      ? defaultLimitPriceDisplay(orderSide, prices, market)
+                      : priceInputPlaceholder(market)
                   }
                   disabled={!isAuthenticated}
                   aria-invalid={isInvalid}
@@ -125,7 +127,7 @@ export function OrderFields({
           </span>
           <span className="font-mono text-sm tabular-nums text-foreground">
             {effectivePrice != null
-              ? `${formatDisplayPrice(unscalePriceFromApi(effectivePrice))} USD`
+              ? `${formatDisplayPrice(unscalePriceFromApi(effectivePrice, market), market)} USD`
               : "—"}
           </span>
         </div>
@@ -160,7 +162,7 @@ export function OrderFields({
                     ),
                   )
                 }
-                placeholder={qtyInputPlaceholder()}
+                placeholder={qtyInputPlaceholder(market)}
                 disabled={!isAuthenticated}
                 aria-invalid={isInvalid}
                 className="h-10 border-border bg-surface-container font-mono tabular-nums"

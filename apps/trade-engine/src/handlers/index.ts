@@ -1,4 +1,5 @@
 import {
+  AssetConfig,
   EVENT_KINDS,
   QUEUES,
   TICK_KINDS,
@@ -38,8 +39,10 @@ import { SNAPSHOTING_INTERVAL_MS } from "../constants";
 
 export const publisherRedis = await createClient().connect();
 
-const btcOrderbook = GLOBAL_ORDERBOOK.ensureOrderbook("BTC");
-GLOBAL_PERPETUAL_MARKETS.ensureMarket("BTC", btcOrderbook);
+for (const asset of Object.values(AssetConfig)) {
+  const orderbook = GLOBAL_ORDERBOOK.ensureOrderbook(asset.symbol);
+  GLOBAL_PERPETUAL_MARKETS.ensureMarket(asset.symbol, orderbook);
+}
 
 pubsub.subscribe(async (message) => {
   await publisherRedis.xAdd(QUEUES.RESPONSE_QUEUE, "*", {

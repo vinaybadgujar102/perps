@@ -9,10 +9,10 @@ import { useClosePosition } from "#/hooks/use-close-position";
 import type { TickerData } from "#/hooks/use-market-subscriptions";
 import { usePositions } from "#/hooks/use-positions";
 import { formatUsd } from "#/lib/format";
+import { useTradingMarket } from "#/contexts/trading-market-context";
 import {
   formatApiPrice,
   formatApiQty,
-  TRADING_MARKET,
 } from "#/lib/market";
 import { calculateUnrealizedPnl } from "#/lib/pnl";
 import { queryKeys } from "#/lib/query-keys";
@@ -53,6 +53,7 @@ function PositionRow({
           markPrice,
           averageEntryPrice: position.averageEntryPrice,
           size: position.size,
+          market: position.market,
         });
 
   return (
@@ -76,16 +77,16 @@ function PositionRow({
         </span>
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
-        {formatApiQty(Math.abs(position.size))}
+        {formatApiQty(Math.abs(position.size), position.market)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
-        {formatApiPrice(position.averageEntryPrice)}
+        {formatApiPrice(position.averageEntryPrice, position.market)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
         {formatUsd(position.collateralUser)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
-        {formatApiPrice(position.estimatedLiquidationPrice)}
+        {formatApiPrice(position.estimatedLiquidationPrice, position.market)}
       </td>
       <td
         className={cn(
@@ -120,12 +121,13 @@ function PositionRow({
 }
 
 export function OpenPositionsPanel() {
+  const { market } = useTradingMarket();
   const { isAuthenticated } = useUser();
   const positionsQuery = usePositions();
   const closePosition = useClosePosition();
 
   const tickerQuery = useQuery({
-    queryKey: queryKeys.ticker(),
+    queryKey: queryKeys.ticker(market),
     queryFn: () => null as TickerData | null,
     staleTime: Infinity,
     refetchOnMount: false,
@@ -238,9 +240,9 @@ export function OpenPositionsPanel() {
                   key={`${position.market}-${position.side}`}
                   position={position}
                   markPrice={
-                    position.market === TRADING_MARKET ? markPrice : null
+                    position.market === market ? markPrice : null
                   }
-                  isActiveMarket={position.market === TRADING_MARKET}
+                  isActiveMarket={position.market === market}
                   isClosing={
                     closePosition.isPending &&
                     closePosition.variables === position.market

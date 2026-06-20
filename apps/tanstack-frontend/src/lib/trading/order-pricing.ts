@@ -25,14 +25,15 @@ export function getLastMidPrice(
 export function defaultLimitPriceDisplay(
   side: Side,
   { bestBid, bestAsk, lastPrice }: MarketPrices,
+  market: string,
 ): string {
   if (side === SIDE.LONG && bestAsk != null) {
-    return String(unscalePriceFromApi(bestAsk));
+    return String(unscalePriceFromApi(bestAsk, market));
   }
   if (side === SIDE.SHORT && bestBid != null) {
-    return String(unscalePriceFromApi(bestBid));
+    return String(unscalePriceFromApi(bestBid, market));
   }
-  if (lastPrice != null) return String(unscalePriceFromApi(lastPrice));
+  if (lastPrice != null) return String(unscalePriceFromApi(lastPrice, market));
   return "";
 }
 
@@ -41,13 +42,14 @@ export function resolveSubmitPrice(
   side: Side,
   priceInput: string,
   prices: MarketPrices,
+  market: string,
 ): number | null {
   const { bestBid, bestAsk, lastPrice } = prices;
 
   if (orderType === ORDER_TYPE.LIMIT_ORDER) {
     const displayPrice = Number(priceInput);
     if (!Number.isFinite(displayPrice) || displayPrice <= 0) return null;
-    return scalePriceToApi(displayPrice);
+    return scalePriceToApi(displayPrice, market);
   }
 
   if (side === SIDE.LONG) {
@@ -59,15 +61,16 @@ export function resolveSubmitPrice(
   return price != null && price > 0 ? price : null;
 }
 
-export function toApiQty(displayQty: number): number | null {
+export function toApiQty(displayQty: number, market: string): number | null {
   if (!Number.isFinite(displayQty) || displayQty <= 0) return null;
-  return scaleQtyToApi(displayQty);
+  return scaleQtyToApi(displayQty, market);
 }
 
 export function estimateCollateral(
   effectivePrice: number | null,
   displayQty: number,
   leverage: number,
+  market: string,
 ): number | null {
   if (
     effectivePrice == null ||
@@ -79,13 +82,14 @@ export function estimateCollateral(
   }
 
   return (
-    (unscalePriceFromApi(effectivePrice) * displayQty) / leverage
+    (unscalePriceFromApi(effectivePrice, market) * displayQty) / leverage
   );
 }
 
 export function estimateNotional(
   effectivePrice: number | null,
   displayQty: number,
+  market: string,
 ): number | null {
   if (
     effectivePrice == null ||
@@ -95,7 +99,7 @@ export function estimateNotional(
     return null;
   }
 
-  return unscalePriceFromApi(effectivePrice) * displayQty;
+  return unscalePriceFromApi(effectivePrice, market) * displayQty;
 }
 
 export function isMarketBookMissing(

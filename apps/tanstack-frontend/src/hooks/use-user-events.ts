@@ -36,7 +36,7 @@ export function useUserEvents() {
       if (event.type === "LIQUIDATION") {
         terminalToast.error(
           "LIQUIDATED",
-          `${event.market} position liquidated at ${formatApiPrice(event.liquidationPrice)}`,
+          `${event.market} position liquidated at ${formatApiPrice(event.liquidationPrice, event.market)}`,
         );
         void queryClient.invalidateQueries({ queryKey: queryKeys.positions() });
         void queryClient.invalidateQueries({

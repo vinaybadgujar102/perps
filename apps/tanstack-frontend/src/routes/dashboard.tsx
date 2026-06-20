@@ -4,18 +4,29 @@ import { OrderbookPanel } from "#/components/common/orderbook-panel";
 import { SiteHeader } from "#/components/common/site-header";
 import { TradingFooter } from "#/components/common/trading-footer";
 import { TradingPanel } from "#/components/common/trading-panel";
+import {
+  TradingMarketProvider,
+  useTradingMarket,
+} from "#/contexts/trading-market-context";
 import { useMarketSubscriptions } from "#/hooks/use-market-subscriptions";
 import { useUserEvents } from "#/hooks/use-user-events";
 import { usePaymentFlashToast } from "#/lib/payment-flash";
-
-const MARKET = "BTC";
 
 export const Route = createFileRoute("/dashboard")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  useMarketSubscriptions(MARKET);
+  return (
+    <TradingMarketProvider>
+      <DashboardContent />
+    </TradingMarketProvider>
+  );
+}
+
+function DashboardContent() {
+  const { market } = useTradingMarket();
+  useMarketSubscriptions(market);
   useUserEvents();
   usePaymentFlashToast();
 

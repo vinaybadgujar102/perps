@@ -19,7 +19,9 @@ export async function pricePoller() {
 
   const subscriptionPayload = {
     method: "SUBSCRIBE",
-    params: ["markPrice.BTC_USDC_PERP"],
+    params: Object.values(AssetConfig).map(
+      (asset) => `markPrice.${asset.symbol}_USDC_PERP`,
+    ),
   };
 
   ws.on("open", () => {

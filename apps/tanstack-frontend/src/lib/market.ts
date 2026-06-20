@@ -4,58 +4,70 @@ import {
   unscalePnlFromApi,
 } from "@repo/sharedtypes";
 
-export const TRADING_MARKET = "BTC";
-
-export const marketConfig = AssetConfig[TRADING_MARKET];
-
-export function scalePriceToApi(displayPrice: number) {
-  return Math.round(displayPrice * 10 ** marketConfig.priceScale);
+export function getMarketConfig(market: string) {
+  const config = AssetConfig[market];
+  if (!config) {
+    throw new Error(`Unknown market: ${market}`);
+  }
+  return config;
 }
 
-export function unscalePriceFromApi(apiPrice: number) {
-  return apiPrice / 10 ** marketConfig.priceScale;
+export function scalePriceToApi(displayPrice: number, market: string) {
+  const { priceScale } = getMarketConfig(market);
+  return Math.round(displayPrice * 10 ** priceScale);
 }
 
-export function scaleQtyToApi(displayQty: number) {
-  return Math.round(displayQty * 10 ** marketConfig.quantityScale);
+export function unscalePriceFromApi(apiPrice: number, market: string) {
+  const { priceScale } = getMarketConfig(market);
+  return apiPrice / 10 ** priceScale;
 }
 
-export function unscaleQtyFromApi(apiQty: number) {
-  return apiQty / 10 ** marketConfig.quantityScale;
+export function scaleQtyToApi(displayQty: number, market: string) {
+  const { quantityScale } = getMarketConfig(market);
+  return Math.round(displayQty * 10 ** quantityScale);
 }
 
-export function formatDisplayPrice(value: number) {
+export function unscaleQtyFromApi(apiQty: number, market: string) {
+  const { quantityScale } = getMarketConfig(market);
+  return apiQty / 10 ** quantityScale;
+}
+
+export function formatDisplayPrice(value: number, market: string) {
+  const { priceScale } = getMarketConfig(market);
   return value.toLocaleString("en-US", {
-    minimumFractionDigits: marketConfig.priceScale,
-    maximumFractionDigits: marketConfig.priceScale,
+    minimumFractionDigits: priceScale,
+    maximumFractionDigits: priceScale,
   });
 }
 
-export function formatApiPrice(apiPrice: number) {
-  return formatDisplayPrice(unscalePriceFromApi(apiPrice));
+export function formatApiPrice(apiPrice: number, market: string) {
+  return formatDisplayPrice(unscalePriceFromApi(apiPrice, market), market);
 }
 
-export function formatApiQty(apiQty: number) {
-  return unscaleQtyFromApi(apiQty).toLocaleString("en-US", {
-    minimumFractionDigits: marketConfig.quantityScale,
-    maximumFractionDigits: marketConfig.quantityScale,
+export function formatApiQty(apiQty: number, market: string) {
+  const { quantityScale } = getMarketConfig(market);
+  return unscaleQtyFromApi(apiQty, market).toLocaleString("en-US", {
+    minimumFractionDigits: quantityScale,
+    maximumFractionDigits: quantityScale,
   });
 }
 
-export function unscaleCollateralFromApi(collateralUser: number) {
-  return unscaleNotionalFromApi(collateralUser, TRADING_MARKET);
+export function unscaleCollateralFromApi(collateralUser: number, market: string) {
+  return unscaleNotionalFromApi(collateralUser, market);
 }
 
-export function unscalePnlFromApiValue(pnl: number) {
-  return unscalePnlFromApi(pnl, TRADING_MARKET);
+export function unscalePnlFromApiValue(pnl: number, market: string) {
+  return unscalePnlFromApi(pnl, market);
 }
 
-export function qtyInputPlaceholder() {
-  return `0.${"0".repeat(marketConfig.quantityScale)}`;
+export function qtyInputPlaceholder(market: string) {
+  const { quantityScale } = getMarketConfig(market);
+  return `0.${"0".repeat(quantityScale)}`;
 }
 
-export function priceInputPlaceholder() {
-  return `0.${"0".repeat(marketConfig.priceScale)}`;
+export function priceInputPlaceholder(market: string) {
+  const { priceScale } = getMarketConfig(market);
+  return `0.${"0".repeat(priceScale)}`;
 }
 
 /** Keeps only numeric input with at most `maxDecimals` digits after the decimal. */

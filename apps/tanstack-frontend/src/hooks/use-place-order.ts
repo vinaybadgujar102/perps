@@ -11,13 +11,15 @@ export function usePlaceOrder(onQtyCleared?: () => void) {
 
   return useMutation({
     mutationFn: createOrderApi,
-    onSuccess: (result) => {
+    onSuccess: (result, variables) => {
       terminalToast.success(
         "SUCCESS",
         formatOrderSuccessMessage(result.message, result.fills.length),
       );
       refreshBalance();
-      void queryClient.invalidateQueries({ queryKey: queryKeys.orderbook() });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.orderbook(variables.market),
+      });
       void queryClient.invalidateQueries({ queryKey: queryKeys.positions() });
       void queryClient.invalidateQueries({ queryKey: queryKeys.openOrders() });
       void queryClient.invalidateQueries({ queryKey: queryKeys.orderHistory() });

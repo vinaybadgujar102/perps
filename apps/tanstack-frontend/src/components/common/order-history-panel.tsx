@@ -10,10 +10,10 @@ import { Button } from "#/components/ui/button";
 import { useUser } from "#/context/user-context";
 import { useOrderHistory } from "#/hooks/use-order-history";
 import { formatTradingTimestamp } from "#/lib/format-trading-timestamp";
+import { useTradingMarket } from "#/contexts/trading-market-context";
 import {
   formatApiPrice,
   formatApiQty,
-  TRADING_MARKET,
 } from "#/lib/market";
 import { cn } from "#/lib/utils";
 
@@ -69,13 +69,13 @@ function OrderHistoryRow({ order, isActiveMarket }: OrderHistoryRowProps) {
         {formatOrderStatus(order.status)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
-        {formatApiPrice(order.price)}
+        {formatApiPrice(order.price, order.market)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
-        {formatApiQty(order.qty)}
+        {formatApiQty(order.qty, order.market)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
-        {formatApiQty(order.filledQty)}
+        {formatApiQty(order.filledQty, order.market)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums text-input-label">
         {formatTradingTimestamp(order.placedAt)}
@@ -85,6 +85,7 @@ function OrderHistoryRow({ order, isActiveMarket }: OrderHistoryRowProps) {
 }
 
 export function OrderHistoryPanel() {
+  const { market } = useTradingMarket();
   const { isAuthenticated } = useUser();
   const orderHistoryQuery = useOrderHistory();
 
@@ -184,7 +185,7 @@ export function OrderHistoryPanel() {
                 <OrderHistoryRow
                   key={order.orderId}
                   order={order}
-                  isActiveMarket={order.market === TRADING_MARKET}
+                  isActiveMarket={order.market === market}
                 />
               ))}
             </tbody>

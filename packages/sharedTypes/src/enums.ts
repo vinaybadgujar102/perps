@@ -1,5 +1,6 @@
 export enum SYMBOLS {
   BTC = "BTC",
+  SOL = "SOL",
 }
 
 export enum QUEUES {

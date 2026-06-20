@@ -1,18 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { getOrderbookApi } from "#/api/orderbook.api";
+import { useTradingMarket } from "#/contexts/trading-market-context";
 import type { TickerData } from "#/hooks/use-market-subscriptions";
-import { TRADING_MARKET } from "#/lib/market";
 import { getLastMidPrice } from "#/lib/trading/order-pricing";
 import { queryKeys } from "#/lib/query-keys";
 
-export function useTradingMarket() {
+export function useMarketOrderbook() {
+  const { market } = useTradingMarket();
+
   const orderbookQuery = useQuery({
-    queryKey: queryKeys.orderbook(),
-    queryFn: () => getOrderbookApi(TRADING_MARKET),
+    queryKey: queryKeys.orderbook(market),
+    queryFn: () => getOrderbookApi(market),
   });
 
   const tickerQuery = useQuery({
-    queryKey: queryKeys.ticker(),
+    queryKey: queryKeys.ticker(market),
     queryFn: () => null as TickerData | null,
     staleTime: Infinity,
     refetchOnMount: false,
@@ -20,7 +22,7 @@ export function useTradingMarket() {
   });
 
   const lastTradeQuery = useQuery({
-    queryKey: queryKeys.lastTrade(),
+    queryKey: queryKeys.lastTrade(market),
     queryFn: () => null,
     staleTime: Infinity,
     refetchOnMount: false,
@@ -34,6 +36,7 @@ export function useTradingMarket() {
     getLastMidPrice(bestBid, bestAsk, tickerQuery.data?.indexPrice ?? null);
 
   return {
+    market,
     bestBid,
     bestAsk,
     lastPrice,

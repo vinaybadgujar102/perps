@@ -6,10 +6,10 @@ import { useUser } from "#/context/user-context";
 import { useClosedPositions } from "#/hooks/use-closed-positions";
 import { formatTradingTimestamp } from "#/lib/format-trading-timestamp";
 import { formatUsd } from "#/lib/format";
+import { useTradingMarket } from "#/contexts/trading-market-context";
 import {
   formatApiPrice,
   formatApiQty,
-  TRADING_MARKET,
 } from "#/lib/market";
 import { cn } from "#/lib/utils";
 
@@ -56,10 +56,10 @@ function ClosedPositionRow({
         </span>
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
-        {formatApiQty(position.size)}
+        {formatApiQty(position.size, position.market)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
-        {formatApiPrice(position.averageEntryPrice)}
+        {formatApiPrice(position.averageEntryPrice, position.market)}
       </td>
       <td
         className={cn(
@@ -80,6 +80,7 @@ function ClosedPositionRow({
 }
 
 export function ClosedPositionsPanel() {
+  const { market } = useTradingMarket();
   const { isAuthenticated } = useUser();
   const closedPositionsQuery = useClosedPositions();
 
@@ -178,7 +179,7 @@ export function ClosedPositionsPanel() {
                 <ClosedPositionRow
                   key={position.positionId}
                   position={position}
-                  isActiveMarket={position.market === TRADING_MARKET}
+                  isActiveMarket={position.market === market}
                 />
               ))}
             </tbody>

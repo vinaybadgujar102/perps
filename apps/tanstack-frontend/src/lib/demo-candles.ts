@@ -2,6 +2,7 @@ import type { CandlestickData } from "lightweight-charts";
 
 const BASE_PRICES: Record<string, number> = {
   BTC: 61_944,
+  SOL: 148,
 };
 
 export function buildDemoCandles(symbol = "BTC"): CandlestickData[] {

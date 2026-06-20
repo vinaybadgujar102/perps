@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { cancelOrderApi } from "#/api/order.api";
+import { cancelOrderApi, type OpenOrder } from "#/api/order.api";
 import { terminalToast } from "#/components/ui/terminal-toast";
 import { useUser } from "#/context/user-context";
 import { queryKeys } from "#/lib/query-keys";
@@ -10,10 +10,14 @@ export function useCancelOrder() {
 
   return useMutation({
     mutationFn: cancelOrderApi,
-    onSuccess: (result) => {
+    onSuccess: (result, orderId) => {
       terminalToast.success("SUCCESS", result.message);
       refreshBalance();
-      void queryClient.invalidateQueries({ queryKey: queryKeys.orderbook() });
+      const orders = queryClient.getQueryData<OpenOrder[]>(queryKeys.openOrders());
+      const market = orders?.find((order) => order.id === orderId)?.market;
+      if (market) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.orderbook(market) });
+      }
       void queryClient.invalidateQueries({ queryKey: queryKeys.openOrders() });
     },
     onError: (error) => {

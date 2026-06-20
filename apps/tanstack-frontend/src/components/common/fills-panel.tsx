@@ -5,7 +5,8 @@ import { Button } from "#/components/ui/button";
 import { useUser } from "#/context/user-context";
 import { useFills } from "#/hooks/use-fills";
 import { formatTradingTimestamp } from "#/lib/format-trading-timestamp";
-import { formatApiPrice, formatApiQty, TRADING_MARKET } from "#/lib/market";
+import { useTradingMarket } from "#/contexts/trading-market-context";
+import { formatApiPrice, formatApiQty } from "#/lib/market";
 import { cn } from "#/lib/utils";
 
 type FillRowProps = {
@@ -39,10 +40,10 @@ function FillRow({ fill, userId, isActiveMarket }: FillRowProps) {
         </span>
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
-        {formatApiPrice(fill.price)}
+        {formatApiPrice(fill.price, fill.market)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums">
-        {formatApiQty(fill.filledQty)}
+        {formatApiQty(fill.filledQty, fill.market)}
       </td>
       <td className="px-4 py-2 text-right font-mono tabular-nums text-input-label">
         {formatTradingTimestamp(fill.timestamp)}
@@ -55,6 +56,7 @@ function FillRow({ fill, userId, isActiveMarket }: FillRowProps) {
 }
 
 export function FillsPanel() {
+  const { market } = useTradingMarket();
   const { isAuthenticated, user } = useUser();
   const fillsQuery = useFills();
 
@@ -154,7 +156,7 @@ export function FillsPanel() {
                   key={fill.id}
                   fill={fill}
                   userId={user.id}
-                  isActiveMarket={fill.market === TRADING_MARKET}
+                  isActiveMarket={fill.market === market}
                 />
               ))}
             </tbody>
