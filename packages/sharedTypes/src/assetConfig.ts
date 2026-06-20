@@ -13,4 +13,10 @@ export const AssetConfig: Record<
     quantityScale: 2,
     maxLeverage: 20,
   },
+  SOL: {
+    symbol: "SOL",
+    priceScale: 2,
+    quantityScale: 2,
+    maxLeverage: 20,
+  },
 };
