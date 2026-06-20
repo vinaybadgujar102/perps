@@ -32,6 +32,7 @@ export enum RESPONSE_KINDS {
   CANCEL_ORDER_RESPONSE = "cancel_order_response",
   CLOSE_POSITION_RESPONSE = "close_position_response",
   USER_EVENT = "user_event",
+  TRADE_UPDATE = "trade_update",
 }
 
 export enum TICK_KINDS {
