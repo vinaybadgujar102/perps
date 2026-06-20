@@ -136,9 +136,6 @@ export function OrderbookPanel() {
     <section className="flex w-96 shrink-0 flex-col border-r border-border bg-surface/10">
       <div className="flex shrink-0 border-b border-border tracking-wider">
         <Button className="flex-1 bg-surface font-bold">ORDER BOOK</Button>
-        <Button className="flex-1 bg-surface font-bold" disabled>
-          RECENT TRADES
-        </Button>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-4">
