@@ -1,25 +1,7 @@
 import type { QueryConfig } from "pg";
-import { pgPool } from "./config/pgClient";
+import { pgPool } from "../config/pgClient";
 
-export const insertTrade = async (
-  fillId: string,
-  market: string,
-  price: number,
-  time: Date,
-) => {
-  const query: QueryConfig = {
-    text: `
-      INSERT INTO trades (time, market, price, fill_id)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (fill_id) DO NOTHING
-    `,
-    values: [time, market, price, fillId],
-  };
-
-  await pgPool.query(query);
-};
-
-export const createOneMinCandle = async () => {
+export async function createOneMinCandle() {
   const createOneMinCandleQuery: QueryConfig = {
     text: `
       CREATE MATERIALIZED VIEW IF NOT EXISTS one_min_candles
@@ -49,9 +31,9 @@ export const createOneMinCandle = async () => {
 
   await pgPool.query(createOneMinCandleQuery);
   await pgPool.query(continuousAggregationPolicyQuery);
-};
+}
 
-export const createFiveMinCandle = async () => {
+export async function createFiveMinCandle() {
   const createFiveMinCandleQuery: QueryConfig = {
     text: `
       CREATE MATERIALIZED VIEW IF NOT EXISTS five_min_candles
@@ -81,17 +63,4 @@ export const createFiveMinCandle = async () => {
 
   await pgPool.query(createFiveMinCandleQuery);
   await pgPool.query(continuousAggregationPolicyQuery);
-};
-
-export const retentionPolicy = async () => {
-  const query: QueryConfig = {
-    text: `
-      SELECT add_retention_policy(
-        'trades',
-        INTERVAL '90 days'
-      );
-    `,
-  };
-
-  await pgPool.query(query);
-};
+}

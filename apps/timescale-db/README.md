@@ -1,15 +1,29 @@
 # timescale-db
 
-To install dependencies:
+Consumes trade fills from Redis and writes them to TimescaleDB.
+
+## Setup
 
 ```bash
 bun install
 ```
 
-To run:
+Initialize the database (run once):
 
 ```bash
-bun run index.ts
+bun run db:init
 ```
 
-This project was created using `bun init` in bun v1.3.5. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Drop all tables and continuous aggregates:
+
+```bash
+bun run db:drop
+```
+
+## Run consumer
+
+```bash
+bun run dev
+```
+
+Requires `DB_URL` for Postgres/TimescaleDB and Redis for `response_queue`.

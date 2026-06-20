@@ -1,5 +1,5 @@
 import { RESPONSE_KINDS, type ResponseQueueMessage } from "@repo/sharedtypes";
-import { insertTrade } from "../db.utils";
+import { insertTrade } from "../db/trades";
 import { persistFills } from "./fills.handler";
 import { unscalePrice } from "../utils/price";
 

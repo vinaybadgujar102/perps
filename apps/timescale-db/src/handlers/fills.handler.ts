@@ -1,5 +1,5 @@
 import type { Fill } from "@repo/sharedtypes";
-import { insertTrade } from "../db.utils";
+import { insertTrade } from "../db/trades";
 import { unscalePrice } from "../utils/price";
 
 export async function persistFills(fills: Fill[]) {

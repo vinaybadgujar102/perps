@@ -3,6 +3,11 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "dev": "bun run index.ts",
+    "db:init": "bun run scripts/init-db.ts",
+    "db:drop": "bun run scripts/drop-db.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
