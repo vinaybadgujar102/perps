@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { requireAuth } from "#/lib/require-auth";
 import { ChartSection } from "#/components/common/chart-section";
 import { OrderbookPanel } from "#/components/common/orderbook-panel";
 import { SiteHeader } from "#/components/common/site-header";
@@ -13,6 +14,7 @@ import { useUserEvents } from "#/hooks/use-user-events";
 import { usePaymentFlashToast } from "#/lib/payment-flash";
 
 export const Route = createFileRoute("/dashboard")({
+  beforeLoad: requireAuth,
   component: RouteComponent,
 });
 

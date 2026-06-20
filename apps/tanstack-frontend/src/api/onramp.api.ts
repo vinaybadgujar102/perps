@@ -1,5 +1,7 @@
 import type {
   ApiEnvelope,
+  DepositHistoryListData,
+  DepositRecord,
   OnrampDepositResult,
   RazorPayPaymentsObject,
 } from "@repo/sharedtypes";
@@ -60,3 +62,20 @@ export const capturePayment = async ({
 
   return response.data.data;
 };
+
+function unwrapListResponse<T>(envelope: ApiEnvelope<T>): T {
+  if (!envelope.success || !envelope.data) {
+    throw new Error(envelope.message || "Request failed");
+  }
+  return envelope.data;
+}
+
+export async function getDepositsApi(): Promise<DepositRecord[]> {
+  const result = await apiClient.get<ApiEnvelope<DepositHistoryListData>>(
+    "/deposits",
+    { headers: authHeaders() },
+  );
+
+  const data = unwrapListResponse(result.data);
+  return data.deposits;
+}

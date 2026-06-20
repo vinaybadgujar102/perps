@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { RegisterLeftPanel } from "#/components/register/register-left-panel";
 import { RegisterRightPanel } from "#/components/register/register-right-panel";
+import { redirectIfAuthenticated } from "#/lib/require-auth";
 
 export const Route = createFileRoute("/register")({
+  beforeLoad: redirectIfAuthenticated,
   component: RouteComponent,
 });
 

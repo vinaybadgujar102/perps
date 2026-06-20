@@ -1,5 +1,7 @@
 import { useCapturePaymentMutation } from "#/hooks/payments/use-capture-payment";
+import { queryKeys } from "#/lib/query-keys";
 import { setPaymentFlashToast } from "#/lib/payment-flash";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 
 // Function to load script and append in DOM tree.
@@ -51,6 +53,7 @@ export const RenderRazorpay = ({
   onComplete?: () => void;
   onPaymentSuccess?: () => void;
 }) => {
+  const queryClient = useQueryClient();
   const { mutateAsync: captureOrder } = useCapturePaymentMutation();
 
   const reloadToDashboard = (toast?: {
@@ -96,6 +99,8 @@ export const RenderRazorpay = ({
             signature: response.razorpay_signature,
           });
 
+          await queryClient.invalidateQueries({ queryKey: queryKeys.deposits() });
+
           onPaymentSuccess?.();
 
           reloadToDashboard({
@@ -124,6 +129,8 @@ export const RenderRazorpay = ({
           status: "failed",
         });
       }
+
+      await queryClient.invalidateQueries({ queryKey: queryKeys.deposits() });
 
       reloadToDashboard({
         variant: "error",

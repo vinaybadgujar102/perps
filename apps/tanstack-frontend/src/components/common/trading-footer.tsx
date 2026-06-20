@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "#/components/ui/button";
 import { ClosedPositionsPanel } from "#/components/common/closed-positions-panel";
+import { DepositHistoryPanel } from "#/components/common/deposit-history-panel";
 import { FillsPanel } from "#/components/common/fills-panel";
 import { OpenOrdersPanel } from "#/components/common/open-orders-panel";
 import { OpenPositionsPanel } from "#/components/common/open-positions-panel";
@@ -12,7 +13,8 @@ type FooterTab =
   | "orders"
   | "closed"
   | "orderHistory"
-  | "fills";
+  | "fills"
+  | "deposits";
 
 const tabs: { id: FooterTab; label: string }[] = [
   { id: "positions", label: "Positions" },
@@ -20,6 +22,7 @@ const tabs: { id: FooterTab; label: string }[] = [
   { id: "closed", label: "Closed" },
   { id: "orderHistory", label: "Order History" },
   { id: "fills", label: "Fills" },
+  { id: "deposits", label: "Deposits" },
 ];
 
 export function TradingFooter() {
@@ -51,6 +54,7 @@ export function TradingFooter() {
         {activeTab === "closed" ? <ClosedPositionsPanel /> : null}
         {activeTab === "orderHistory" ? <OrderHistoryPanel /> : null}
         {activeTab === "fills" ? <FillsPanel /> : null}
+        {activeTab === "deposits" ? <DepositHistoryPanel /> : null}
       </div>
     </div>
   );

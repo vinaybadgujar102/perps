@@ -25,6 +25,10 @@ function parseUser(raw: string): AuthUser | null {
 }
 
 export function loadSession(): AuthSession | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
   const token = localStorage.getItem(TOKEN_KEY);
   const userRaw = localStorage.getItem(USER_KEY);
 

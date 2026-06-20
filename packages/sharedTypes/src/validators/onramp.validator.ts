@@ -33,3 +33,15 @@ export type RazorPayPaymentsObject = {
   receipt: string | null;
   status: string;
 };
+
+export type DepositRecord = {
+  orderId: string;
+  paymentId: string | null;
+  status: "CREATED" | "SUCCESS" | "FAILED";
+  amountUsd: number;
+  createdAt: number;
+};
+
+export type DepositHistoryListData = {
+  deposits: DepositRecord[];
+};

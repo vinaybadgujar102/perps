@@ -7,6 +7,7 @@ import accountRouter from "./account.route";
 import positionRouter from "./position.route";
 import orderbookRouter from "./orderbook.route";
 import onrampRouter from "./onramp.route";
+import depositsRouter from "./deposits.route";
 import fillsRouter from "./fills.route";
 import pingRouter from "./ping.route";
 
@@ -22,6 +23,7 @@ appRouter.use("/account", accountRouter);
 appRouter.use("/positions", positionRouter);
 appRouter.use("/orderbook", orderbookRouter);
 appRouter.use("/onramp", onrampRouter);
+appRouter.use("/deposits", depositsRouter);
 appRouter.use("/", marketRouter);
 
 export default appRouter;

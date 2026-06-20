@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { ChevronDown, User } from "lucide-react";
 import { DepositDialog } from "#/components/common/deposit-dialog";
 import {
@@ -12,8 +13,14 @@ import { useUser } from "#/context/user-context";
 import { formatUsd } from "#/lib/format";
 
 export function HeaderUserMenu() {
+  const navigate = useNavigate();
   const { user, balanceUsd, isBalanceLoading, logout } = useUser();
   const [depositOpen, setDepositOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    void navigate({ to: "/login" });
+  };
 
   if (!user) {
     return null;
@@ -46,7 +53,7 @@ export function HeaderUserMenu() {
               Deposit
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={logout}>Log out</DropdownMenuItem>
+            <DropdownMenuItem onSelect={handleLogout}>Log out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

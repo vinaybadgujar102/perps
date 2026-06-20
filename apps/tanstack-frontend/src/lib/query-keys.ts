@@ -6,6 +6,7 @@ export const queryKeys = {
   positions: () => ["positions"] as const,
   openOrders: () => ["openOrders"] as const,
   orderHistory: () => ["orderHistory"] as const,
+  deposits: () => ["deposits"] as const,
   closedPositions: () => ["closedPositions"] as const,
   fills: () => ["fills"] as const,
 };
