@@ -3,6 +3,8 @@ import {
   depthRoom,
   indexPricePushSchema,
   indexPriceRoom,
+  tradePushSchema,
+  tradeRoom,
 } from "@repo/sharedtypes";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
@@ -20,8 +22,15 @@ export type TickerData = {
   nextFundingTime?: number;
 };
 
+export type LastTradeData = {
+  market: string;
+  price: number;
+  timestamp: number;
+  fillId: string;
+};
+
 function roomsForMarket(market: string) {
-  return [depthRoom(market), indexPriceRoom(market)];
+  return [depthRoom(market), indexPriceRoom(market), tradeRoom(market)];
 }
 
 export function useMarketSubscriptions(market: string) {
@@ -63,6 +72,16 @@ export function useMarketSubscriptions(market: string) {
 
           queryClient.setQueryData<TickerData>(
             queryKeys.ticker(activeMarket),
+            push.data.data,
+          );
+          break;
+        }
+        case "trade": {
+          const push = tradePushSchema.safeParse(data);
+          if (!push.success || push.data.data.market !== activeMarket) return;
+
+          queryClient.setQueryData<LastTradeData>(
+            queryKeys.lastTrade(activeMarket),
             push.data.data,
           );
           break;

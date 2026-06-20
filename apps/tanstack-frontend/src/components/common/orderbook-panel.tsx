@@ -102,6 +102,14 @@ export function OrderbookPanel() {
     queryFn: () => getOrderbookApi(TRADING_MARKET),
   });
 
+  const lastTradeQuery = useQuery({
+    queryKey: queryKeys.lastTrade(),
+    queryFn: () => null,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
   const asks = withCumulativeTotals(
     toDisplayLevels(orderbookQuery.data?.asks ?? []),
   );
@@ -110,11 +118,13 @@ export function OrderbookPanel() {
   );
 
   const lastTradedPrice =
-    orderbookQuery.data?.bestBid && orderbookQuery.data?.bestAsk
-      ? (scalePrice(orderbookQuery.data.bestBid.price) +
-          scalePrice(orderbookQuery.data.bestAsk.price)) /
-        2
-      : null;
+    lastTradeQuery.data?.price != null
+      ? scalePrice(lastTradeQuery.data.price)
+      : orderbookQuery.data?.bestBid && orderbookQuery.data?.bestAsk
+        ? (scalePrice(orderbookQuery.data.bestBid.price) +
+            scalePrice(orderbookQuery.data.bestAsk.price)) /
+          2
+        : null;
 
   return (
     <section className="flex w-96 shrink-0 flex-col border-r border-border bg-surface/10">

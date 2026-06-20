@@ -19,13 +19,19 @@ export function useTradingMarket() {
     refetchOnWindowFocus: false,
   });
 
+  const lastTradeQuery = useQuery({
+    queryKey: queryKeys.lastTrade(),
+    queryFn: () => null,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
   const bestBid = orderbookQuery.data?.bestBid?.price ?? null;
   const bestAsk = orderbookQuery.data?.bestAsk?.price ?? null;
-  const lastPrice = getLastMidPrice(
-    bestBid,
-    bestAsk,
-    tickerQuery.data?.indexPrice ?? null,
-  );
+  const lastPrice =
+    lastTradeQuery.data?.price ??
+    getLastMidPrice(bestBid, bestAsk, tickerQuery.data?.indexPrice ?? null);
 
   return {
     bestBid,

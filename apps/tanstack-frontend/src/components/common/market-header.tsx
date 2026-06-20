@@ -45,13 +45,23 @@ export function MarketHeader() {
     refetchOnWindowFocus: false,
   });
 
+  const lastTradeQuery = useQuery({
+    queryKey: queryKeys.lastTrade(),
+    queryFn: () => null,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
   const lastTradedPrice =
-    orderbookQuery.data?.bestBid && orderbookQuery.data?.bestAsk
-      ? (orderbookQuery.data.bestBid.price +
-          orderbookQuery.data.bestAsk.price) /
-        2 /
-        10 ** priceScale
-      : null;
+    lastTradeQuery.data?.price != null
+      ? lastTradeQuery.data.price / 10 ** priceScale
+      : orderbookQuery.data?.bestBid && orderbookQuery.data?.bestAsk
+        ? (orderbookQuery.data.bestBid.price +
+            orderbookQuery.data.bestAsk.price) /
+          2 /
+          10 ** priceScale
+        : null;
 
   return (
     <div className="border-b border-border bg-surface/30 p-6">
