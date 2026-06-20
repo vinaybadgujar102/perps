@@ -1,7 +1,16 @@
 import { pgPool } from "../src/config/pgClient";
 import { dropDb } from "../src/db/drop";
 
-await dropDb();
-await pgPool.end();
+let failed = false;
 
-console.log("TimescaleDB tables dropped");
+try {
+  await dropDb();
+  console.log("TimescaleDB tables dropped");
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error);
+  failed = true;
+} finally {
+  await pgPool.end();
+}
+
+if (failed) process.exit(1);

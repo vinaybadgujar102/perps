@@ -14,7 +14,7 @@ export class FundingRateService {
     fundingRate: number,
   ): number {
     const notionalInt = Math.abs(positionSize) * markPrice;
-    const feeEngine = Math.round(notionalInt * Math.abs(fundingRate));
+    const feeEngine = Math.round(notionalInt * fundingRate);
     return Math.sign(positionSize) * feeEngine;
   }
 }
