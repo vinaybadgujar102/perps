@@ -39,9 +39,9 @@ import { SNAPSHOTING_INTERVAL_MS } from "../constants";
 
 export const publisherRedis = await createClient().connect();
 
-for (const symbol of Object.keys(AssetConfig)) {
-  const orderbook = GLOBAL_ORDERBOOK.ensureOrderbook(symbol);
-  GLOBAL_PERPETUAL_MARKETS.ensureMarket(symbol, orderbook);
+for (const asset of Object.values(AssetConfig)) {
+  const orderbook = GLOBAL_ORDERBOOK.ensureOrderbook(asset.symbol);
+  GLOBAL_PERPETUAL_MARKETS.ensureMarket(asset.symbol, orderbook);
 }
 
 pubsub.subscribe(async (message) => {

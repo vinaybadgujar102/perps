@@ -19,7 +19,9 @@ export async function pricePoller() {
 
   const subscriptionPayload = {
     method: "SUBSCRIBE",
-    params: Object.keys(AssetConfig).map((s) => `markPrice.${s}_USDC_PERP`),
+    params: Object.values(AssetConfig).map(
+      (asset) => `markPrice.${asset.symbol}_USDC_PERP`,
+    ),
   };
 
   ws.on("open", () => {

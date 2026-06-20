@@ -10,10 +10,10 @@ export function useClosePosition() {
 
   return useMutation({
     mutationFn: closePositionApi,
-    onSuccess: (result) => {
+    onSuccess: (result, market) => {
       terminalToast.success("SUCCESS", result.message);
       refreshBalance();
-      void queryClient.invalidateQueries({ queryKey: queryKeys.orderbook() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.orderbook(market) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.positions() });
       void queryClient.invalidateQueries({ queryKey: queryKeys.orderHistory() });
       void queryClient.invalidateQueries({ queryKey: queryKeys.closedPositions() });

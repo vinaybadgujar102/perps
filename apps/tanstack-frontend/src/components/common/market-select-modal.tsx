@@ -1,7 +1,7 @@
 import { AssetConfig } from "@repo/sharedtypes";
 import { useQueries } from "@tanstack/react-query";
 import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getOrderbookApi } from "#/api/orderbook.api";
 import {
   Dialog,
@@ -51,6 +51,10 @@ export function MarketSelectModal({
 }: MarketSelectModalProps) {
   const [search, setSearch] = useState("");
 
+  useEffect(() => {
+    if (!open) setSearch("");
+  }, [open]);
+
   const orderbookQueries = useQueries({
     queries: markets.map((symbol) => ({
       queryKey: queryKeys.orderbook(symbol),
@@ -71,7 +75,6 @@ export function MarketSelectModal({
   const handleSelect = (symbol: string) => {
     onSelect(symbol);
     onOpenChange(false);
-    setSearch("");
   };
 
   return (
