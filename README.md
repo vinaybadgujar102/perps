@@ -1,159 +1,180 @@
-# Turborepo starter
+# perps-platform
 
-This Turborepo starter is maintained by the Turborepo core team.
+A perpetual futures trading platform for **BTC** and **SOL**, built as a Bun/Turborepo monorepo. An in-memory matching engine handles order placement and position management; services communicate over **Redis Streams**; orders and fills persist to **Postgres** via an async writer. A TanStack trading terminal provides the live UI.
 
-## Using this example
+**What works today:** order placement, live orderbook depth over WebSocket, open positions, funding settlement, and a Razorpay onramp stub.
 
-Run the following command:
+## Stack
 
-```sh
-npx create-turbo@latest
+| Layer | Tech |
+| --- | --- |
+| Runtime / monorepo | Bun 1.3, Turborepo |
+| API | Express ([`apps/api`](apps/api)) |
+| Engine | In-memory matcher ([`apps/trade-engine`](apps/trade-engine)) |
+| Message bus | Redis Streams (`send_queue`, `response_queue` — [`packages/sharedTypes/src/enums.ts`](packages/sharedTypes/src/enums.ts)) |
+| Realtime | WebSocket server on **8081** ([`apps/wsServer`](apps/wsServer)) |
+| Persistence | Prisma + Postgres ([`packages/database`](packages/database)) |
+| Frontend | TanStack Start + Vite on **3000** ([`apps/tanstack-frontend`](apps/tanstack-frontend)) |
+| Optional | [`price-poller`](apps/price-poller) (Backpack mark prices), [`timescale-db`](apps/timescale-db) (candles/analytics) |
+
+## Architecture
+
+```mermaid
+flowchart LR
+  FE[tanstack-frontend:3000]
+  API[api:3003]
+  TE[trade-engine]
+  WS[wsServer:8081]
+  DBP[db-poller]
+  R[(Redis Streams)]
+  PG[(Postgres)]
+
+  FE -->|REST /api/v1| API
+  FE -->|WS| WS
+  API -->|xAdd send_queue| R
+  R -->|xRead| TE
+  TE -->|xAdd response_queue| R
+  R -->|correlate requests| API
+  R -->|depth/trades/index| WS
+  R -->|orders/fills| DBP
+  API --> PG
+  DBP --> PG
 ```
 
-## What's inside?
+**How messages flow:** The API writes commands (create order, cancel, get account state) to `send_queue` with a `requestId`. The trade-engine is the sole consumer — it matches orders, updates positions, and publishes to `response_queue`. The API worker reads `response_queue` and correlates responses back to the HTTP caller via `requestId`. Separately, the engine broadcasts market events (depth updates, trades, index price) that `wsServer` fans out to WebSocket clients and `db-poller` persists to Postgres.
 
-This Turborepo includes the following packages/apps:
+## Service map
 
-### Apps and Packages
+| Service | Port | Redis role | Other deps |
+| --- | --- | --- | --- |
+| `trade-engine` | — | Consumes `send_queue`, publishes `response_queue` | Loads snapshot on boot |
+| `api` | `PORT` (demo: **3003**) | Produces `send_queue`, consumes `response_queue` | `DATABASE_URL`, `JWT_SECRET` |
+| `wsServer` | **8081** | Consumes `response_queue`, broadcasts to clients | — |
+| `db-poller` | — | Consumes `response_queue` | `DATABASE_URL` |
+| `price-poller` | — | Produces mark-price ticks → `send_queue` | Backpack WS (optional for demo) |
+| `tanstack-frontend` | **3000** | — | Proxies API to `localhost:3003` |
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+## Prerequisites
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+- [Bun](https://bun.sh) 1.3+ (`packageManager: bun@1.3.5`)
+- Redis running locally
+- Postgres running locally
 
-### Utilities
+Quick start with Docker:
 
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+```bash
+docker run -d --name perps-redis -p 6379:6379 redis
+docker run -d --name perps-pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres
 ```
 
-Without global `turbo`, use your package manager:
+## Environment variables
 
-```sh
-cd my-turborepo
-npx turbo build
-bun dlx turbo build
-bun exec turbo build
+Copy the example file and fill in values:
+
+```bash
+cp .env.example .env
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+Bun auto-loads `.env` from the working directory. When running services via turbo from the repo root, they inherit these values.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+### Required for core demo
 
-```sh
-turbo build --filter=docs
+| Variable | Used by | Notes |
+| --- | --- | --- |
+| `DATABASE_URL` | api, db-poller, Prisma migrate | Postgres connection string |
+| `JWT_SECRET` | api auth | Any random string for local dev |
+| `PORT` | api | **No default in code** — set `3003` for the frontend proxy |
+
+### Optional / feature-specific
+
+| Variable | Used by |
+| --- | --- |
+| `ADMIN_API_SECRET` | api admin routes |
+| `RAZORPAY_TEST_API_KEY`, `RAZORPAY_TEST_SECRET_KEY` | onramp |
+| `FUNDING_INTERVAL_MS` | trade-engine (default 8h) |
+| `VITE_API_PROXY_TARGET`, `VITE_WS_URL` | frontend (defaults work locally) |
+| `DB_URL` | timescale-db only |
+| `REDIS_URL`, `SIM_*` | [`scripts/simulate-orderbook.ts`](scripts/simulate-orderbook.ts) |
+
+Most services connect to Redis via `createClient()` with the default `redis://localhost:6379`. Only the orderbook simulator documents `REDIS_URL`.
+
+## Startup order
+
+Services have dependencies — start them in this order:
+
+1. **Redis** — all services block on connect
+2. **Postgres** + migrate: `cd packages/database && bun run db:migrate`
+3. **trade-engine** — must be running before commands get processed
+4. **api** — needs Redis, DB, and engine for order flow (`PORT=3003`)
+5. **wsServer** — live UI needs this for depth/trades
+6. **db-poller** — async Postgres writer for orders/fills
+7. **price-poller** — optional; mark prices for liquidations/index (or use the simulator)
+8. **tanstack-frontend** — last; hits api + ws
+9. **simulate-orderbook** — dev liquidity after engine is running
+
+> **Note:** `bun run dev` at the root runs **all** turbo `dev` tasks, including `timescale-db` which requires `DB_URL`. For the standard demo, use per-service filters instead (see below).
+
+## Demo script
+
+Copy-paste setup (~5 minutes):
+
+```bash
+# 0. Infra (if not already running)
+docker run -d --name perps-redis -p 6379:6379 redis
+docker run -d --name perps-pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres
+
+# 1. Install + DB
+bun install
+cp .env.example .env   # set DATABASE_URL + JWT_SECRET
+cd packages/database && bun run db:migrate && cd ../..
+
+# 2. Core services (separate terminals, or background with &)
+bun run dev --filter=trade-engine
+bun run dev --filter=api
+bun run dev --filter=wsserver
+bun run dev --filter=db-poller
+bun run dev --filter=tanstack-frontend
+
+# 3. Seed liquidity
+bun run simulate:orderbook
+
+# 4. Open http://localhost:3000 → /login → /dashboard
 ```
 
-Without global `turbo`:
+Ensure `.env` has `PORT=3003`, `JWT_SECRET`, and `DATABASE_URL` before starting the api.
 
-```sh
-npx turbo build --filter=docs
-bun exec turbo build --filter=docs
-bun exec turbo build --filter=docs
+## Liquidity for demo
+
+The orderbook starts empty. Use [`scripts/simulate-orderbook.ts`](scripts/simulate-orderbook.ts) to seed a multi-level BTC book and simulate realistic activity:
+
+```bash
+bun run simulate:orderbook
 ```
 
-### Develop
+**What it does:** creates sim users (IDs 9001–9005), places resting limit orders, executes crosses, and refreshes liquidity on a jittered interval.
 
-To develop all apps and packages, run the following command:
+**Requires:** Redis + trade-engine (+ wsServer for live depth/trade UI).
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+**Tunable via env:** `SIM_MID_PRICE`, `SIM_SPREAD`, `SIM_TRADE_PROB`, `SIM_DEPTH_LEVELS`, and more — see the script header for the full list.
 
-```sh
-cd my-turborepo
-turbo dev
+## Monorepo layout
+
+```
+apps/
+  api/               REST + Redis producer/consumer
+  trade-engine/      Matching engine
+  wsServer/          WebSocket fanout
+  db-poller/         Postgres writer
+  price-poller/      External mark prices (optional)
+  timescale-db/      Analytics consumer (optional)
+  tanstack-frontend/ Trading UI
+packages/
+  database/          Prisma schema + client
+  sharedtypes/       Queues, events, asset config
 ```
 
-Without global `turbo`, use your package manager:
+## Further reading
 
-```sh
-cd my-turborepo
-npx turbo dev
-bun exec turbo dev
-bun exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-bun exec turbo dev --filter=web
-bun exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-bun exec turbo login
-bun exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-bun exec turbo link
-bun exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+- [`notes/FUNDING_RATE.md`](notes/FUNDING_RATE.md) — funding rate implementation
+- [`nginx/README.md`](nginx/README.md) — API cluster load test (ports 3001–3003 → nginx 8080)
+- [`apps/timescale-db/README.md`](apps/timescale-db/README.md) — optional Timescale setup
