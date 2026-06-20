@@ -1,71 +1,91 @@
+import type { QueryConfig } from "pg";
 import { pgPool } from "./config/pgClient";
 
 export const insertTrade = async (market: string, price: number) => {
-  const query = {
+  const query: QueryConfig = {
     text: `
-        INSERT INTO trades (time, market, price)
-        VALUES (NOW(), $1, $2)
-          `,
+      INSERT INTO trades (time, market, price)
+      VALUES (NOW(), $1, $2)
+    `,
     values: [market, price],
   };
+
   await pgPool.query(query);
 };
 
 export const createOneMinCandle = async () => {
-  const createOneMinCandlequery = {
+  const createOneMinCandleQuery: QueryConfig = {
     text: `
-  CREATE MATERIALIZED VIEW IF NOT EXITS one_min_candles
-  WITH (timescaledb.continous) AS
-  SELECT 
-    time_bucket('1 minute', time) AS bucket,
-    market,
-    first(price, time) AS open,
-    max(price) as high,
-    min(price) as low,
-last(price, time) as close
-FROM trades
-GROUP BY bucket, market,
-`,
+      CREATE MATERIALIZED VIEW IF NOT EXISTS one_min_candles
+      WITH (timescaledb.continuous) AS
+      SELECT
+        time_bucket('1 minute', time) AS bucket,
+        market,
+        first(price, time) AS open,
+        max(price) AS high,
+        min(price) AS low,
+        last(price, time) AS close
+      FROM trades
+      GROUP BY bucket, market;
+    `,
   };
 
-  const continousAggregationPolicyQuery = {
+  const continuousAggregationPolicyQuery: QueryConfig = {
     text: `
-    SELECT add_continous_aggregate_policy('one_min_candles',
-    start_offset => INTERVAL '1 hour',
-    end_offset => INTERVAL '1 minute',
-    schedule_interval => INTERVAL '1 minute'
-)
-`,
+      SELECT add_continuous_aggregate_policy(
+        'one_min_candles',
+        start_offset => INTERVAL '1 hour',
+        end_offset => INTERVAL '1 minute',
+        schedule_interval => INTERVAL '1 minute'
+      );
+    `,
   };
-  await pgPool.query(createOneMinCandlequery);
-  await pgPool.query(continousAggregationPolicyQuery);
+
+  await pgPool.query(createOneMinCandleQuery);
+  await pgPool.query(continuousAggregationPolicyQuery);
 };
 
 export const createFiveMinCandle = async () => {
-  const createFiveMinCandle = {
+  const createFiveMinCandleQuery: QueryConfig = {
     text: `
-  CREATE MATERIALIZED VIEW IF NOT EXISTS five_min_candles
-  WITH (timescaledb.continous) AS
-  SELECT
-  time_bucket('5 minutes', time) AS bucket,
-  first(price, time) AS open,
-  max(price) AS high,
-  min(price) AS low,
-  last(price, time) AS close
-FROM trades 
-GROUP by bucket, market
-`,
+      CREATE MATERIALIZED VIEW IF NOT EXISTS five_min_candles
+      WITH (timescaledb.continuous) AS
+      SELECT
+        time_bucket('5 minutes', time) AS bucket,
+        market,
+        first(price, time) AS open,
+        max(price) AS high,
+        min(price) AS low,
+        last(price, time) AS close
+      FROM trades
+      GROUP BY bucket, market;
+    `,
   };
 
-  const continousAggregationPolicyQuery = {
-    text: `SELECT add_continuous_aggregate_policy(
-  'five_min_candles',
-  start_offset => INTERVAL '7 days',
-  end_offset => INTERVAL '5 minutes',
-  schedule_interval => INTERVAL '5 minutes'
-);`,
+  const continuousAggregationPolicyQuery: QueryConfig = {
+    text: `
+      SELECT add_continuous_aggregate_policy(
+        'five_min_candles',
+        start_offset => INTERVAL '7 days',
+        end_offset => INTERVAL '5 minutes',
+        schedule_interval => INTERVAL '5 minutes'
+      );
+    `,
   };
 
-  await pgPool.query(createFiveMinCandle);
-  await pgPool.query(continousAggregationPolicyQuery);
+  await pgPool.query(createFiveMinCandleQuery);
+  await pgPool.query(continuousAggregationPolicyQuery);
+};
+
+export const retentionPolicy = async () => {
+  const query: QueryConfig = {
+    text: `
+      SELECT add_retention_policy(
+        'trades',
+        INTERVAL '90 days'
+      );
+    `,
+  };
+
+  await pgPool.query(query);
 };
