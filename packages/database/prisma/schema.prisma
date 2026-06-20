@@ -113,7 +113,7 @@ model Payment {
   orderId   String        @unique // the order id for which this payment is
   paymentId String? // the payment id from the razorpay which will help us to reconcile later. each order can have multiple payment tries
   status    PaymentStatus @default(CREATED) // status of the payment
-  amount    Int
+  amount    Int // Razorpay minor units (USD cents); convert via scalePaymentCentsToEngine before crediting engine
   userId    Int
   user      User          @relation(fields: [userId], references: [id])
   createdAt DateTime      @default(now())

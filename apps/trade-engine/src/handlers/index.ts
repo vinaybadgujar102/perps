@@ -76,9 +76,11 @@ function runFundingSettlement() {
 
   for (const position of POSITIONS.values()) {
     const perpetualMarket = GLOBAL_PERPETUAL_MARKETS.getMarket(position.market);
+    const orderbook = GLOBAL_ORDERBOOK.getOrderbook(position.market);
 
     const fee = fundingRateService.calculateFundingRateFees(
       position.size,
+      orderbook.getIndexPrice(),
       perpetualMarket.fundingRate,
     );
 

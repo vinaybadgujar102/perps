@@ -269,7 +269,7 @@ async function ensureSimUser(publisher: RedisClientType, userId: number) {
       kind: EVENT_KINDS.CREDIT_BALANCE,
       payload: {
         userId,
-        amountUsd: 500_000_000,
+        amountUsd: 100_000_000,
         onrampId: crypto.randomUUID(),
       },
     }),

@@ -13,6 +13,7 @@ import { mapErrorToResponse } from "../utils/mapErrorToResponse";
 import { deriveOrderStatus } from "../utils/order.util";
 import { calculateRealizedPnl } from "../utils/pnl.util";
 import type { PubSub } from "../pubsub/pubsub";
+import { publishTradeUpdates } from "../utils/publishTradeUpdates";
 
 export class ClosePositionHandler implements EventHandler<
   z.infer<typeof closePositionPayloadSchema>
@@ -55,6 +56,10 @@ export class ClosePositionHandler implements EventHandler<
             asks: depthDelta.asks,
           },
         });
+      }
+
+      if (fills.length > 0) {
+        publishTradeUpdates(this.pubsub, fills);
       }
 
       const orderFills = fills.filter(

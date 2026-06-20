@@ -13,6 +13,7 @@ import { mapErrorToResponse } from "../utils/mapErrorToResponse";
 import { deriveOrderStatus } from "../utils/order.util";
 import type { PubSub } from "../pubsub/pubsub";
 import { GLOBAL_ORDERBOOK } from "../inMemoryStates";
+import { publishTradeUpdates } from "../utils/publishTradeUpdates";
 
 export class CreateOrderHandler implements EventHandler<
   z.infer<typeof createOrderPayloadSchema>
@@ -66,6 +67,10 @@ export class CreateOrderHandler implements EventHandler<
             asks: depthDelta.asks,
           },
         });
+      }
+
+      if (fills.length > 0) {
+        publishTradeUpdates(this.pubsub, fills);
       }
 
       console.log(GLOBAL_ORDERBOOK);

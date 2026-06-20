@@ -1,8 +1,7 @@
 import { InsufficientMarginError } from "../errors";
 import type { OrderEntity } from "../entity/order.entity";
 
-// here user owns the state and it should be responsible for actually
-// changing its state. when to change is depends on other service according to usecase
+// Balance and locked margin are stored in engine monetary units (notional scale).
 export class User {
   userId: number;
   balance: number = 0;

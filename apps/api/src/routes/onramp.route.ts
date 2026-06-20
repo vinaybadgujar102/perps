@@ -18,6 +18,7 @@ import { errorResponse, successResponse } from "../utils/responseUtils";
 import { schemaValidator } from "../validators";
 import { razorpayInstance } from "../config/razorpay.config";
 import { PaymentStatus, prisma } from "@repo/database";
+import { fromDisplayUsd, fromPaymentCents, toDisplayUsd } from "../utils/scaling";
 
 type CreateOrderResponse = Extract<
   TradeEngineResponse,
@@ -38,7 +39,7 @@ onrampRouter.post(
 
     try {
       const order = await razorpayInstance.orders.create({
-        amount: amountUsd * 100,
+        amount: Math.round(amountUsd * BASE_CURRENCY_SCALE_FACTOR),
         currency: "USD",
       });
 
@@ -78,9 +79,7 @@ onrampRouter.post(
     const { amountUsd: displayAmountUsd } = req.body as z.infer<
       typeof onrampDepositSchema
     >;
-    const scaledAmountUsd = Math.round(
-      displayAmountUsd * BASE_CURRENCY_SCALE_FACTOR,
-    );
+    const scaledAmountUsd = fromDisplayUsd(displayAmountUsd);
     const requestId = crypto.randomUUID();
     const onrampId = crypto.randomUUID();
 
@@ -126,17 +125,10 @@ onrampRouter.post(
         {
           onrampId: engineResponse.data.onrampId,
           amountUsd: displayAmountUsd,
-          balanceUsd:
-            Math.round(
-              (engineResponse.data.balanceUsd / BASE_CURRENCY_SCALE_FACTOR) *
-                100,
-            ) / 100,
-          availableMarginUsd:
-            Math.round(
-              (engineResponse.data.availableMarginUsd /
-                BASE_CURRENCY_SCALE_FACTOR) *
-                100,
-            ) / 100,
+          balanceUsd: toDisplayUsd(engineResponse.data.balanceUsd),
+          availableMarginUsd: toDisplayUsd(
+            engineResponse.data.availableMarginUsd,
+          ),
         },
         "Deposit completed successfully.",
       );
@@ -181,7 +173,7 @@ onrampRouter.post(
         );
       }
 
-      // Idempotency check
+      // idempotency check
       if (existingPayment.status === PaymentStatus.SUCCESS) {
         return successResponse(
           res,
@@ -191,7 +183,7 @@ onrampRouter.post(
         );
       }
 
-      // Payment failed on Razorpay side
+      // payment failed on razorpay side
       if (body.status !== "success") {
         await prisma.payment.update({
           where: {
@@ -211,7 +203,7 @@ onrampRouter.post(
         .update(`${body.orderId}|${body.paymentId}`)
         .digest("hex");
 
-      // Signature verification failed
+      // signature verification failed
       if (generatedSignature !== body.signature) {
         await prisma.payment.update({
           where: {
@@ -230,7 +222,7 @@ onrampRouter.post(
         );
       }
 
-      const scaledAmountUsd = existingPayment.amount;
+      const scaledAmountUsd = fromPaymentCents(existingPayment.amount);
 
       const requestId = crypto.randomUUID();
       const onrampId = crypto.randomUUID();
@@ -280,8 +272,7 @@ onrampRouter.post(
         },
       });
 
-      const displayAmountUsd =
-        existingPayment.amount / BASE_CURRENCY_SCALE_FACTOR;
+      const displayAmountUsd = toDisplayUsd(scaledAmountUsd);
 
       return successResponse(
         res,
@@ -289,17 +280,10 @@ onrampRouter.post(
         {
           onrampId: engineResponse.data.onrampId,
           amountUsd: displayAmountUsd,
-          balanceUsd:
-            Math.round(
-              (engineResponse.data.balanceUsd / BASE_CURRENCY_SCALE_FACTOR) *
-                100,
-            ) / 100,
-          availableMarginUsd:
-            Math.round(
-              (engineResponse.data.availableMarginUsd /
-                BASE_CURRENCY_SCALE_FACTOR) *
-                100,
-            ) / 100,
+          balanceUsd: toDisplayUsd(engineResponse.data.balanceUsd),
+          availableMarginUsd: toDisplayUsd(
+            engineResponse.data.availableMarginUsd,
+          ),
         },
         "Deposit completed successfully.",
       );

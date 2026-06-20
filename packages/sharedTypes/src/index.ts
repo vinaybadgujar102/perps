@@ -17,10 +17,15 @@ import {
 } from "./validators/order.validator";
 
 //------------------------------------------------//
-/**
- * Currency scaling factor. 100 cents (base unit) = 1$
- */
-export const BASE_CURRENCY_SCALE_FACTOR = 100;
+export {
+  BASE_CURRENCY_SCALE_FACTOR,
+  engineUsdToDisplay,
+  getNotionalScaleFactor,
+  scaleDisplayUsdToEngine,
+  scalePaymentCentsToEngine,
+  unscaleNotionalFromApi,
+  unscalePnlFromApi,
+} from "./scaling";
 
 export const createUserPayloadSchema = z.object({
   requestId: z.string(),
@@ -387,6 +392,30 @@ export const depthPushSchema = z.object({
   }),
 });
 
+export const tradeUpdateSchema = z.object({
+  kind: z.literal(RESPONSE_KINDS.TRADE_UPDATE),
+  payload: z.object({
+    market: z.string(),
+    price: z.number(),
+    timestamp: z.number(),
+    fillId: z.string(),
+  }),
+});
+
+export type TradeUpdate = z.infer<typeof tradeUpdateSchema>;
+
+export const tradeRoom = (market: string) => `trade.${market}`;
+
+export const tradePushSchema = z.object({
+  stream: z.string(),
+  data: z.object({
+    market: z.string(),
+    price: z.number(),
+    timestamp: z.number(),
+    fillId: z.string(),
+  }),
+});
+
 export const tradeEngineResponseSchema = z.discriminatedUnion("kind", [
   createUserResponseSchema,
   createOrderResponseSchema,
@@ -414,6 +443,7 @@ export const responseQueueSchema = z.discriminatedUnion("kind", [
   indexPriceUpdateSchema,
   depthUpdateSchema,
   userEventUpdateSchema,
+  tradeUpdateSchema,
 ]);
 
 export type ResponseQueueMessage = z.infer<typeof responseQueueSchema>;
@@ -441,6 +471,7 @@ export const eventSchema = z.discriminatedUnion("kind", [
   indexPriceUpdateSchema,
   depthUpdateSchema,
   userEventUpdateSchema,
+  tradeUpdateSchema,
 ]);
 
 export { AssetConfig } from "./assetConfig";

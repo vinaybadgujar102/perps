@@ -1,0 +1,24 @@
+{
+  "name": "timescale-db",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run index.ts",
+    "db:init": "bun run scripts/init-db.ts",
+    "db:drop": "bun run scripts/drop-db.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@repo/sharedtypes": "workspace:*",
+    "@types/pg": "^8.20.0",
+    "pg": "^8.22.0",
+    "redis": "^6.0.0",
+    "zod": "^4.4.3"
+  }
+}
