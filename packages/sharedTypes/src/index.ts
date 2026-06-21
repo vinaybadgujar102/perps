@@ -19,6 +19,8 @@ import {
 //------------------------------------------------//
 export {
   BASE_CURRENCY_SCALE_FACTOR,
+  DEFAULT_BALANCE_MARKET,
+  DEFAULT_NEW_USER_BALANCE_DISPLAY_USD,
   engineUsdToDisplay,
   getNotionalScaleFactor,
   scaleDisplayUsdToEngine,

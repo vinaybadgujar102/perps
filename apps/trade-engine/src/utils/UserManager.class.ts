@@ -1,3 +1,8 @@
+import {
+  DEFAULT_BALANCE_MARKET,
+  DEFAULT_NEW_USER_BALANCE_DISPLAY_USD,
+  scaleDisplayUsdToEngine,
+} from "@repo/sharedtypes";
 import { UserNotFoundError } from "../errors";
 import { User } from "./User.class";
 
@@ -19,6 +24,12 @@ export class UserManager {
 
   createUser(userId: number) {
     const user = new User(userId);
+    user.depositBalance(
+      scaleDisplayUsdToEngine(
+        DEFAULT_NEW_USER_BALANCE_DISPLAY_USD,
+        DEFAULT_BALANCE_MARKET,
+      ),
+    );
     this.users.set(userId, user);
     return user;
   }

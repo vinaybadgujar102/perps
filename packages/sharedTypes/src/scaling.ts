@@ -3,6 +3,12 @@ import { AssetConfig } from "./assetConfig";
 /** Razorpay / fiat minor units: 100 cents = 1 USD. */
 export const BASE_CURRENCY_SCALE_FACTOR = 100;
 
+/** Display USD credited to every newly registered user. */
+export const DEFAULT_NEW_USER_BALANCE_DISPLAY_USD = 100_000;
+
+/** Primary market for balance scaling until multi-market balances exist. */
+export const DEFAULT_BALANCE_MARKET = "BTC";
+
 /**
  * Canonical engine monetary scale (price × qty composite).
  * All engine balance, margin, collateral, and PnL integers use this unit.
