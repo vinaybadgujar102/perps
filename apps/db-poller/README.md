@@ -1,15 +1,14 @@
 # db-poller
 
-To install dependencies:
+Async Postgres writer — persists orders, fills, and closed positions from `response_queue`.
+
+| | |
+| --- | --- |
+| Needs | `DATABASE_URL`, Redis |
 
 ```bash
-bun install
+# from repo root
+bun run dev --filter=db-poller
 ```
 
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.5. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Required for the demo so trades survive restarts. Full setup: [docs/DEMO.md](../../docs/DEMO.md)

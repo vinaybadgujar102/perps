@@ -1,15 +1,12 @@
-# database
+# @repo/database
 
-To install dependencies:
-
-```bash
-bun install
-```
-
-To run:
+Prisma schema and Postgres client shared across the monorepo.
 
 ```bash
-bun run index.ts
+cd packages/database
+bun run db:migrate    # local dev
+bun run db:deploy     # production
+bun run db:generate   # regenerate client
 ```
 
-This project was created using `bun init` in bun v1.3.5. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Requires `DATABASE_URL` in root `.env`.

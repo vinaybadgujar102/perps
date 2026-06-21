@@ -1,52 +1,42 @@
-# nginx load balancing (local)
+# nginx — API load test (local)
 
-## 1. Include this config
+Run three API instances behind nginx on port **8080**.
+
+## 1. Include config
 
 In Homebrew nginx (`/opt/homebrew/etc/nginx/nginx.conf`), inside `http { }`:
 
 ```nginx
-include /Users/YOUR_USER/Desktop/Developer/perps-platform/nginx/perps-api.conf;
+include /path/to/perps-platform/nginx/perps-api.conf;
 ```
 
-Or symlink/copy to `~/nginx-lab/` if you already use that folder.
-
-**Important:** Disable the default Homebrew `server { listen 8080; ... }` block (static `html/`), or it will conflict and return nginx 404s instead of proxying.
+Disable the default `listen 8080` static site block if it conflicts.
 
 ```bash
 nginx -t && nginx -s reload
 ```
 
-## 2. Run three API instances
+## 2. Start API cluster
 
-From `apps/api`:
-
-```bash
-bun run dev:cluster
-```
-
-Stop the cluster:
+From repo root:
 
 ```bash
-bun run dev:cluster:stop
+./scripts/run-api-cluster.sh
 ```
 
-Backends: `3001`, `3002`, `3003`.
+Stop: `./scripts/stop-api-cluster.sh`
+
+Backends: ports `3001`, `3002`, `3003`.
 
 ## 3. Test
 
 ```bash
-# Direct
 curl http://localhost:3001/api/v1/ping
-
-# Through nginx (port 8080)
-curl -s http://localhost:8080/api/v1/ping
-curl -sI http://localhost:8080/api/v1/ping | grep -i x-upstream
-
-for i in {1..9}; do curl -s http://localhost:8080/api/v1/ping | jq .data.port; done
+curl http://localhost:8080/api/v1/ping
 ```
 
-## 4. Frontend via Vite
+## 4. Frontend through nginx (optional)
 
 ```bash
-VITE_API_PROXY_TARGET=http://localhost:8080 bun run dev --filter=web
+VITE_API_PROXY_TARGET=http://localhost:8080 bun run dev --filter=tanstack-frontend
 ```

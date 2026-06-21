@@ -1,15 +1,15 @@
 # wsserver
 
-To install dependencies:
+WebSocket fanout for live depth, index price, and trades.
+
+| | |
+| --- | --- |
+| Port | `8081` |
+| Needs | Redis |
 
 ```bash
-bun install
+# from repo root
+bun run dev --filter=wsserver
 ```
 
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.5. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Full demo: [docs/DEMO.md](../../docs/DEMO.md)

@@ -1,15 +1,15 @@
 # api
 
-To install dependencies:
+Express REST API. Publishes commands to Redis `send_queue`, correlates responses from `response_queue`, talks to Postgres.
+
+| | |
+| --- | --- |
+| Port | `3003` (set `PORT` in root `.env`) |
+| Needs | `DATABASE_URL`, `JWT_SECRET`, Redis, trade-engine |
 
 ```bash
-bun install
+# from repo root
+bun run dev --filter=api
 ```
 
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.5. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Full demo: [docs/DEMO.md](../../docs/DEMO.md)

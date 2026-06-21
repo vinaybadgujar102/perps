@@ -1,15 +1,14 @@
 # price-poller
 
-To install dependencies:
+Optional. Streams Backpack mark prices into the trade engine for index / liquidation.
+
+| | |
+| --- | --- |
+| Needs | Redis, outbound Backpack WS |
 
 ```bash
-bun install
+# from repo root
+bun run dev --filter=price-poller
 ```
 
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.5. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Not required for the standard demo — `simulate:orderbook` seeds prices instead.

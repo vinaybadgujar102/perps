@@ -1,29 +1,14 @@
 # timescale-db
 
-Consumes trade fills from Redis and writes them to TimescaleDB.
+Optional. Consumes fills from Redis and builds OHLC candles in TimescaleDB.
 
-## Setup
-
-```bash
-bun install
-```
-
-Initialize the database (run once):
+| | |
+| --- | --- |
+| Needs | `DB_URL` (separate from Prisma `DATABASE_URL`), Redis |
 
 ```bash
-bun run db:init
+bun run db:init    # once
+bun run dev        # from this app directory, or --filter=timescale-db from root
 ```
 
-Drop all tables and continuous aggregates:
-
-```bash
-bun run db:drop
-```
-
-## Run consumer
-
-```bash
-bun run dev
-```
-
-Requires `DB_URL` for Postgres/TimescaleDB and Redis for `response_queue`.
+Not part of the standard demo. Chart UI still uses synthetic candles.

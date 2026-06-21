@@ -1,15 +1,15 @@
 # trade-engine
 
-To install dependencies:
+In-memory matching engine — orders, positions, margin, liquidation, funding.
+
+| | |
+| --- | --- |
+| Port | none (Redis consumer) |
+| Needs | Redis |
 
 ```bash
-bun install
+# from repo root
+bun run dev --filter=trade-engine
 ```
 
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.5. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Start this **before** the API. Full demo: [docs/DEMO.md](../../docs/DEMO.md)
