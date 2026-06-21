@@ -15,6 +15,12 @@ import { loginApi } from "#/api/auth.api";
 import { terminalToast } from "#/components/ui/terminal-toast";
 import { useUser } from "#/context/user-context";
 
+const inputClassName =
+  "border-0 border-b border-border rounded-none bg-transparent h-12 shadow-none text-foreground focus-visible:ring-0 focus-visible:border-accent placeholder:text-input-label/30";
+
+const DEMO_EMAIL = "demo@perps.local";
+const DEMO_PASSWORD = "demo1234";
+
 export function LoginRightPanel() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -52,8 +58,9 @@ export function LoginRightPanel() {
   });
 
   return (
-    <section className="flex-1 border-l-foreground-muted border-l">
-      <div className="p-8 flex flex-col gap-4 grow-0">
+    <section className="flex-1">
+      <div className="bg-surface border border-border p-8 md:p-12 relative">
+        <div className="absolute top-0 right-0 w-2 h-2 bg-accent" />
         <form
           id="login-form"
           onSubmit={(e) => {
@@ -69,25 +76,26 @@ export function LoginRightPanel() {
                   field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
                   <Field
-                    className="flex flex-col gap-1.5"
+                    className="group flex flex-col gap-1.5"
                     data-invalid={isInvalid}
                   >
                     <FieldLabel
                       htmlFor={field.name}
-                      className="text-neutral-400 tracking-wider text-xs"
+                      className="mono-label text-input-label group-focus-within:text-accent"
                     >
-                      EMAIL
+                      EMAIL ADDRESS
                     </FieldLabel>
                     <Input
                       id={field.name}
                       name={field.name}
+                      type="email"
                       value={field.state.value}
-                      className="bg-foreground h-12 placeholder:text-gray-400"
+                      className={inputClassName}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}
                       aria-invalid={isInvalid}
-                      placeholder="USER@PERPS.IO"
-                      autoComplete="off"
+                      placeholder="TRADER@PERPS.IO"
+                      autoComplete="email"
                     />
                     {isInvalid && (
                       <FieldError
@@ -107,25 +115,26 @@ export function LoginRightPanel() {
                   field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
                   <Field
-                    className="flex flex-col gap-1.5"
+                    className="group flex flex-col gap-1.5"
                     data-invalid={isInvalid}
                   >
                     <FieldLabel
                       htmlFor={field.name}
-                      className="text-neutral-400 tracking-wider text-xs"
+                      className="mono-label text-input-label group-focus-within:text-accent"
                     >
                       PASSWORD
                     </FieldLabel>
                     <Input
                       id={field.name}
                       name={field.name}
+                      type="password"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
-                      className="bg-foreground h-12 placeholder:text-gray-400"
+                      className={inputClassName}
                       onBlur={field.handleBlur}
                       aria-invalid={isInvalid}
-                      placeholder="USER@PERPS.IO"
-                      autoComplete="off"
+                      placeholder="••••••••"
+                      autoComplete="current-password"
                     />
                     {isInvalid && (
                       <FieldError
@@ -139,24 +148,26 @@ export function LoginRightPanel() {
             />
           </FieldGroup>
         </form>
-        <Button
-          type="submit"
-          form="login-form"
-          className="pl-0! text-xl bg-transparent text-foreground tracking-widest font-extrabold w-fit cursor-pointer"
-        >
-          LOGIN
-          <MoveRight strokeWidth={4} size={5} />
-        </Button>
-        <Link
-          className="text-neutral-600 text-xs hover:underline-offset-4 hover:underline hover:text-foreground"
-          to="/register"
-        >
-          NO ACCOUNT? CREATE ONE
-        </Link>
-      </div>
-
-      <div className="relative w-full h-px overflow-hidden bg-border mb-4">
-        <div className="absolute top-0 left-0 h-px w-24 bg-accent animate-shimmer" />
+        <div className="pt-6 flex flex-col gap-6">
+          <Button
+            type="submit"
+            form="login-form"
+            disabled={mutation.isPending}
+            className="pl-0! text-2xl bg-transparent text-foreground tracking-widest font-black w-fit cursor-pointer"
+          >
+            {mutation.isPending ? "LOGGING IN..." : "LOGIN"}
+            <MoveRight strokeWidth={4} size={5} />
+          </Button>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-foreground-muted">
+            Demo: {DEMO_EMAIL} / {DEMO_PASSWORD}
+          </p>
+          <Link
+            className="font-mono text-[10px] uppercase tracking-widest text-foreground-muted hover:text-foreground"
+            to="/register"
+          >
+            NO ACCOUNT? CREATE ONE
+          </Link>
+        </div>
       </div>
     </section>
   );

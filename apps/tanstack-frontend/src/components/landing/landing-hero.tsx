@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
+import { DemoDataBadge } from "#/components/common/demo-data-badge";
 
 const HERO_IMAGE =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuA_eXFgb4D6OelxF0uIbUJ29yNZiVW72LzQZJ8OEdlywESjbXINqValpkfGes4XFfNlrrQY0tT1xwIbaTSXDDvyUVurYKVTdAI407HjqCeYCyhizGl4J1f0UKd9KNb_Uj_6ej7IOiZtJf4eY8L5QvBgk4mlxJv5YvPp_OCJ0nfnYaLfaVqJf1JZ0Dl_IIClRRegHxmDuPKlRSeqABoMOixlHFBxW9JeawSdoVQ_t8C4tNFs0prjIdbfHUMZEL0w3ktStiNfBFQWDzI";
@@ -21,7 +22,7 @@ export function LandingHero() {
   }, []);
 
   return (
-    <main className="relative flex h-screen w-full flex-col justify-center px-10 pt-16 max-md:px-4">
+    <main className="relative flex min-h-[calc(100vh-3rem)] w-full flex-col justify-center px-10 pb-20 max-md:px-4">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 flex select-none items-center justify-center overflow-hidden opacity-[0.03]"
@@ -39,6 +40,7 @@ export function LandingHero() {
           <div className="mb-2 inline-flex items-center gap-2 text-accent">
             <span className="h-2 w-2 bg-accent" />
             <span className="mono-label">LIVE MAINNET v4.0</span>
+            <DemoDataBadge label="Demo" />
           </div>
 
           <h1 className="display-xl uppercase leading-[0.85] tracking-[-0.06em] text-foreground">

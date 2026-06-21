@@ -86,7 +86,7 @@ flowchart LR
 
 ## Environment variables
 
-Create a `.env` file at the **repo root**. Bun auto-loads it when running services via turbo from the root.
+Copy [`.env.example`](.env.example) to `.env` at the **repo root** and adjust as needed. Bun auto-loads it when running services via turbo from the root.
 
 ```bash
 # .env — minimum for the standard demo

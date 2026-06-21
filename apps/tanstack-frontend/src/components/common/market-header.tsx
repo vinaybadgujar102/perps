@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { getOrderbookApi } from "#/api/orderbook.api";
+import { DemoDataBadge } from "#/components/common/demo-data-badge";
 import { MarketSelectModal } from "#/components/common/market-select-modal";
 import { useTradingMarket } from "#/contexts/trading-market-context";
 import type { TickerData } from "#/hooks/use-market-subscriptions";
@@ -80,7 +81,7 @@ export function MarketHeader() {
 
   return (
     <>
-      <div className="border-b border-border bg-surface/30 p-6">
+      <div className="border-b border-border bg-surface/30 px-8 py-7">
         <div className="flex flex-wrap items-end gap-x-12 gap-y-4">
           <div className="relative">
             <span className="display-xl pointer-events-none absolute -top-6 left-0 select-none opacity-[0.03]">
@@ -105,17 +106,24 @@ export function MarketHeader() {
 
           <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
             <div className="flex flex-col">
-              <span className="mono-label mb-1 text-input-label">
+              <span className="mono-label mb-1 flex items-center gap-1.5 text-input-label">
                 24h Change
+                <DemoDataBadge />
               </span>
               <span className="font-mono text-trading-green">{stats.change}</span>
             </div>
             <div className="flex flex-col">
-              <span className="mono-label mb-1 text-input-label">24h High</span>
+              <span className="mono-label mb-1 flex items-center gap-1.5 text-input-label">
+                24h High
+                <DemoDataBadge />
+              </span>
               <span className="font-mono text-foreground">{stats.high}</span>
             </div>
             <div className="flex flex-col">
-              <span className="mono-label mb-1 text-input-label">24h Low</span>
+              <span className="mono-label mb-1 flex items-center gap-1.5 text-input-label">
+                24h Low
+                <DemoDataBadge />
+              </span>
               <span className="font-mono text-foreground">{stats.low}</span>
             </div>
             <div className="flex flex-col">

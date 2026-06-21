@@ -4,6 +4,7 @@ import {
   createChart,
   type IChartApi,
 } from "lightweight-charts";
+import { DemoDataBadge } from "#/components/common/demo-data-badge";
 import { Button } from "#/components/ui/button";
 import { useTradingMarket } from "#/contexts/trading-market-context";
 import { buildDemoCandles } from "#/lib/demo-candles";
@@ -62,7 +63,7 @@ export function ChartPanel() {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col border-t border-border bg-background">
-      <div className="absolute top-4 left-4 z-20 flex gap-2">
+      <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
         <Button
           type="button"
           variant="outline"
@@ -85,6 +86,7 @@ export function ChartPanel() {
         >
           Depth
         </Button>
+        <DemoDataBadge label="Demo chart" />
       </div>
 
       {view === "chart" ? (

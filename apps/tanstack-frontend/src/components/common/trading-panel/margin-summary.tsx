@@ -40,7 +40,7 @@ export function MarginSummary({
       {estimatedCollateral != null ? (
         <div className="mt-1 flex justify-between">
           <span className="nav-label text-[10px] text-input-label">
-            Est. Margin
+            Est. Margin Locked
           </span>
           <span className="font-mono tabular-nums text-input-label">
             {formatUsd(estimatedCollateral)} USD

@@ -4,7 +4,7 @@ const FOOTER_LINKS = ["Terms", "Privacy", "Risk Disclosure"] as const;
 
 export function LandingFooter() {
   return (
-    <footer className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between border-t border-border bg-background px-10 py-2 max-md:px-4">
+    <footer className="flex items-center justify-between border-t border-border bg-background px-10 py-4 max-md:px-4">
       <p className="mono-label text-foreground-muted">
         © 2026 PERPS.IO. HIGH RISK TRADING.
       </p>

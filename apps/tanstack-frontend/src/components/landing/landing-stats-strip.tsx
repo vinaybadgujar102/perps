@@ -1,3 +1,5 @@
+import { DemoDataBadge } from "#/components/common/demo-data-badge";
+
 const STATS = [
   { label: "24H VOLUME", value: "$1,284,942,001", accent: true },
   { label: "OPEN INTEREST", value: "$450,210,559" },
@@ -6,7 +8,13 @@ const STATS = [
 
 export function LandingStatsStrip() {
   return (
-    <section className="fixed inset-x-0 bottom-16 z-30 border-t border-border bg-background/80 backdrop-blur-sm">
+    <section className="border-t border-border bg-background/80 backdrop-blur-sm">
+      <div className="flex items-center justify-between border-b border-border/60 px-10 py-2 max-md:px-4">
+        <span className="mono-label text-[10px] text-foreground-muted">
+          Platform metrics
+        </span>
+        <DemoDataBadge label="Demo data" />
+      </div>
       <div className="flex divide-x divide-border overflow-x-auto">
         {STATS.map((stat) => (
           <div
