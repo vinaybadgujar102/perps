@@ -8,40 +8,16 @@ import {
   EVENT_KINDS,
   ORDER_STATUS,
   ORDER_TYPE,
-  QUEUES,
   SIDE,
 } from "@repo/sharedtypes";
 import type z from "zod";
 import { prisma } from "@repo/database";
-import { requestMap } from "..";
-import { redis } from ".";
-import { errorResponse, successResponse } from "../utils/responseUtils";
 import { StatusCodes } from "http-status-codes";
 import { isUser } from "../middlewares/user.middleware";
+import { dispatchToEngine } from "../utils/dispatchToEngine";
+import { errorResponse, successResponse } from "../utils/responseUtils";
 
 const orderRouter = Router();
-
-async function dispatchToEngine<T>(
-  payload: Record<string, unknown>,
-  requestId: string,
-): Promise<T> {
-  await redis.xAdd(QUEUES.SEND_QUEUE, "*", {
-    data: JSON.stringify(payload),
-  });
-
-  return new Promise((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      requestMap.delete(requestId);
-      reject(new Error("Request timed out"));
-    }, 10000);
-
-    requestMap.set(requestId, {
-      timeoutId,
-      resolve,
-      reject,
-    });
-  });
-}
 
 orderRouter.get("/history", isUser, async (req: Request, res: Response) => {
   const orders = await prisma.order.findMany({

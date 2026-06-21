@@ -1,13 +1,11 @@
 import {
   EVENT_KINDS,
   getOrderbookParamsSchema,
-  QUEUES,
 } from "@repo/sharedtypes";
 import { Router, type Request, type Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import type z from "zod";
-import { requestMap } from "..";
-import { redis } from ".";
+import { dispatchToEngine } from "../utils/dispatchToEngine";
 import { errorResponse, successResponse } from "../utils/responseUtils";
 import { schemaValidator } from "../validators";
 
@@ -21,30 +19,16 @@ orderbookRouter.get(
     const requestId = crypto.randomUUID();
 
     try {
-      await redis.xAdd(QUEUES.SEND_QUEUE, "*", {
-        data: JSON.stringify({
+      const data = await dispatchToEngine(
+        {
           requestId,
           kind: EVENT_KINDS.GET_ORDERBOOK,
           payload: {
             market,
           },
-        }),
-      });
-
-      const promise = new Promise((resolve, reject) => {
-        const timeoutId = setTimeout(() => {
-          requestMap.delete(requestId);
-          reject(new Error("Request timed out"));
-        }, 10000);
-
-        requestMap.set(requestId, {
-          timeoutId,
-          resolve,
-          reject,
-        });
-      });
-
-      const data = await promise;
+        },
+        requestId,
+      );
       return successResponse(
         res,
         StatusCodes.OK,

@@ -1,6 +1,6 @@
 import { eventSchema, QUEUES, RESPONSE_KINDS } from "@repo/sharedtypes";
 import { createClient } from "redis";
-import { requestMap } from ".";
+import { requestMap } from "./requestMap";
 
 const consumerRedis = await createClient().connect();
 

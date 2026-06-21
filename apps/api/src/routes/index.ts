@@ -1,6 +1,5 @@
 import { Router } from "express";
 import authRouter from "./auth.router";
-import { createClient } from "redis";
 import orderRouter from "./order.route";
 import marketRouter from "./market.route";
 import accountRouter from "./account.route";
@@ -10,8 +9,6 @@ import onrampRouter from "./onramp.route";
 import depositsRouter from "./deposits.route";
 import fillsRouter from "./fills.route";
 import pingRouter from "./ping.route";
-
-export const redis = await createClient().connect();
 
 const appRouter = Router();
 

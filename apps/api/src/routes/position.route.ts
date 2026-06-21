@@ -2,43 +2,19 @@ import {
   closePositionParamsSchema,
   closePositionPayloadSchema,
   EVENT_KINDS,
-  QUEUES,
   SIDE,
 } from "@repo/sharedtypes";
 import { prisma } from "@repo/database";
 import { Router, type Request, type Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import type z from "zod";
-import { requestMap } from "..";
 import { isUser } from "../middlewares/user.middleware";
-import { redis } from ".";
+import { dispatchToEngine } from "../utils/dispatchToEngine";
 import { errorResponse, successResponse } from "../utils/responseUtils";
 import { toDisplayCollateral, toDisplayPnl } from "../utils/scaling";
 import { schemaValidator } from "../validators";
 
 const positionRouter = Router();
-
-async function dispatchToEngine<T>(
-  payload: Record<string, unknown>,
-  requestId: string,
-): Promise<T> {
-  await redis.xAdd(QUEUES.SEND_QUEUE, "*", {
-    data: JSON.stringify(payload),
-  });
-
-  return new Promise((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      requestMap.delete(requestId);
-      reject(new Error("Request timed out"));
-    }, 10000);
-
-    requestMap.set(requestId, {
-      timeoutId,
-      resolve,
-      reject,
-    });
-  });
-}
 
 positionRouter.get("/closed", isUser, async (req: Request, res: Response) => {
   const closedPositions = await prisma.closedPosition.findMany({
@@ -80,19 +56,7 @@ positionRouter.get("/", isUser, async (req: Request, res: Response) => {
   };
 
   try {
-    const data = await dispatchToEngine<{
-      success: boolean;
-      message: string | null;
-      data: Array<{
-        market: string;
-        side: SIDE;
-        size: number;
-        averageEntryPrice: number;
-        collateralUser: number;
-        estimatedLiquidationPrice: number;
-        realizedPnl: number;
-      }> | null;
-    }>(payload, requestId);
+    const data = await dispatchToEngine(payload, requestId);
 
     const clientData =
       data.success && data.data

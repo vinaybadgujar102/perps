@@ -5,15 +5,13 @@ import {
   loginSchema,
   signUpSchema,
   EVENT_KINDS,
-  QUEUES,
 } from "@repo/sharedtypes";
 import { prisma } from "@repo/database";
 import { errorResponse, successResponse } from "../utils/responseUtils";
 import { StatusCodes } from "http-status-codes";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { redis } from ".";
-import { requestMap } from "..";
+import { dispatchToEngine } from "../utils/dispatchToEngine";
 const authRouter = Router();
 
 // also add the user in order engine
@@ -54,19 +52,6 @@ authRouter.post(
 
       const requestId = crypto.randomUUID();
 
-      const promise = new Promise((resolve, reject) => {
-        const timeoutId = setTimeout(() => {
-          requestMap.delete(requestId);
-          reject(new Error("Request Timeout"));
-        }, 10000);
-
-        requestMap.set(requestId, {
-          resolve,
-          reject,
-          timeoutId,
-        });
-      });
-
       const payload = {
         requestId: requestId,
         kind: EVENT_KINDS.CREATE_USER,
@@ -75,11 +60,7 @@ authRouter.post(
         },
       };
 
-      redis.xAdd(QUEUES.SEND_QUEUE, "*", {
-        data: JSON.stringify(payload),
-      });
-
-      await promise;
+      await dispatchToEngine(payload, requestId);
 
       return successResponse(
         res,

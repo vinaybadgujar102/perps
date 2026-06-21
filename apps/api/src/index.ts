@@ -4,8 +4,6 @@ import appRouter from "./routes";
 import { listenForRequestId } from "./worker";
 import { bootstrapMarkets } from "./bootstrap/market.bootstrap";
 
-export const requestMap = new Map();
-
 const app = express();
 
 app.use(express.json());

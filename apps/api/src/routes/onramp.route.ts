@@ -4,28 +4,17 @@ import {
   EVENT_KINDS,
   onRampCaptureSchema,
   onrampDepositSchema,
-  QUEUES,
-  RESPONSE_KINDS,
-  type TradeEngineResponse,
 } from "@repo/sharedtypes";
 import { Router, type Request, type Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import type z from "zod";
-import { requestMap } from "..";
 import { isUser } from "../middlewares/user.middleware";
-import { redis } from ".";
+import { dispatchToEngine } from "../utils/dispatchToEngine";
 import { errorResponse, successResponse } from "../utils/responseUtils";
 import { schemaValidator } from "../validators";
 import { razorpayInstance } from "../config/razorpay.config";
 import { PaymentStatus, prisma } from "@repo/database";
 import { fromDisplayUsd, fromPaymentCents, toDisplayUsd } from "../utils/scaling";
-
-type CreateOrderResponse = Extract<
-  TradeEngineResponse,
-  { kind: RESPONSE_KINDS.CREDIT_BALANCE_RESPONSE }
->;
-
-type CreateOrderResponsePayload = CreateOrderResponse["data"];
 
 const onrampRouter = Router();
 
@@ -84,8 +73,8 @@ onrampRouter.post(
     const onrampId = crypto.randomUUID();
 
     try {
-      await redis.xAdd(QUEUES.SEND_QUEUE, "*", {
-        data: JSON.stringify({
+      const engineResponse = await dispatchToEngine(
+        {
           requestId,
           kind: EVENT_KINDS.CREDIT_BALANCE,
           payload: {
@@ -93,22 +82,8 @@ onrampRouter.post(
             amountUsd: scaledAmountUsd,
             onrampId,
           },
-        }),
-      });
-
-      const engineResponse = await new Promise<CreateOrderResponsePayload>(
-        (resolve, reject) => {
-          const timeoutId = setTimeout(() => {
-            requestMap.delete(requestId);
-            reject(new Error("Request timed out"));
-          }, 10000);
-
-          requestMap.set(requestId, {
-            timeoutId,
-            resolve,
-            reject,
-          });
         },
+        requestId,
       );
 
       if (!engineResponse.success || !engineResponse.data) {
@@ -227,8 +202,8 @@ onrampRouter.post(
       const requestId = crypto.randomUUID();
       const onrampId = crypto.randomUUID();
 
-      await redis.xAdd(QUEUES.SEND_QUEUE, "*", {
-        data: JSON.stringify({
+      const engineResponse = await dispatchToEngine(
+        {
           requestId,
           kind: EVENT_KINDS.CREDIT_BALANCE,
           payload: {
@@ -236,22 +211,8 @@ onrampRouter.post(
             amountUsd: scaledAmountUsd,
             onrampId,
           },
-        }),
-      });
-
-      const engineResponse = await new Promise<CreateOrderResponsePayload>(
-        (resolve, reject) => {
-          const timeoutId = setTimeout(() => {
-            requestMap.delete(requestId);
-            reject(new Error("Request timed out"));
-          }, 10000);
-
-          requestMap.set(requestId, {
-            timeoutId,
-            resolve,
-            reject,
-          });
         },
+        requestId,
       );
 
       if (!engineResponse.success || !engineResponse.data) {
