@@ -2,7 +2,30 @@
 
 A perpetual futures trading platform for **BTC** and **SOL**, built as a Bun/Turborepo monorepo. An in-memory matching engine handles order placement and position management; services communicate over **Redis Streams**; orders and fills persist to **Postgres** via an async writer. A TanStack trading terminal provides the live UI.
 
-**What works today:** order placement, live orderbook depth over WebSocket, open positions, funding settlement, and a Razorpay onramp stub.
+## Status
+
+### Working today
+
+| Area | Details |
+| --- | --- |
+| Markets | **BTC** and **SOL** — switch markets in the dashboard header |
+| Trading | Limit and market orders, cancel open orders, close positions, up to 20× leverage |
+| Realtime | Live orderbook depth, index price, and last trade over WebSocket |
+| Account | Positions, open orders, closed positions, order history, fills, deposit history |
+| Balances | New engine users start with **$100,000** margin (credited on signup) |
+| Funding | Periodic funding settlement in the trade engine |
+| Onramp | Razorpay payment-order flow + direct balance credit stub |
+| Persistence | Orders, fills, closed positions, and payments written to Postgres via `db-poller` |
+| Demo | One-shot DB seed (`demo:seed`) and live orderbook simulator (`simulate:orderbook`) |
+
+### Partial / in progress
+
+| Area | Notes |
+| --- | --- |
+| Price chart | UI renders **synthetic demo candles** per market — not yet wired to Timescale OHLC |
+| Orderbook sim | [`scripts/simulate-orderbook.ts`](scripts/simulate-orderbook.ts) seeds **BTC** liquidity only |
+| Timescale | [`apps/timescale-db`](apps/timescale-db) ingests fills and builds 1m/5m candles — optional, requires `DB_URL` |
+| Rust engine | [`apps/trade-engine-rust`](apps/trade-engine-rust) is an early scaffold; production path uses the TypeScript engine |
 
 ## Stack
 
@@ -49,10 +72,11 @@ flowchart LR
 | --- | --- | --- | --- |
 | `trade-engine` | — | Consumes `send_queue`, publishes `response_queue` | Loads snapshot on boot |
 | `api` | `PORT` (demo: **3003**) | Produces `send_queue`, consumes `response_queue` | `DATABASE_URL`, `JWT_SECRET` |
-| `wsServer` | **8081** | Consumes `response_queue`, broadcasts to clients | — |
+| `wsserver` | **8081** | Consumes `response_queue`, broadcasts to clients | — |
 | `db-poller` | — | Consumes `response_queue` | `DATABASE_URL` |
 | `price-poller` | — | Produces mark-price ticks → `send_queue` | Backpack WS (optional for demo) |
 | `tanstack-frontend` | **3000** | — | Proxies API to `localhost:3003` |
+| `timescale-db` | — | Consumes `response_queue` | `DB_URL` (separate from Prisma DB) |
 
 ## Prerequisites
 
@@ -60,30 +84,36 @@ flowchart LR
 - Redis running locally
 - Postgres running locally
 
-Quick start with Docker:
-
-```bash
-docker run -d --name perps-redis -p 6379:6379 redis
-docker run -d --name perps-pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres
-```
-
 ## Environment variables
 
-Copy the example file and fill in values:
+Create a `.env` file at the **repo root**. Bun auto-loads it when running services via turbo from the root.
 
 ```bash
-cp .env.example .env
+# .env — minimum for the standard demo
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
+JWT_SECRET=dev-secret-change-me
+PORT=3003
 ```
 
-Bun auto-loads `.env` from the working directory. When running services via turbo from the repo root, they inherit these values.
+Frontend overrides live in [`apps/tanstack-frontend/.env.example`](apps/tanstack-frontend/.env.example) (optional — defaults work locally).
 
 ### Required for core demo
 
 | Variable | Used by | Notes |
 | --- | --- | --- |
-| `DATABASE_URL` | api, db-poller, Prisma migrate | Postgres connection string |
+| `DATABASE_URL` | api, db-poller, Prisma migrate, demo scripts | Postgres connection string |
 | `JWT_SECRET` | api auth | Any random string for local dev |
 | `PORT` | api | **No default in code** — set `3003` for the frontend proxy |
+
+### Demo / simulator
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `DEMO_USER_EMAIL` | `demo@perps.local` | Login account created by `demo:seed` / simulator |
+| `DEMO_USER_PASSWORD` | `demo1234` | Password for the demo login account |
+| `DEMO_SEED_LOGIN_USER` | `true` | Set `false` to skip demo login user seeding |
+| `DEMO_LOGIN_BALANCE_USD` | `100000000` | Engine balance credited to demo user (scaled USD) |
+| `SIM_*`, `REDIS_URL` | see script header | Tunables for [`scripts/simulate-orderbook.ts`](scripts/simulate-orderbook.ts) |
 
 ### Optional / feature-specific
 
@@ -92,9 +122,8 @@ Bun auto-loads `.env` from the working directory. When running services via turb
 | `ADMIN_API_SECRET` | api admin routes |
 | `RAZORPAY_TEST_API_KEY`, `RAZORPAY_TEST_SECRET_KEY` | onramp |
 | `FUNDING_INTERVAL_MS` | trade-engine (default 8h) |
-| `VITE_API_PROXY_TARGET`, `VITE_WS_URL` | frontend (defaults work locally) |
+| `VITE_API_PROXY_TARGET`, `VITE_WS_URL` | frontend (defaults: `http://localhost:3003`, `ws://localhost:8081`) |
 | `DB_URL` | timescale-db only |
-| `REDIS_URL`, `SIM_*` | [`scripts/simulate-orderbook.ts`](scripts/simulate-orderbook.ts) |
 
 Most services connect to Redis via `createClient()` with the default `redis://localhost:6379`. Only the orderbook simulator documents `REDIS_URL`.
 
@@ -106,11 +135,11 @@ Services have dependencies — start them in this order:
 2. **Postgres** + migrate: `cd packages/database && bun run db:migrate`
 3. **trade-engine** — must be running before commands get processed
 4. **api** — needs Redis, DB, and engine for order flow (`PORT=3003`)
-5. **wsServer** — live UI needs this for depth/trades
+5. **wsserver** — live UI needs this for depth/trades/index price
 6. **db-poller** — async Postgres writer for orders/fills
 7. **price-poller** — optional; mark prices for liquidations/index (or use the simulator)
 8. **tanstack-frontend** — last; hits api + ws
-9. **simulate-orderbook** — dev liquidity after engine is running
+9. **simulate:orderbook** — dev BTC liquidity after engine is running
 
 > **Note:** `bun run dev` at the root runs **all** turbo `dev` tasks, including `timescale-db` which requires `DB_URL`. For the standard demo, use per-service filters instead (see below).
 
@@ -119,13 +148,9 @@ Services have dependencies — start them in this order:
 Copy-paste setup (~5 minutes):
 
 ```bash
-# 0. Infra (if not already running)
-docker run -d --name perps-redis -p 6379:6379 redis
-docker run -d --name perps-pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres
-
-# 1. Install + DB
+# 1. Install + DB (Redis and Postgres must already be running)
 bun install
-cp .env.example .env   # set DATABASE_URL + JWT_SECRET
+# create .env at repo root (see Environment variables above)
 cd packages/database && bun run db:migrate && cd ../..
 
 # 2. Core services (separate terminals, or background with &)
@@ -135,42 +160,77 @@ bun run dev --filter=wsserver
 bun run dev --filter=db-poller
 bun run dev --filter=tanstack-frontend
 
-# 3. Seed liquidity
+# 3. Seed Postgres + demo login + BTC orderbook liquidity
 bun run simulate:orderbook
 
 # 4. Open http://localhost:3000 → /login → /dashboard
+#    Demo account: demo@perps.local / demo1234
+#    (or sign up — new users also receive $100k engine balance)
 ```
 
 Ensure `.env` has `PORT=3003`, `JWT_SECRET`, and `DATABASE_URL` before starting the api.
 
+### DB-only seed (no simulator)
+
+If you only need Postgres rows (markets, sim users, demo login) without live orderbook activity:
+
+```bash
+bun run demo:seed
+```
+
+The simulator runs this automatically on startup when `DATABASE_URL` is set.
+
 ## Liquidity for demo
 
-The orderbook starts empty. Use [`scripts/simulate-orderbook.ts`](scripts/simulate-orderbook.ts) to seed a multi-level BTC book and simulate realistic activity:
+The orderbook starts empty. Use [`scripts/simulate-orderbook.ts`](scripts/simulate-orderbook.ts) to seed a multi-level **BTC** book and simulate realistic activity:
 
 ```bash
 bun run simulate:orderbook
 ```
 
-**What it does:** creates sim users (IDs 9001–9005), places resting limit orders, executes crosses, and refreshes liquidity on a jittered interval.
+**What it does:** seeds markets and sim users in Postgres, creates a demo login account, registers sim users in the engine, places resting limit orders, executes crosses, and refreshes liquidity on a jittered interval.
 
-**Requires:** Redis + trade-engine (+ wsServer for live depth/trade UI).
+**Requires:** Redis + trade-engine (+ wsserver for live depth/trade UI, db-poller for persisted fills).
 
 **Tunable via env:** `SIM_MID_PRICE`, `SIM_SPREAD`, `SIM_TRADE_PROB`, `SIM_DEPTH_LEVELS`, and more — see the script header for the full list.
+
+## Testing
+
+```bash
+# Typecheck + lint (all packages)
+bun run check-types
+bun run lint
+
+# Trade engine unit tests (matching, PnL, liquidation, leverage)
+cd apps/trade-engine && bun test
+
+# API tests
+cd apps/api && bun test
+
+# Frontend tests
+cd apps/tanstack-frontend && bun test
+```
 
 ## Monorepo layout
 
 ```
 apps/
-  api/               REST + Redis producer/consumer
-  trade-engine/      Matching engine
-  wsServer/          WebSocket fanout
-  db-poller/         Postgres writer
-  price-poller/      External mark prices (optional)
-  timescale-db/      Analytics consumer (optional)
-  tanstack-frontend/ Trading UI
+  api/                 REST + Redis producer/consumer
+  trade-engine/        Matching engine (production)
+  trade-engine-rust/   Rust engine scaffold (WIP)
+  wsServer/            WebSocket fanout
+  db-poller/           Postgres writer
+  price-poller/        External mark prices (optional)
+  timescale-db/        Fill → OHLC consumer (optional)
+  tanstack-frontend/   Trading UI (BTC + SOL)
 packages/
-  database/          Prisma schema + client
-  sharedtypes/       Queues, events, asset config
+  database/            Prisma schema + client
+  sharedTypes/         Queues, events, asset config (@repo/sharedtypes)
+  ui/                  Shared UI primitives
+scripts/
+  demo-seed.ts         Postgres demo seed
+  simulate-orderbook.ts  Live BTC orderbook simulator
+  run-api-cluster.sh   Multi-instance API for nginx load tests
 ```
 
 ## Further reading
