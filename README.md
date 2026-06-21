@@ -2,6 +2,8 @@
 
 A perpetual futures trading platform for **BTC** and **SOL**, built as a Bun/Turborepo monorepo. An in-memory matching engine handles order placement and position management; services communicate over **Redis Streams**; orders and fills persist to **Postgres** via an async writer. A TanStack trading terminal provides the live UI.
 
+**→ [Run the local demo](docs/DEMO.md)** — step-by-step setup with automated seeding and orderbook simulation.
+
 ## Status
 
 ### Working today
@@ -143,56 +145,11 @@ Services have dependencies — start them in this order:
 
 > **Note:** `bun run dev` at the root runs **all** turbo `dev` tasks, including `timescale-db` which requires `DB_URL`. For the standard demo, use per-service filters instead (see below).
 
-## Demo script
+## Demo
 
-Copy-paste setup (~5 minutes):
+See **[docs/DEMO.md](docs/DEMO.md)** for the full step-by-step guide.
 
-```bash
-# 1. Install + DB (Redis and Postgres must already be running)
-bun install
-# create .env at repo root (see Environment variables above)
-cd packages/database && bun run db:migrate && cd ../..
-
-# 2. Core services (separate terminals, or background with &)
-bun run dev --filter=trade-engine
-bun run dev --filter=api
-bun run dev --filter=wsserver
-bun run dev --filter=db-poller
-bun run dev --filter=tanstack-frontend
-
-# 3. Seed Postgres + demo login + BTC orderbook liquidity
-bun run simulate:orderbook
-
-# 4. Open http://localhost:3000 → /login → /dashboard
-#    Demo account: demo@perps.local / demo1234
-#    (or sign up — new users also receive $100k engine balance)
-```
-
-Ensure `.env` has `PORT=3003`, `JWT_SECRET`, and `DATABASE_URL` before starting the api.
-
-### DB-only seed (no simulator)
-
-If you only need Postgres rows (markets, sim users, demo login) without live orderbook activity:
-
-```bash
-bun run demo:seed
-```
-
-The simulator runs this automatically on startup when `DATABASE_URL` is set.
-
-## Liquidity for demo
-
-The orderbook starts empty. Use [`scripts/simulate-orderbook.ts`](scripts/simulate-orderbook.ts) to seed a multi-level **BTC** book and simulate realistic activity:
-
-```bash
-bun run simulate:orderbook
-```
-
-**What it does:** seeds markets and sim users in Postgres, creates a demo login account, registers sim users in the engine, places resting limit orders, executes crosses, and refreshes liquidity on a jittered interval.
-
-**Requires:** Redis + trade-engine (+ wsserver for live depth/trade UI, db-poller for persisted fills).
-
-**Tunable via env:** `SIM_MID_PRICE`, `SIM_SPREAD`, `SIM_TRADE_PROB`, `SIM_DEPTH_LEVELS`, and more — see the script header for the full list.
+Quick summary: start Redis and Postgres → migrate → run five services → `bun run simulate:orderbook` → login at `demo@perps.local` / `demo1234`.
 
 ## Testing
 
@@ -235,6 +192,7 @@ scripts/
 
 ## Further reading
 
+- [`docs/DEMO.md`](docs/DEMO.md) — local demo setup (automated seed + orderbook sim)
 - [`notes/FUNDING_RATE.md`](notes/FUNDING_RATE.md) — funding rate implementation
 - [`nginx/README.md`](nginx/README.md) — API cluster load test (ports 3001–3003 → nginx 8080)
 - [`apps/timescale-db/README.md`](apps/timescale-db/README.md) — optional Timescale setup
