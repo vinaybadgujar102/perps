@@ -21,6 +21,6 @@ appRouter.use("/positions", positionRouter);
 appRouter.use("/orderbook", orderbookRouter);
 appRouter.use("/onramp", onrampRouter);
 appRouter.use("/deposits", depositsRouter);
-appRouter.use("/", marketRouter);
+appRouter.use("/market", marketRouter);
 
 export default appRouter;

@@ -1,19 +1,19 @@
 import { prisma } from "@repo/database";
+import {
+  createMarketSchema,
+  marketSymbolParamsSchema,
+  updateMarketSchema,
+} from "@repo/sharedtypes";
 import { Router, type Request, type Response } from "express";
 import { StatusCodes } from "http-status-codes";
+import type z from "zod";
 import { isAdmin } from "../middlewares/admin.middleware";
 import { errorResponse, successResponse } from "../utils/responseUtils";
 import { schemaValidator } from "../validators";
-import {
-  createMarketSchema,
-  updateMarketSchema,
-} from "@repo/sharedtypes";
 
 const marketRouter = Router();
 
-const normalizeSymbol = (symbol: string) => symbol.trim().toUpperCase();
-
-marketRouter.get("/markets", async (_req: Request, res: Response) => {
+marketRouter.get("/", async (_req: Request, res: Response) => {
   const markets = await prisma.market.findMany({
     where: { isActive: true },
     orderBy: { symbol: "asc" },
@@ -27,27 +27,8 @@ marketRouter.get("/markets", async (_req: Request, res: Response) => {
   );
 });
 
-marketRouter.get("/markets/:symbol", async (req: Request, res: Response) => {
-  const symbol = normalizeSymbol(req.params.symbol);
-
-  const market = await prisma.market.findUnique({
-    where: { symbol },
-  });
-
-  if (!market) {
-    return errorResponse(res, StatusCodes.NOT_FOUND, "Market not found.");
-  }
-
-  return successResponse(
-    res,
-    StatusCodes.OK,
-    { market },
-    "Market loaded successfully.",
-  );
-});
-
 marketRouter.post(
-  "/admin/markets",
+  "/admin",
   isAdmin,
   schemaValidator(createMarketSchema),
   async (req: Request, res: Response) => {
@@ -81,11 +62,12 @@ marketRouter.post(
 );
 
 marketRouter.put(
-  "/admin/markets/:symbol",
+  "/admin/:symbol",
   isAdmin,
+  schemaValidator(marketSymbolParamsSchema, "params"),
   schemaValidator(updateMarketSchema),
   async (req: Request, res: Response) => {
-    const symbol = normalizeSymbol(req.params.symbol);
+    const { symbol } = req.params as z.infer<typeof marketSymbolParamsSchema>;
     const data = updateMarketSchema.parse(req.body);
 
     try {
@@ -113,10 +95,11 @@ marketRouter.put(
 );
 
 marketRouter.delete(
-  "/admin/markets/:symbol",
+  "/admin/:symbol",
   isAdmin,
+  schemaValidator(marketSymbolParamsSchema, "params"),
   async (req: Request, res: Response) => {
-    const symbol = normalizeSymbol(req.params.symbol);
+    const { symbol } = req.params as z.infer<typeof marketSymbolParamsSchema>;
 
     try {
       const market = await prisma.market.update({
@@ -133,6 +116,29 @@ marketRouter.delete(
     } catch {
       return errorResponse(res, StatusCodes.NOT_FOUND, "Market not found.");
     }
+  },
+);
+
+marketRouter.get(
+  "/:symbol",
+  schemaValidator(marketSymbolParamsSchema, "params"),
+  async (req: Request, res: Response) => {
+    const { symbol } = req.params as z.infer<typeof marketSymbolParamsSchema>;
+
+    const market = await prisma.market.findUnique({
+      where: { symbol },
+    });
+
+    if (!market) {
+      return errorResponse(res, StatusCodes.NOT_FOUND, "Market not found.");
+    }
+
+    return successResponse(
+      res,
+      StatusCodes.OK,
+      { market },
+      "Market loaded successfully.",
+    );
   },
 );
 
