@@ -3,12 +3,16 @@
  * Dev script: seeds a multi-level BTC orderbook and simulates realistic
  * activity — passive liquidity updates plus actual trades between sim users.
  *
- * Requires: Redis + trade-engine (+ wsServer for live depth/trade UI).
+ * Requires: Redis + trade-engine + Postgres (DATABASE_URL) + db-poller for full E2E.
  *
  * Usage:
  *   bun run simulate:orderbook
  *
  * Env:
+ *   DATABASE_URL        required — seeds markets + sim users in Postgres for db-poller
+ *   DEMO_USER_EMAIL     default demo@perps.local (login account for the UI)
+ *   DEMO_USER_PASSWORD  default demo1234
+ *   DEMO_SEED_LOGIN_USER default true — credits a demo login user in engine + Postgres
  *   REDIS_URL           default redis://localhost:6379
  *   SIM_INTERVAL_MS     default 1500 (base tick; actual delay is jittered)
  *   SIM_USER_BASE       default 9001 (creates SIM_USER_COUNT users from here)
@@ -31,6 +35,10 @@ import {
   SIDE,
   eventSchema,
 } from "@repo/sharedtypes";
+import {
+  ensureDemoLoginUserInDb,
+  seedDemoDatabase,
+} from "./lib/demo-db-seed";
 
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
 const INTERVAL_MS = Number(process.env.SIM_INTERVAL_MS ?? 1500);
@@ -43,6 +51,10 @@ const PRICE_STEP = Number(process.env.SIM_PRICE_STEP ?? 1_000);
 const MIN_QTY = Number(process.env.SIM_MIN_QTY ?? 5);
 const MAX_QTY = Number(process.env.SIM_MAX_QTY ?? 40);
 const TRADE_PROB = Number(process.env.SIM_TRADE_PROB ?? 0.35);
+const DEMO_SEED_LOGIN_USER = process.env.DEMO_SEED_LOGIN_USER !== "false";
+const DEMO_LOGIN_BALANCE_USD = Number(
+  process.env.DEMO_LOGIN_BALANCE_USD ?? 100_000_000,
+);
 const MARKET = "BTC";
 
 const { priceScale, quantityScale } = AssetConfig[MARKET];
@@ -252,16 +264,23 @@ async function dispatch(
   return response;
 }
 
-async function ensureSimUser(publisher: RedisClientType, userId: number) {
+async function ensureEngineUser(
+  publisher: RedisClientType,
+  userId: number,
+  balanceUsd: number,
+  label: string,
+) {
   const createUserRes = await dispatch(publisher, {
     kind: EVENT_KINDS.CREATE_USER,
     payload: { userId },
   });
 
   if (createUserRes.success) {
-    console.log(`Created sim user ${userId}`);
+    console.log(`Created ${label} ${userId} in trade engine`);
   } else if (createUserRes.message !== "USER_ALREADY_EXISTS") {
-    throw new Error(createUserRes.message ?? `Failed to create sim user ${userId}`);
+    throw new Error(
+      createUserRes.message ?? `Failed to create ${label} ${userId}`,
+    );
   }
 
   unwrapEngine(
@@ -269,11 +288,15 @@ async function ensureSimUser(publisher: RedisClientType, userId: number) {
       kind: EVENT_KINDS.CREDIT_BALANCE,
       payload: {
         userId,
-        amountUsd: 100_000_000,
+        amountUsd: balanceUsd,
         onrampId: crypto.randomUUID(),
       },
     }),
   );
+}
+
+async function ensureSimUser(publisher: RedisClientType, userId: number) {
+  await ensureEngineUser(publisher, userId, 100_000_000, "sim user");
 }
 
 async function createOrder(
@@ -624,6 +647,17 @@ async function simulateTick(publisher: RedisClientType) {
 }
 
 async function main() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error(
+      "DATABASE_URL is required so sim users and orders can persist via db-poller",
+    );
+  }
+
+  await seedDemoDatabase(simUserIds);
+  console.log(
+    `Postgres seeded: markets + sim users ${simUserIds.join(", ")}`,
+  );
+
   const consumer = createClient({ url: REDIS_URL });
   const publisher = createClient({ url: REDIS_URL });
 
@@ -631,6 +665,19 @@ async function main() {
   await publisher.connect();
 
   void startResponseListener(consumer);
+
+  if (DEMO_SEED_LOGIN_USER) {
+    const demoUser = await ensureDemoLoginUserInDb();
+    await ensureEngineUser(
+      publisher,
+      demoUser.userId,
+      DEMO_LOGIN_BALANCE_USD,
+      "demo login user",
+    );
+    console.log(
+      `Demo login ready: ${demoUser.email} / ${demoUser.password} (userId ${demoUser.userId})`,
+    );
+  }
 
   console.log("Orderbook + trade simulator started");
   console.log(

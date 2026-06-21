@@ -7,10 +7,13 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "simulate:orderbook": "bun run scripts/simulate-orderbook.ts"
+    "simulate:orderbook": "bun run scripts/simulate-orderbook.ts",
+    "demo:seed": "bun run scripts/demo-seed.ts"
   },
   "devDependencies": {
+    "@repo/database": "workspace:*",
     "@repo/sharedtypes": "workspace:*",
+    "bcrypt": "^6.0.0",
     "prettier": "^3.7.4",
     "redis": "^5.12.1",
     "turbo": "^2.9.14",
