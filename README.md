@@ -25,6 +25,38 @@ More screenshot slots: [`docs/assets/demo/README.md`](docs/assets/demo/README.md
 3. Follow **[docs/DEMO.md](docs/DEMO.md)** (install → migrate → 5 services → `bun run simulate:orderbook`)  
 4. Login: `demo@perps.local` / `demo1234`
 
+## Architecture
+
+```mermaid
+flowchart LR
+    Frontend["TanStack Frontend :3000"]
+    API["API :3003"]
+    SendQueue["Redis send_queue"]
+    Engine["trade-engine"]
+    ResponseQueue["Redis response_queue"]
+    DBPoller["db-poller"]
+    WSServer["wsserver :8081"]
+    PricePoller["price-poller optional"]
+    Timescale["timescale-db optional"]
+    Postgres["PostgreSQL"]
+    Clients["WebSocket Clients"]
+
+    Frontend -->|REST /api/v1| API
+    Frontend -->|WS ws://8081| WSServer
+    API -->|xAdd| SendQueue
+    PricePoller -->|mark_price ticks| SendQueue
+    SendQueue --> Engine
+    Engine -->|xAdd| ResponseQueue
+    ResponseQueue --> API
+    ResponseQueue --> DBPoller
+    ResponseQueue --> WSServer
+    ResponseQueue --> Timescale
+    DBPoller --> Postgres
+    API --> Postgres
+    WSServer --> Clients
+```
+
+More diagrams (order flow, matching, liquidation, auth, WebSocket, frontend): **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
 
 ## Services
 
@@ -38,12 +70,11 @@ More screenshot slots: [`docs/assets/demo/README.md`](docs/assets/demo/README.md
 | `price-poller` | — | optional |
 | `timescale-db` | — | optional, needs `DB_URL` |
 
-
 ## Repo layout
 
 ```
 apps/           api, trade-engine, wsServer, db-poller, tanstack-frontend, …
 packages/       database (Prisma), sharedTypes, ui
 scripts/        demo-seed, simulate-orderbook
-docs/           DEMO.md, assets/demo/
+docs/           DEMO.md, ARCHITECTURE.md, assets/demo/
 ```
