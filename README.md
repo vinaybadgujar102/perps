@@ -6,9 +6,7 @@ Perpetual futures trading — matching engine, Redis event bus, Postgres persist
 
 ## Demo
 
-https://github.com/vinaybadgujar102/perps/raw/main/docs/assets/demo/dashboard.mov
-
-More media slots: [`docs/assets/demo/README.md`](docs/assets/demo/README.md)
+https://github.com/user-attachments/assets/fceb973f-2a09-4eb2-bf23-4cc4f66b4726
 
 ## Quick start
 
@@ -59,8 +57,8 @@ More diagrams (order flow, matching, liquidation, auth, WebSocket, frontend): **
 | `wsserver` | 8081 | `bun run dev --filter=wsserver` |
 | `trade-engine` | — | `bun run dev --filter=trade-engine` |
 | `db-poller` | — | `bun run dev --filter=db-poller` |
-| `price-poller` | — | optional |
-| `timescale-db` | — | optional, needs `DB_URL` |
+| `price-poller` | — | `bun run dev --filter=price-poller` |
+| `timescale-db` | — | `bun run dev --filter=timescale-db` |
 
 ## Repo layout
 
