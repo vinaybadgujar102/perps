@@ -32,9 +32,6 @@ PORT=3003
 cd packages/database && bun run db:migrate && cd ../..
 ```
 
-![Setup — add terminal screenshot](assets/demo/setup-terminal.png)
-*Optional: `docs/assets/demo/setup-terminal.png` — services + simulator running*
-
 ## 4. Start services
 
 Five terminals from the **repo root**, one command each:
@@ -71,20 +68,16 @@ Demo login ready: demo@perps.local / demo1234 (userId …)
 2. **Login** → `demo@perps.local` / `demo1234`
 3. Open **Dashboard** and place orders
 
-![Dashboard after login](assets/demo/dashboard.png)
-*Add `docs/assets/demo/dashboard.png`*
-
-![Orderbook with liquidity](assets/demo/orderbook.png)
-*Add `docs/assets/demo/orderbook.png`*
-
 ---
 
 ## Demo login
 
-| | Default |
-| --- | --- |
-| Email | `demo@perps.local` |
-| Password | `demo1234` |
+
+|          | Default            |
+| -------- | ------------------ |
+| Email    | `demo@perps.local` |
+| Password | `demo1234`         |
+
 
 Override with `DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD` in `.env`.  
 Set `DEMO_SEED_LOGIN_USER=false` to skip and sign up manually.
@@ -101,20 +94,25 @@ Still need `simulate:orderbook` or signup for trade-engine users.
 
 ## Troubleshooting
 
-| Problem | Fix |
-| --- | --- |
-| `DATABASE_URL` required | Add to `.env` |
-| API won't start | Set `PORT=3003` and `JWT_SECRET` |
-| Empty orderbook | Keep `simulate:orderbook` running |
-| Orders don't save | Start `db-poller` |
-| FK errors in db-poller | Re-run `simulate:orderbook` |
+
+| Problem                 | Fix                               |
+| ----------------------- | --------------------------------- |
+| `DATABASE_URL` required | Add to `.env`                     |
+| API won't start         | Set `PORT=3003` and `JWT_SECRET`  |
+| Empty orderbook         | Keep `simulate:orderbook` running |
+| Orders don't save       | Start `db-poller`                 |
+| FK errors in db-poller  | Re-run `simulate:orderbook`       |
+
 
 ## Record a demo
 
 Use these slots when capturing video or screenshots — see [`assets/demo/README.md`](assets/demo/README.md):
 
-| Asset | Suggested content |
-| --- | --- |
-| `overview.mp4` | Full flow: login → market order → position updates |
-| `positions.png` | Positions / order history tabs |
-| `deposit.png` | Deposit dialog (optional) |
+
+| Asset           | Suggested content                                  |
+| --------------- | -------------------------------------------------- |
+| `overview.mp4`  | Full flow: login → market order → position updates |
+| `positions.png` | Positions / order history tabs                     |
+| `deposit.png`   | Deposit dialog (optional)                          |
+
+

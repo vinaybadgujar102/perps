@@ -16,14 +16,21 @@
  *   REDIS_URL           default redis://localhost:6379
  *   SIM_INTERVAL_MS     default 1500 (base tick; actual delay is jittered)
  *   SIM_USER_BASE       default 9001 (creates SIM_USER_COUNT users from here)
- *   SIM_USER_COUNT      default 5
+ *   SIM_USER_COUNT      default 12
  *   SIM_DEPTH_LEVELS    default 10 (matches engine snapshot limit)
+ *   SIM_ORDERS_PER_LEVEL default 6 (stacked makers per price level)
  *   SIM_MID_PRICE       default 6100000 ($61,000.00)
- *   SIM_SPREAD          default 3000 ($30.00 between best bid and best ask)
- *   SIM_PRICE_STEP      default 1000 ($10.00 between levels)
- *   SIM_MIN_QTY         default 5   (0.05 BTC with quantityScale=2)
- *   SIM_MAX_QTY         default 40  (0.40 BTC)
- *   SIM_TRADE_PROB      default 0.35 (chance each tick executes a cross)
+ *   SIM_SPREAD          default 1000 ($10.00 between best bid and best ask)
+ *   SIM_PRICE_STEP      default 500  ($5.00 between levels — denser book)
+ *   SIM_MIN_QTY         default 150  (1.50 BTC with quantityScale=2)
+ *   SIM_MAX_QTY         default 2500 (25.00 BTC)
+ *   SIM_TOUCH_MIN_QTY   default 400  (4.00 BTC at best bid/ask)
+ *   SIM_TOUCH_MAX_QTY   default 5000 (50.00 BTC at best bid/ask)
+ *   SIM_TRADE_PROB      default 0.12 (chance each tick executes a cross)
+ *   SIM_TRADE_MAX_QTY   default 120 (1.20 BTC max per simulated cross)
+ *   SIM_PULL_PROB       default 0.03 (chance to cancel a deep order)
+ *   SIM_USER_BALANCE_DISPLAY_USD default 50000000 ($50M per sim user)
+ *   SIM_LEVERAGE        default 20 (max for BTC)
  */
 
 import { createClient, type RedisClientType } from "redis";
@@ -34,6 +41,7 @@ import {
   QUEUES,
   SIDE,
   eventSchema,
+  scaleDisplayUsdToEngine,
 } from "@repo/sharedtypes";
 import {
   ensureDemoLoginUserInDb,
@@ -43,19 +51,32 @@ import {
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
 const INTERVAL_MS = Number(process.env.SIM_INTERVAL_MS ?? 1500);
 const SIM_USER_BASE = Number(process.env.SIM_USER_BASE ?? 9001);
-const SIM_USER_COUNT = Number(process.env.SIM_USER_COUNT ?? 5);
+const SIM_USER_COUNT = Number(process.env.SIM_USER_COUNT ?? 12);
 const DEPTH_LEVELS = Number(process.env.SIM_DEPTH_LEVELS ?? 10);
+const ORDERS_PER_LEVEL = Number(process.env.SIM_ORDERS_PER_LEVEL ?? 6);
 const MID_PRICE = Number(process.env.SIM_MID_PRICE ?? 6_100_000);
-const SPREAD = Number(process.env.SIM_SPREAD ?? 3_000);
-const PRICE_STEP = Number(process.env.SIM_PRICE_STEP ?? 1_000);
-const MIN_QTY = Number(process.env.SIM_MIN_QTY ?? 5);
-const MAX_QTY = Number(process.env.SIM_MAX_QTY ?? 40);
-const TRADE_PROB = Number(process.env.SIM_TRADE_PROB ?? 0.35);
+const SPREAD = Number(process.env.SIM_SPREAD ?? 1_000);
+const PRICE_STEP = Number(process.env.SIM_PRICE_STEP ?? 500);
+const MIN_QTY = Number(process.env.SIM_MIN_QTY ?? 150);
+const MAX_QTY = Number(process.env.SIM_MAX_QTY ?? 2_500);
+const TOUCH_MIN_QTY = Number(process.env.SIM_TOUCH_MIN_QTY ?? 400);
+const TOUCH_MAX_QTY = Number(process.env.SIM_TOUCH_MAX_QTY ?? 5_000);
+const TRADE_PROB = Number(process.env.SIM_TRADE_PROB ?? 0.12);
+const TRADE_MAX_QTY = Number(process.env.SIM_TRADE_MAX_QTY ?? 120);
+const PULL_PROB = Number(process.env.SIM_PULL_PROB ?? 0.03);
+const MARKET = "BTC";
+const SIM_USER_BALANCE_DISPLAY_USD = Number(
+  process.env.SIM_USER_BALANCE_DISPLAY_USD ?? 50_000_000,
+);
+const SIM_LEVERAGE = Number(process.env.SIM_LEVERAGE ?? AssetConfig.BTC.maxLeverage);
+const SIM_USER_BALANCE = scaleDisplayUsdToEngine(
+  SIM_USER_BALANCE_DISPLAY_USD,
+  MARKET,
+);
 const DEMO_SEED_LOGIN_USER = process.env.DEMO_SEED_LOGIN_USER !== "false";
 const DEMO_LOGIN_BALANCE_USD = Number(
   process.env.DEMO_LOGIN_BALANCE_USD ?? 100_000_000,
 );
-const MARKET = "BTC";
 
 const { priceScale, quantityScale } = AssetConfig[MARKET];
 const BEST_BID = MID_PRICE - Math.floor(SPREAD / 2);
@@ -95,6 +116,7 @@ type RestingOrder = {
 
 const pending = new Map<string, PendingRequest>();
 const restingOrders: RestingOrder[] = [];
+const userMargin = new Map<number, { balance: number; locked: number }>();
 const simUserIds = Array.from(
   { length: SIM_USER_COUNT },
   (_, i) => SIM_USER_BASE + i,
@@ -102,25 +124,127 @@ const simUserIds = Array.from(
 
 let tradeCount = 0;
 let totalFilledQty = 0;
+let seedUserIndex = 0;
+
+function requiredCollateral(price: number, qty: number) {
+  return (price * qty) / SIM_LEVERAGE;
+}
+
+function creditUserMargin(userId: number, amount: number) {
+  const existing = userMargin.get(userId);
+  if (existing) {
+    existing.balance += amount;
+    return;
+  }
+  userMargin.set(userId, { balance: amount, locked: 0 });
+}
+
+function getAvailableMargin(userId: number) {
+  const state = userMargin.get(userId);
+  if (!state) return 0;
+  return state.balance - state.locked;
+}
+
+function reserveLocalMargin(userId: number, price: number, qty: number) {
+  const state = userMargin.get(userId);
+  if (!state) {
+    throw new Error(`Unknown sim user ${userId}`);
+  }
+
+  const required = requiredCollateral(price, qty);
+  if (getAvailableMargin(userId) < required) {
+    throw new Error(`Local margin tracking out of sync for user ${userId}`);
+  }
+  state.locked += required;
+}
+
+function releaseLocalMargin(userId: number, price: number, qty: number) {
+  const state = userMargin.get(userId);
+  if (!state) return;
+
+  state.locked = Math.max(
+    0,
+    state.locked - requiredCollateral(price, qty),
+  );
+}
+
+function capQtyToMargin(userId: number, price: number, desiredQty: number) {
+  const maxQty = Math.floor(
+    (getAvailableMargin(userId) * SIM_LEVERAGE) / price,
+  );
+  return Math.max(0, Math.min(desiredQty, maxQty));
+}
+
+function pickSimUserWithMargin(price: number, qty: number) {
+  const required = requiredCollateral(price, qty);
+  const rotated = [
+    ...simUserIds.slice(seedUserIndex),
+    ...simUserIds.slice(0, seedUserIndex),
+  ];
+
+  for (const userId of rotated) {
+    if (getAvailableMargin(userId) >= required) {
+      seedUserIndex = (simUserIds.indexOf(userId) + 1) % simUserIds.length;
+      return userId;
+    }
+  }
+
+  let bestUser = simUserIds[0]!;
+  let bestAvailable = getAvailableMargin(bestUser);
+  for (const userId of simUserIds) {
+    const available = getAvailableMargin(userId);
+    if (available > bestAvailable) {
+      bestAvailable = available;
+      bestUser = userId;
+    }
+  }
+  return bestUser;
+}
+
+function pickTakerUserWithMargin(
+  excludeUserId: number,
+  price: number,
+  qty: number,
+) {
+  const required = requiredCollateral(price, qty);
+  const candidates = simUserIds.filter((id) => id !== excludeUserId);
+
+  for (const userId of candidates) {
+    if (getAvailableMargin(userId) >= required) {
+      return userId;
+    }
+  }
+
+  return null;
+}
 
 function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 function randomQty(levelIndex: number) {
-  const touchWeight = Math.max(0.35, 1 - levelIndex * 0.07);
-  const base = MIN_QTY + (MAX_QTY - MIN_QTY) * touchWeight;
-  return Math.max(MIN_QTY, Math.round(base * (0.75 + Math.random() * 0.5)));
+  if (levelIndex === 0) {
+    return randomInt(TOUCH_MIN_QTY, TOUCH_MAX_QTY);
+  }
+
+  const depthFalloff = Math.max(0.45, 1 - levelIndex * 0.05);
+  const base = MIN_QTY + (MAX_QTY - MIN_QTY) * depthFalloff;
+  return Math.max(MIN_QTY, Math.round(base * (0.85 + Math.random() * 0.3)));
 }
 
-function pickSimUser() {
-  return simUserIds[randomInt(0, simUserIds.length - 1)]!;
+function targetQtyAtLevel(levelIndex: number) {
+  if (levelIndex === 0) {
+    return randomInt(TOUCH_MIN_QTY, TOUCH_MAX_QTY);
+  }
+  return randomQty(levelIndex);
 }
 
-function pickTakerUser(excludeUserId: number) {
-  const candidates = simUserIds.filter((id) => id !== excludeUserId);
-  if (candidates.length === 0) return simUserIds[0]!;
-  return candidates[randomInt(0, candidates.length - 1)]!;
+function randomTradeQty(available: number, makerQty: number) {
+  if (available < MIN_QTY) return 0;
+
+  const cap = Math.min(TRADE_MAX_QTY, available, makerQty);
+  const floor = Math.min(MIN_QTY, cap);
+  return randomInt(floor, cap);
 }
 
 function bidPriceAtLevel(levelIndex: number) {
@@ -193,6 +317,7 @@ function applyFillsToLocalBook(fills: TradeFill[]) {
     const maker = restingOrders.find((o) => o.id === fill.makerOrderId);
     if (!maker) continue;
 
+    releaseLocalMargin(maker.userId, maker.price, fill.filledQty);
     maker.qty -= fill.filledQty;
     if (maker.qty <= 0) {
       const index = restingOrders.findIndex((o) => o.id === maker.id);
@@ -293,10 +418,12 @@ async function ensureEngineUser(
       },
     }),
   );
+
+  creditUserMargin(userId, balanceUsd);
 }
 
 async function ensureSimUser(publisher: RedisClientType, userId: number) {
-  await ensureEngineUser(publisher, userId, 100_000_000, "sim user");
+  await ensureEngineUser(publisher, userId, SIM_USER_BALANCE, "sim user");
 }
 
 async function createOrder(
@@ -320,7 +447,7 @@ async function createOrder(
           qty,
           orderType,
           price,
-          leverage: 20,
+          leverage: SIM_LEVERAGE,
         },
       }),
     ) ?? [];
@@ -341,12 +468,17 @@ async function createOrder(
 
 async function placeRestingOrder(
   publisher: RedisClientType,
-  userId: number,
   side: SIDE,
   price: number,
-  qty: number,
-): Promise<RestingOrder> {
+  desiredQty: number,
+): Promise<RestingOrder | null> {
   assertNoCross(side, price);
+
+  const userId = pickSimUserWithMargin(price, desiredQty);
+  const qty = capQtyToMargin(userId, price, desiredQty);
+  if (qty < MIN_QTY) {
+    return null;
+  }
 
   const { fills, resting } = await createOrder(
     publisher,
@@ -366,6 +498,7 @@ async function placeRestingOrder(
     throw new Error(`Passive order did not rest on book: ${side} ${formatPrice(price)}`);
   }
 
+  reserveLocalMargin(userId, price, resting.qty);
   return resting;
 }
 
@@ -380,6 +513,8 @@ async function cancelOrder(publisher: RedisClientType, orderId: string) {
       payload: { orderId },
     }),
   );
+
+  releaseLocalMargin(order.userId, order.price, order.qty);
 
   const index = restingOrders.findIndex((o) => o.id === orderId);
   if (index !== -1) restingOrders.splice(index, 1);
@@ -398,20 +533,21 @@ async function executeTrade(publisher: RedisClientType) {
 
     const maker = makers[randomInt(0, makers.length - 1)]!;
     const available = availableQtyAtPrice(SIDE.SHORT, bestAsk);
-    const tradeQty = Math.min(
-      randomQty(0),
-      available,
-      maker.qty,
-    );
+    const tradeQty = randomTradeQty(available, maker.qty);
     if (tradeQty < MIN_QTY) return;
 
-    const takerUserId = pickTakerUser(maker.userId);
+    const takerUserId = pickTakerUserWithMargin(maker.userId, bestAsk, tradeQty);
+    if (!takerUserId) return;
+
+    const takerQty = capQtyToMargin(takerUserId, bestAsk, tradeQty);
+    if (takerQty < MIN_QTY) return;
+
     const { fills } = await createOrder(
       publisher,
       takerUserId,
       SIDE.LONG,
       bestAsk,
-      tradeQty,
+      takerQty,
     );
 
     if (fills.length === 0) {
@@ -428,16 +564,21 @@ async function executeTrade(publisher: RedisClientType) {
 
   const maker = makers[randomInt(0, makers.length - 1)]!;
   const available = availableQtyAtPrice(SIDE.LONG, bestBid);
-  const tradeQty = Math.min(randomQty(0), available, maker.qty);
+  const tradeQty = randomTradeQty(available, maker.qty);
   if (tradeQty < MIN_QTY) return;
 
-  const takerUserId = pickTakerUser(maker.userId);
+  const takerUserId = pickTakerUserWithMargin(maker.userId, bestBid, tradeQty);
+  if (!takerUserId) return;
+
+  const takerQty = capQtyToMargin(takerUserId, bestBid, tradeQty);
+  if (takerQty < MIN_QTY) return;
+
   const { fills } = await createOrder(
     publisher,
     takerUserId,
     SIDE.SHORT,
     bestBid,
-    tradeQty,
+    takerQty,
   );
 
   if (fills.length === 0) {
@@ -448,35 +589,39 @@ async function executeTrade(publisher: RedisClientType) {
   logTrade(fills);
 }
 
+async function seedLevel(
+  publisher: RedisClientType,
+  side: SIDE,
+  level: number,
+  ordersToPlace = ORDERS_PER_LEVEL,
+) {
+  const price =
+    side === SIDE.LONG ? bidPriceAtLevel(level) : askPriceAtLevel(level);
+
+  for (let i = 0; i < ordersToPlace; i++) {
+    const qty = randomQty(level);
+    await placeRestingOrder(publisher, side, price, qty);
+    await sleep(25);
+  }
+}
+
 async function bootstrapBook(publisher: RedisClientType) {
-  console.log("Seeding initial depth...");
+  console.log("Seeding deep initial liquidity...");
 
   for (let level = DEPTH_LEVELS - 1; level >= 0; level--) {
-    const ask = await placeRestingOrder(
-      publisher,
-      pickSimUser(),
-      SIDE.SHORT,
-      askPriceAtLevel(level),
-      randomQty(level),
-    );
+    await seedLevel(publisher, SIDE.SHORT, level);
+    const levelQty = availableQtyAtPrice(SIDE.SHORT, askPriceAtLevel(level));
     console.log(
-      `  ask L${level} ${formatPrice(ask.price)} x ${formatQty(ask.qty)} BTC (user ${ask.userId})`,
+      `  ask L${level} ${formatPrice(askPriceAtLevel(level))} x ${formatQty(levelQty)} BTC (${ORDERS_PER_LEVEL} orders)`,
     );
-    await sleep(50);
   }
 
   for (let level = 0; level < DEPTH_LEVELS; level++) {
-    const bid = await placeRestingOrder(
-      publisher,
-      pickSimUser(),
-      SIDE.LONG,
-      bidPriceAtLevel(level),
-      randomQty(level),
-    );
+    await seedLevel(publisher, SIDE.LONG, level);
+    const levelQty = availableQtyAtPrice(SIDE.LONG, bidPriceAtLevel(level));
     console.log(
-      `  bid L${level} ${formatPrice(bid.price)} x ${formatQty(bid.qty)} BTC (user ${bid.userId})`,
+      `  bid L${level} ${formatPrice(bidPriceAtLevel(level))} x ${formatQty(levelQty)} BTC (${ORDERS_PER_LEVEL} orders)`,
     );
-    await sleep(50);
   }
 
   console.log(
@@ -497,55 +642,60 @@ function logBookSnapshot() {
 
 async function addLiquidity(publisher: RedisClientType) {
   const side = Math.random() < 0.5 ? SIDE.LONG : SIDE.SHORT;
-  const level = randomInt(0, DEPTH_LEVELS - 1);
+  const level =
+    Math.random() < 0.7 ? randomInt(0, 2) : randomInt(0, DEPTH_LEVELS - 1);
   const price =
     side === SIDE.LONG ? bidPriceAtLevel(level) : askPriceAtLevel(level);
   const qty = randomQty(level);
 
-  const order = await placeRestingOrder(publisher, pickSimUser(), side, price, qty);
+  const order = await placeRestingOrder(publisher, side, price, qty);
+  if (!order) return;
+
   console.log(
-    `[+] ${side === SIDE.LONG ? "bid" : "ask"} ${formatPrice(order.price)} x ${formatQty(order.qty)} BTC (user ${order.userId})`,
+    `[+] ${side === SIDE.LONG ? "bid" : "ask"} L${level} ${formatPrice(order.price)} x ${formatQty(order.qty)} BTC (user ${order.userId})`,
   );
 }
 
 async function pullLiquidity(publisher: RedisClientType) {
   if (restingOrders.length === 0) return;
 
-  const index = randomInt(0, restingOrders.length - 1);
-  const order = restingOrders[index]!;
+  const deepOrders = restingOrders.filter((order) => {
+    const level =
+      order.side === SIDE.LONG
+        ? Math.round((BEST_BID - order.price) / PRICE_STEP)
+        : Math.round((order.price - BEST_ASK) / PRICE_STEP);
+    return level >= 3;
+  });
+
+  const candidates = deepOrders.length > 0 ? deepOrders : restingOrders;
+  const order = candidates[randomInt(0, candidates.length - 1)]!;
   await cancelOrder(publisher, order.id);
   console.log(
     `[-] ${order.side === SIDE.LONG ? "bid" : "ask"} ${formatPrice(order.price)} x ${formatQty(order.qty)} BTC`,
   );
 }
 
-async function refreshTouch(publisher: RedisClientType) {
-  const side = Math.random() < 0.5 ? SIDE.LONG : SIDE.SHORT;
-  const touchOrders = restingOrders.filter((o) => o.side === side);
-  if (touchOrders.length === 0) return;
+async function topUpTouch(publisher: RedisClientType) {
+  for (const side of [SIDE.LONG, SIDE.SHORT] as const) {
+    const touchPrice =
+      side === SIDE.LONG ? bidPriceAtLevel(0) : askPriceAtLevel(0);
+    const currentQty = availableQtyAtPrice(side, touchPrice);
+    const targetQty = targetQtyAtLevel(0);
 
-  const touchPrice =
-    side === SIDE.LONG
-      ? Math.max(...touchOrders.map((o) => o.price))
-      : Math.min(...touchOrders.map((o) => o.price));
+    if (currentQty >= targetQty) continue;
 
-  const atTouch = touchOrders.filter((o) => o.price === touchPrice);
-  const toReplace = atTouch[randomInt(0, atTouch.length - 1)]!;
+    const order = await placeRestingOrder(
+      publisher,
+      side,
+      touchPrice,
+      targetQty - currentQty,
+    );
+    if (!order) continue;
 
-  await cancelOrder(publisher, toReplace.id);
-
-  const newQty = randomQty(0);
-  const order = await placeRestingOrder(
-    publisher,
-    pickSimUser(),
-    side,
-    touchPrice,
-    newQty,
-  );
-
-  console.log(
-    `[~] touch ${side === SIDE.LONG ? "bid" : "ask"} ${formatPrice(order.price)} x ${formatQty(order.qty)} BTC (user ${order.userId})`,
-  );
+    console.log(
+      `[~] top-up ${side === SIDE.LONG ? "bid" : "ask"} ${formatPrice(order.price)} +${formatQty(order.qty)} BTC (total ${formatQty(availableQtyAtPrice(side, touchPrice))})`,
+    );
+  }
 }
 
 async function shiftLevel(publisher: RedisClientType) {
@@ -572,77 +722,75 @@ async function shiftLevel(publisher: RedisClientType) {
       : askPriceAtLevel(nextLevel);
   const newQty = randomQty(nextLevel);
 
-  const replaced = await placeRestingOrder(
-    publisher,
-    pickSimUser(),
-    side,
-    newPrice,
-    newQty,
-  );
+  const replaced = await placeRestingOrder(publisher, side, newPrice, newQty);
+  if (!replaced) return;
 
   console.log(
     `[↔] ${side === SIDE.LONG ? "bid" : "ask"} ${formatPrice(order.price)} → ${formatPrice(replaced.price)} x ${formatQty(replaced.qty)} BTC`,
   );
 }
 
-async function replenishIfThin(publisher: RedisClientType) {
-  const bidLevels = new Set(
-    restingOrders.filter((o) => o.side === SIDE.LONG).map((o) => o.price),
-  ).size;
-  const askLevels = new Set(
-    restingOrders.filter((o) => o.side === SIDE.SHORT).map((o) => o.price),
-  ).size;
+async function maintainBookDepth(publisher: RedisClientType) {
+  for (let level = 0; level < DEPTH_LEVELS; level++) {
+    for (const side of [SIDE.LONG, SIDE.SHORT] as const) {
+      const price =
+        side === SIDE.LONG ? bidPriceAtLevel(level) : askPriceAtLevel(level);
+      const ordersAtLevel = ordersAtPrice(side, price);
+      const currentQty = availableQtyAtPrice(side, price);
+      const targetQty = targetQtyAtLevel(level);
 
-  const minLevels = Math.max(3, Math.floor(DEPTH_LEVELS / 2));
+      const missingOrders = ORDERS_PER_LEVEL - ordersAtLevel.length;
+      for (let i = 0; i < missingOrders; i++) {
+        const order = await placeRestingOrder(
+          publisher,
+          side,
+          price,
+          randomQty(level),
+        );
+        if (!order) continue;
 
-  for (let level = bidLevels; level < minLevels; level++) {
-    const price = bidPriceAtLevel(level);
-    if (ordersAtPrice(SIDE.LONG, price).length > 0) continue;
-    const order = await placeRestingOrder(
-      publisher,
-      pickSimUser(),
-      SIDE.LONG,
-      price,
-      randomQty(level),
-    );
-    console.log(
-      `[↺] refill bid L${level} ${formatPrice(order.price)} x ${formatQty(order.qty)} BTC`,
-    );
-  }
+        console.log(
+          `[↺] stack ${side === SIDE.LONG ? "bid" : "ask"} L${level} ${formatPrice(order.price)} x ${formatQty(order.qty)} BTC`,
+        );
+      }
 
-  for (let level = askLevels; level < minLevels; level++) {
-    const price = askPriceAtLevel(level);
-    if (ordersAtPrice(SIDE.SHORT, price).length > 0) continue;
-    const order = await placeRestingOrder(
-      publisher,
-      pickSimUser(),
-      SIDE.SHORT,
-      price,
-      randomQty(level),
-    );
-    console.log(
-      `[↺] refill ask L${level} ${formatPrice(order.price)} x ${formatQty(order.qty)} BTC`,
-    );
+      if (currentQty < targetQty) {
+        const order = await placeRestingOrder(
+          publisher,
+          side,
+          price,
+          targetQty - currentQty,
+        );
+        if (!order) continue;
+
+        console.log(
+          `[↺] refill ${side === SIDE.LONG ? "bid" : "ask"} L${level} ${formatPrice(order.price)} +${formatQty(order.qty)} BTC`,
+        );
+      }
+    }
   }
 }
 
 async function simulateTick(publisher: RedisClientType) {
   if (Math.random() < TRADE_PROB) {
     await executeTrade(publisher);
-    await replenishIfThin(publisher);
+    await topUpTouch(publisher);
+    await maintainBookDepth(publisher);
     return;
   }
 
   const roll = Math.random();
 
-  if (roll < 0.35) {
+  if (roll < 0.55) {
     await addLiquidity(publisher);
-  } else if (roll < 0.6) {
+  } else if (roll < 0.75) {
+    await topUpTouch(publisher);
+  } else if (roll < 0.8 && Math.random() < PULL_PROB) {
     await pullLiquidity(publisher);
-  } else if (roll < 0.8) {
-    await refreshTouch(publisher);
-  } else {
+  } else if (roll < 0.9) {
     await shiftLevel(publisher);
+  } else {
+    await maintainBookDepth(publisher);
   }
 }
 
@@ -687,7 +835,11 @@ async function main() {
       `spread=${formatPrice(SPREAD)}`,
       `step=${formatPrice(PRICE_STEP)}`,
       `levels=${DEPTH_LEVELS}`,
+      `ordersPerLevel=${ORDERS_PER_LEVEL}`,
+      `qty=${formatQty(MIN_QTY)}-${formatQty(MAX_QTY)} BTC`,
+      `touch=${formatQty(TOUCH_MIN_QTY)}-${formatQty(TOUCH_MAX_QTY)} BTC`,
       `users=${simUserIds.join(",")}`,
+      `userBalance=$${SIM_USER_BALANCE_DISPLAY_USD.toLocaleString()}`,
       `tradeProb=${TRADE_PROB}`,
       `interval~${INTERVAL_MS}ms`,
     ].join(" | "),

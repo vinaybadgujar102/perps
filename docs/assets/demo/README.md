@@ -4,7 +4,8 @@ Drop screenshots and videos here, then reference them from the root README and `
 
 | File | Use for |
 | --- | --- |
-| `overview.mp4` | Full platform walkthrough (landing → login → trade) |
+| `dashboard.mov` | Full platform walkthrough (login → trade → live orderbook) |
+| `overview.mp4` | Alternate walkthrough slot |
 | `dashboard.png` | Trading terminal screenshot |
 | `orderbook.png` | Live orderbook + last price |
 | `positions.png` | Open positions / order history |

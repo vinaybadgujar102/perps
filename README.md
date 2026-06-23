@@ -6,17 +6,9 @@ Perpetual futures trading — matching engine, Redis event bus, Postgres persist
 
 ## Demo
 
-<!-- DEMO_VIDEO: Paste a hosted URL below, or commit docs/assets/demo/overview.mp4 and link it here -->
-<!-- Example: https://www.youtube.com/watch?v=YOUR_VIDEO_ID -->
+https://github.com/vinaybadgujar102/perps/raw/main/docs/assets/demo/dashboard.mov
 
-> **Video:** Add `docs/assets/demo/overview.mp4` or paste a hosted walkthrough URL above.
-
-| | |
-| --- | --- |
-| ![Trading dashboard](docs/assets/demo/dashboard.png) | ![Live orderbook](docs/assets/demo/orderbook.png) |
-| *Dashboard — `docs/assets/demo/dashboard.png`* | *Orderbook — `docs/assets/demo/orderbook.png`* |
-
-More screenshot slots: [`docs/assets/demo/README.md`](docs/assets/demo/README.md)
+More media slots: [`docs/assets/demo/README.md`](docs/assets/demo/README.md)
 
 ## Quick start
 
