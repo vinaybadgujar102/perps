@@ -1,6 +1,6 @@
 # perps-platform
 
-Perpetual futures trading for **BTC** and **SOL** — matching engine, Redis event bus, Postgres persistence, TanStack trading UI.
+Perpetual futures trading — matching engine, Redis event bus, Postgres persistence, TanStack trading UI.
 
 **[Run the local demo →](docs/DEMO.md)**
 
@@ -24,16 +24,6 @@ More screenshot slots: [`docs/assets/demo/README.md`](docs/assets/demo/README.md
 2. `cp .env.example .env`  
 3. Follow **[docs/DEMO.md](docs/DEMO.md)** (install → migrate → 5 services → `bun run simulate:orderbook`)  
 4. Login: `demo@perps.local` / `demo1234`
-
-## What works
-
-- Limit & market orders, cancel, close, 20× leverage (BTC + SOL)
-- Live orderbook, index price, last trade (WebSocket)
-- Positions, orders, fills, closed positions, deposit history
-- $100k starting margin on signup / demo seed
-- Orders & fills persisted via `db-poller`
-
-**Not wired yet:** real OHLC chart (UI uses demo candles), Timescale optional, Rust engine scaffold.
 
 ## Architecture
 
