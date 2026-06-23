@@ -6,7 +6,11 @@ Perpetual futures trading — matching engine, Redis event bus, Postgres persist
 
 ## Demo
 
+#### Trading Flow
 https://github.com/user-attachments/assets/fceb973f-2a09-4eb2-bf23-4cc4f66b4726
+
+#### Payments Gateway Integration
+https://github.com/user-attachments/assets/5a4d5d2e-8439-47ba-8ca0-c03a11697b2a
 
 ## Quick start
 
