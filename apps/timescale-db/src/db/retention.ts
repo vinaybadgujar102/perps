@@ -1,5 +1,5 @@
 import type { QueryConfig } from "pg";
-import { pgPool } from "../config/pgClient";
+import { runPolicyQuery } from "./policy";
 
 export async function addRetentionPolicy() {
   const query: QueryConfig = {
@@ -11,5 +11,5 @@ export async function addRetentionPolicy() {
     `,
   };
 
-  await pgPool.query(query);
+  await runPolicyQuery(query);
 }

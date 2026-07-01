@@ -1,6 +1,6 @@
 import { Pool } from "pg";
-import { dbUrl } from "../constants";
+import { requireDbUrl } from "../constants";
 
 export const pgPool = new Pool({
-  connectionString: dbUrl,
+  connectionString: requireDbUrl(),
 });

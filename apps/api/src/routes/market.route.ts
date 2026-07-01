@@ -1,15 +1,18 @@
 import { prisma } from "@repo/database";
 import {
   createMarketSchema,
+  getCandlesQuerySchema,
   marketSymbolParamsSchema,
   updateMarketSchema,
 } from "@repo/sharedtypes";
 import { Router, type Request, type Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import type z from "zod";
+import { TimescaleNotConfiguredError } from "../config/timescaleClient";
 import { isAdmin } from "../middlewares/admin.middleware";
+import { getCandles } from "../services/candles.service";
 import { errorResponse, successResponse } from "../utils/responseUtils";
-import { schemaValidator } from "../validators";
+import { schemaValidator, getValidatedQuery } from "../validators";
 
 const marketRouter = Router();
 
@@ -115,6 +118,35 @@ marketRouter.delete(
       );
     } catch {
       return errorResponse(res, StatusCodes.NOT_FOUND, "Market not found.");
+    }
+  },
+);
+
+marketRouter.get(
+  "/:symbol/candles",
+  schemaValidator(marketSymbolParamsSchema, "params"),
+  schemaValidator(getCandlesQuerySchema, "query"),
+  async (req: Request, res: Response) => {
+    const { symbol } = req.params as z.infer<typeof marketSymbolParamsSchema>;
+    const query = getValidatedQuery<z.infer<typeof getCandlesQuerySchema>>(req);
+
+    try {
+      const data = await getCandles(symbol, query);
+      return successResponse(
+        res,
+        StatusCodes.OK,
+        data,
+        "Candles loaded successfully.",
+      );
+    } catch (error) {
+      if (error instanceof TimescaleNotConfiguredError) {
+        return errorResponse(
+          res,
+          StatusCodes.SERVICE_UNAVAILABLE,
+          "Candle history is unavailable. TimescaleDB is not configured.",
+        );
+      }
+      throw error;
     }
   },
 );

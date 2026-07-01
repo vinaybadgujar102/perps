@@ -6,6 +6,11 @@
   "devDependencies": {
     "@types/bun": "latest"
   },
+  "scripts": {
+    "dev": "bun run index.ts",
+    "db:init": "bun run scripts/init-db.ts",
+    "db:drop": "bun run scripts/drop-db.ts"
+  },
   "peerDependencies": {
     "typescript": "^5"
   },
@@ -13,7 +18,7 @@
     "@repo/sharedtypes": "workspace:*",
     "@types/pg": "^8.20.0",
     "pg": "^8.22.0",
-    "redis": "^6.0.0",
+    "redis": "^5.12.1",
     "zod": "^4.4.3"
   }
 }

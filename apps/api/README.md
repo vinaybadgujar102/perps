@@ -6,6 +6,7 @@ Express REST API. Publishes commands to Redis `send_queue`, correlates responses
 | --- | --- |
 | Port | `3003` (set `PORT` in root `.env`) |
 | Needs | `DATABASE_URL`, `JWT_SECRET`, Redis, trade-engine |
+| Optional | `DB_URL` — TimescaleDB for `GET /market/:symbol/candles` |
 
 ```bash
 # from repo root

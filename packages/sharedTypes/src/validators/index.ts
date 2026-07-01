@@ -5,3 +5,4 @@ export * from "./account.validator";
 export * from "./onramp.validator";
 export * from "./orderbook.validator";
 export * from "./position.validator";
+export * from "./candles.validator";

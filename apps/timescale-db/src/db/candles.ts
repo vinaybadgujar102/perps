@@ -1,5 +1,6 @@
 import type { QueryConfig } from "pg";
 import { pgPool } from "../config/pgClient";
+import { runPolicyQuery } from "./policy";
 
 export async function createOneMinCandle() {
   const createOneMinCandleQuery: QueryConfig = {
@@ -30,7 +31,7 @@ export async function createOneMinCandle() {
   };
 
   await pgPool.query(createOneMinCandleQuery);
-  await pgPool.query(continuousAggregationPolicyQuery);
+  await runPolicyQuery(continuousAggregationPolicyQuery);
 }
 
 export async function createFiveMinCandle() {
@@ -62,5 +63,5 @@ export async function createFiveMinCandle() {
   };
 
   await pgPool.query(createFiveMinCandleQuery);
-  await pgPool.query(continuousAggregationPolicyQuery);
+  await runPolicyQuery(continuousAggregationPolicyQuery);
 }

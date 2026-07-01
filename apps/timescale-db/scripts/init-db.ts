@@ -1,7 +1,16 @@
 import { pgPool } from "../src/config/pgClient";
 import { initDb } from "../src/db/init";
 
-await initDb();
-await pgPool.end();
+let failed = false;
 
-console.log("TimescaleDB initialized");
+try {
+  await initDb();
+  console.log("TimescaleDB initialized");
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error);
+  failed = true;
+} finally {
+  await pgPool.end();
+}
+
+if (failed) process.exit(1);
