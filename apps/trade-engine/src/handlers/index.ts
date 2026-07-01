@@ -91,7 +91,11 @@ function runFundingSettlement() {
     user.balance -= fee;
   }
 }
+
+// create snapshots
 setInterval(() => snapShotService.createSnapshot(), SNAPSHOTING_INTERVAL_MS);
+
+// funding settlements interval
 setInterval(runFundingSettlement, FUNDING_INTERVAL_MS);
 
 export const dispatcher = new EventDispatcher(

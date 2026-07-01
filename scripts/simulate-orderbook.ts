@@ -75,7 +75,7 @@ const SIM_USER_BALANCE = scaleDisplayUsdToEngine(
 );
 const DEMO_SEED_LOGIN_USER = process.env.DEMO_SEED_LOGIN_USER !== "false";
 const DEMO_LOGIN_BALANCE_USD = Number(
-  process.env.DEMO_LOGIN_BALANCE_USD ?? 100_000_000,
+  process.env.DEMO_LOGIN_BALANCE_USD ?? 5_000_000_000,
 );
 
 const { priceScale, quantityScale } = AssetConfig[MARKET];
