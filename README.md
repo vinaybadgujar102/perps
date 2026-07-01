@@ -12,6 +12,9 @@ https://github.com/user-attachments/assets/fceb973f-2a09-4eb2-bf23-4cc4f66b4726
 #### Payments Gateway Integration
 https://github.com/user-attachments/assets/5a4d5d2e-8439-47ba-8ca0-c03a11697b2a
 
+### Load Testing
+https://drive.google.com/file/d/1ZKHyrd4zJD8BrIc0zf64I3tfdg3QZQtT/view?usp=sharing
+
 ## Quick start
 
 1. Redis + Postgres running locally  
@@ -72,3 +75,6 @@ packages/       database (Prisma), sharedTypes, ui
 scripts/        demo-seed, simulate-orderbook
 docs/           DEMO.md, ARCHITECTURE.md, assets/demo/
 ```
+
+## Load Testing Script
+``` k6 run -e MODE=step k6/scripts/production-path-test.js ```
