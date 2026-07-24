@@ -50,6 +50,43 @@ import {
   seedDemoDatabase,
 } from "./lib/demo-db-seed";
 
+async function loadEnvFromFiles() {
+  const candidates = [
+    ".env",
+    "/opt/perps/.env",
+    new URL("../.env", import.meta.url).pathname,
+  ];
+
+  for (const path of candidates) {
+    try {
+      const file = Bun.file(path);
+      if (!(await file.exists())) continue;
+      const text = await file.text();
+      for (const raw of text.split("\n")) {
+        const line = raw.trim();
+        if (!line || line.startsWith("#")) continue;
+        const eq = line.indexOf("=");
+        if (eq <= 0) continue;
+        const key = line.slice(0, eq).trim();
+        let value = line.slice(eq + 1).trim();
+        if (
+          (value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))
+        ) {
+          value = value.slice(1, -1);
+        }
+        if (process.env[key] === undefined || process.env[key] === "") {
+          process.env[key] = value;
+        }
+      }
+    } catch {
+      // ignore missing / unreadable env files
+    }
+  }
+}
+
+await loadEnvFromFiles();
+
 const HOSTED_DEMO = process.env.HOSTED_DEMO === "true";
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
 // Hosted demo defaults keep Redis lean; any SIM_* env override still wins.
@@ -821,7 +858,7 @@ async function simulateTick(publisher: RedisClientType) {
 async function main() {
   if (!process.env.DATABASE_URL) {
     throw new Error(
-      "DATABASE_URL is required so sim users and orders can persist via db-poller",
+      "DATABASE_URL is required so sim users and orders can persist via db-poller. Set it in PM2 env or /opt/perps/.env",
     );
   }
 

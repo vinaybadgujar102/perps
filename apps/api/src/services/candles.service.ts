@@ -25,8 +25,36 @@ type CandleRow = {
   close: number;
 };
 
-function useFakeCandles(): boolean {
-  return process.env.HOSTED_DEMO === "true" || !process.env.DB_URL;
+function envFlag(name: string): boolean {
+  const v = process.env[name]?.trim().toLowerCase();
+  return v === "true" || v === "1" || v === "yes";
+}
+
+/**
+ * Timescale is opt-in (`USE_TIMESCALE=true` + valid `DB_URL`).
+ * HOSTED_DEMO and leftover local :5433 URLs always use fake candles.
+ */
+function shouldUseTimescale(): boolean {
+  if (envFlag("HOSTED_DEMO")) return false;
+  if (!envFlag("USE_TIMESCALE")) return false;
+
+  const dbUrl = process.env.DB_URL?.trim() ?? "";
+  if (!dbUrl) return false;
+
+  try {
+    const u = new URL(dbUrl);
+    const local =
+      u.hostname === "127.0.0.1" ||
+      u.hostname === "localhost" ||
+      u.hostname === "::1";
+    if (local && (u.port === "5433" || dbUrl.includes(":5433"))) {
+      return false;
+    }
+  } catch {
+    return false;
+  }
+
+  return true;
 }
 
 function fakeResponse(
@@ -57,7 +85,7 @@ export async function getCandles(
 }> {
   const { interval } = query;
 
-  if (useFakeCandles()) {
+  if (!shouldUseTimescale()) {
     return fakeResponse(market, query);
   }
 
@@ -81,7 +109,6 @@ export async function getCandles(
   }
 
   try {
-    // Prefer continuous aggregates; fall back to bucketing raw trades when sparse.
     const aggregateResult = await pool.query<CandleRow>(
       `
         SELECT bucket, open, high, low, close
@@ -132,7 +159,6 @@ export async function getCandles(
 
     return { market, interval, candles, synthetic: false };
   } catch (error) {
-    // Timescale down / unreachable — serve static fake candles so the chart still works.
     console.warn(
       "[candles] Timescale query failed; serving fake candles:",
       error instanceof Error ? error.message : error,
