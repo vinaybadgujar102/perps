@@ -93,7 +93,7 @@ VITE_HOSTED_DEMO=true   # chart stays on static candles (no live WS bar updates)
 
 **Services to run:** `trade-engine`, `api`, `wsserver`, `db-poller`, `tanstack-frontend`, and `bun run simulate:orderbook`.
 
-**Skip:** `timescale-db` and any Timescale Postgres instance.
+**Skip:** `timescale-db` and any Timescale Postgres instance. If `timescale-db` is started with `HOSTED_DEMO=true`, it exits the consumer and idles (no `DB_URL` connection). The orderbook simulator never talks to Timescale — only Redis + Prisma Postgres + the engine.
 
 **What `HOSTED_DEMO` changes:**
 

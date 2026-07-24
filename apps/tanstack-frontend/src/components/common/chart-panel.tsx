@@ -43,6 +43,9 @@ export function ChartPanel() {
     () => candlesQuery.data?.candles ?? [],
     [candlesQuery.data?.candles],
   );
+  const showDemoBadge =
+    import.meta.env.VITE_HOSTED_DEMO === "true" ||
+    candlesQuery.data?.synthetic === true;
 
   useEffect(() => {
     if (!chartRef.current || view !== "chart") return;
@@ -123,15 +126,13 @@ export function ChartPanel() {
     chart.timeScale().fitContent();
   }, [historicalCandles]);
 
-  const hostedDemo = import.meta.env.VITE_HOSTED_DEMO === "true";
-
   useLiveCandleUpdates({
     seriesRef,
     market,
     interval,
     priceScale: config.priceScale,
     historicalCandles,
-    enabled: !hostedDemo,
+    enabled: !showDemoBadge,
   });
 
   const showEmptyState =
@@ -142,7 +143,7 @@ export function ChartPanel() {
 
   const showSparseHint =
     view === "chart" &&
-    !hostedDemo &&
+    !showDemoBadge &&
     !candlesQuery.isLoading &&
     historicalCandles.length > 0 &&
     historicalCandles.length < 10;
@@ -189,7 +190,7 @@ export function ChartPanel() {
             {value}
           </Button>
         ))}
-        {hostedDemo ? <DemoDataBadge label="Demo" /> : null}
+        {showDemoBadge ? <DemoDataBadge label="Demo data" /> : null}
       </div>
 
       {view === "chart" ? (

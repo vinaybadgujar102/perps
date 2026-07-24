@@ -22,6 +22,8 @@ export const candlesResponseSchema = z.object({
   market: z.string(),
   interval: candleIntervalSchema,
   candles: z.array(candleSchema),
+  /** True when OHLC is synthetic (hosted demo / no Timescale). */
+  synthetic: z.boolean().optional(),
 });
 
 export type Candle = z.infer<typeof candleSchema>;

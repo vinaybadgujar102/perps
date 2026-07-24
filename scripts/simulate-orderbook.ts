@@ -4,6 +4,7 @@
  * activity — passive liquidity updates plus actual trades between sim users.
  *
  * Requires: Redis + trade-engine + Postgres (DATABASE_URL) + db-poller for full E2E.
+ * Does NOT require TimescaleDB / DB_URL — candles are independent (fake under HOSTED_DEMO).
  *
  * Usage:
  *   bun run simulate:orderbook
@@ -13,7 +14,7 @@
  *   DEMO_USER_EMAIL     default demo@perps.local (login account for the UI)
  *   DEMO_USER_PASSWORD  default demo1234
  *   DEMO_SEED_LOGIN_USER default true — credits a demo login user in engine + Postgres
- *   HOSTED_DEMO       when true, uses low-volume defaults (slower ticks, fewer trades)
+ *   HOSTED_DEMO         when true: low-volume defaults; no Timescale needed for charts
  *   REDIS_URL           default redis://localhost:6379
  *   SIM_INTERVAL_MS     default 1500 (hosted: 9000)
  *   SIM_USER_BASE       default 9001 (creates SIM_USER_COUNT users from here)
@@ -852,7 +853,7 @@ async function main() {
 
   console.log(
     HOSTED_DEMO
-      ? "Orderbook + trade simulator started (HOSTED_DEMO low-volume mode)"
+      ? "Orderbook + trade simulator started (HOSTED_DEMO low-volume mode — no Timescale required)"
       : "Orderbook + trade simulator started",
   );
   console.log(

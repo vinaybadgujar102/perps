@@ -12,7 +12,7 @@ export function DemoDataBadge({
   return (
     <span
       className={cn(
-        "mono-label inline-flex shrink-0 rounded border border-accent/40 bg-accent/10 px-1.5 py-0.5 text-[9px] tracking-widest text-accent",
+        "mono-label inline-flex shrink-0 items-center rounded border border-accent/50 bg-accent/15 px-2 py-0.5 text-[10px] font-medium tracking-widest text-accent uppercase",
         className,
       )}
     >

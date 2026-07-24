@@ -32,18 +32,29 @@ function useFakeCandles(): boolean {
 function fakeResponse(
   market: string,
   query: GetCandlesQuery,
-): { market: string; interval: CandleInterval; candles: Candle[] } {
+): {
+  market: string;
+  interval: CandleInterval;
+  candles: Candle[];
+  synthetic: true;
+} {
   return {
     market,
     interval: query.interval,
     candles: buildFakeCandles(market, query),
+    synthetic: true,
   };
 }
 
 export async function getCandles(
   market: string,
   query: GetCandlesQuery,
-): Promise<{ market: string; interval: CandleInterval; candles: Candle[] }> {
+): Promise<{
+  market: string;
+  interval: CandleInterval;
+  candles: Candle[];
+  synthetic?: boolean;
+}> {
   const { interval } = query;
 
   if (useFakeCandles()) {
@@ -119,7 +130,7 @@ export async function getCandles(
       close: row.close,
     }));
 
-    return { market, interval, candles };
+    return { market, interval, candles, synthetic: false };
   } catch (error) {
     // Timescale down / unreachable — serve static fake candles so the chart still works.
     console.warn(
