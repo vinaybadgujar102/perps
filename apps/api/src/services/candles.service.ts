@@ -29,6 +29,17 @@ function useFakeCandles(): boolean {
   return process.env.HOSTED_DEMO === "true" || !process.env.DB_URL;
 }
 
+function fakeResponse(
+  market: string,
+  query: GetCandlesQuery,
+): { market: string; interval: CandleInterval; candles: Candle[] } {
+  return {
+    market,
+    interval: query.interval,
+    candles: buildFakeCandles(market, query),
+  };
+}
+
 export async function getCandles(
   market: string,
   query: GetCandlesQuery,
@@ -36,11 +47,7 @@ export async function getCandles(
   const { interval } = query;
 
   if (useFakeCandles()) {
-    return {
-      market,
-      interval,
-      candles: buildFakeCandles(market, query),
-    };
+    return fakeResponse(market, query);
   }
 
   const viewName = VIEW_BY_INTERVAL[interval];
@@ -57,63 +64,68 @@ export async function getCandles(
     pool = getTimescalePool();
   } catch (error) {
     if (error instanceof TimescaleNotConfiguredError) {
-      return {
-        market,
-        interval,
-        candles: buildFakeCandles(market, query),
-      };
+      return fakeResponse(market, query);
     }
     throw error;
   }
 
-  // Prefer continuous aggregates; fall back to bucketing raw trades when sparse.
-  const aggregateResult = await pool.query<CandleRow>(
-    `
-      SELECT bucket, open, high, low, close
-      FROM ${viewName}
-      WHERE market = $1
-        AND bucket >= $2
-        AND bucket <= $3
-      ORDER BY bucket ASC
-      LIMIT $4
-    `,
-    [market, fromDate, toDate, limit],
-  );
-
-  let rows = aggregateResult.rows;
-
-  if (rows.length < Math.min(limit, 30)) {
-    const tradeResult = await pool.query<CandleRow>(
+  try {
+    // Prefer continuous aggregates; fall back to bucketing raw trades when sparse.
+    const aggregateResult = await pool.query<CandleRow>(
       `
-        SELECT
-          time_bucket($4::interval, time) AS bucket,
-          first(price, time) AS open,
-          max(price) AS high,
-          min(price) AS low,
-          last(price, time) AS close
-        FROM trades
+        SELECT bucket, open, high, low, close
+        FROM ${viewName}
         WHERE market = $1
-          AND time >= $2
-          AND time <= $3
-        GROUP BY bucket
+          AND bucket >= $2
+          AND bucket <= $3
         ORDER BY bucket ASC
-        LIMIT $5
+        LIMIT $4
       `,
-      [market, fromDate, toDate, bucket, limit],
+      [market, fromDate, toDate, limit],
     );
 
-    if (tradeResult.rows.length > rows.length) {
-      rows = tradeResult.rows;
+    let rows = aggregateResult.rows;
+
+    if (rows.length < Math.min(limit, 30)) {
+      const tradeResult = await pool.query<CandleRow>(
+        `
+          SELECT
+            time_bucket($4::interval, time) AS bucket,
+            first(price, time) AS open,
+            max(price) AS high,
+            min(price) AS low,
+            last(price, time) AS close
+          FROM trades
+          WHERE market = $1
+            AND time >= $2
+            AND time <= $3
+          GROUP BY bucket
+          ORDER BY bucket ASC
+          LIMIT $5
+        `,
+        [market, fromDate, toDate, bucket, limit],
+      );
+
+      if (tradeResult.rows.length > rows.length) {
+        rows = tradeResult.rows;
+      }
     }
+
+    const candles: Candle[] = rows.map((row) => ({
+      time: Math.floor(row.bucket.getTime() / 1000),
+      open: row.open,
+      high: row.high,
+      low: row.low,
+      close: row.close,
+    }));
+
+    return { market, interval, candles };
+  } catch (error) {
+    // Timescale down / unreachable — serve static fake candles so the chart still works.
+    console.warn(
+      "[candles] Timescale query failed; serving fake candles:",
+      error instanceof Error ? error.message : error,
+    );
+    return fakeResponse(market, query);
   }
-
-  const candles: Candle[] = rows.map((row) => ({
-    time: Math.floor(row.bucket.getTime() / 1000),
-    open: row.open,
-    high: row.high,
-    low: row.low,
-    close: row.close,
-  }));
-
-  return { market, interval, candles };
 }

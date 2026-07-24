@@ -6,6 +6,7 @@ import {
   type IChartApi,
   type ISeriesApi,
 } from "lightweight-charts";
+import { DemoDataBadge } from "#/components/common/demo-data-badge";
 import { Button } from "#/components/ui/button";
 import { useTradingMarket } from "#/contexts/trading-market-context";
 import { useCandles } from "#/hooks/use-candles";
@@ -188,6 +189,7 @@ export function ChartPanel() {
             {value}
           </Button>
         ))}
+        {hostedDemo ? <DemoDataBadge label="Demo" /> : null}
       </div>
 
       {view === "chart" ? (
