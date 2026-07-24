@@ -12,7 +12,9 @@ import { marketPriceState } from "./inMemoryState";
 import { createClient } from "redis";
 import type z from "zod";
 
-const redis = await createClient().connect();
+const redis = await createClient(
+  process.env.REDIS_URL ? { url: process.env.REDIS_URL } : undefined,
+).connect();
 
 export async function pricePoller() {
   const ws = new WebSocket(CONSTANTS.BACKPACK_URL);

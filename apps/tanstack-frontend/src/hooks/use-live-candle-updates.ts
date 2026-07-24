@@ -15,6 +15,8 @@ type UseLiveCandleUpdatesOptions = {
   interval: CandleInterval;
   priceScale: number;
   historicalCandles: Candle[];
+  /** When false, chart stays on static historical candles (hosted demo). */
+  enabled?: boolean;
 };
 
 export function useLiveCandleUpdates({
@@ -23,6 +25,7 @@ export function useLiveCandleUpdates({
   interval,
   priceScale,
   historicalCandles,
+  enabled = true,
 }: UseLiveCandleUpdatesOptions) {
   const lastTradeQuery = useQuery({
     queryKey: queryKeys.lastTrade(market),
@@ -30,18 +33,21 @@ export function useLiveCandleUpdates({
     staleTime: Infinity,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
+    enabled,
   });
 
   const lastFillIdRef = useRef<string | null>(null);
   const formingBarRef = useRef<Candle | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     lastFillIdRef.current = null;
     formingBarRef.current =
       historicalCandles[historicalCandles.length - 1] ?? null;
-  }, [market, interval, historicalCandles]);
+  }, [market, interval, historicalCandles, enabled]);
 
   useEffect(() => {
+    if (!enabled) return;
     const trade = lastTradeQuery.data;
     const series = seriesRef.current;
     if (!trade || trade.market !== market || !series) return;
@@ -62,6 +68,7 @@ export function useLiveCandleUpdates({
       time: nextBar.time as UTCTimestamp,
     });
   }, [
+    enabled,
     lastTradeQuery.data,
     market,
     interval,

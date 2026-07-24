@@ -15,7 +15,9 @@ import { createClient } from "redis";
 import { broadcast } from "./subscriptions";
 
 export async function startRedisConsumer() {
-  const consumerRedis = await createClient().connect();
+  const consumerRedis = await createClient(
+    process.env.REDIS_URL ? { url: process.env.REDIS_URL } : undefined,
+  ).connect();
   let lastId = "$";
 
   while (true) {
@@ -74,6 +76,8 @@ export async function startRedisConsumer() {
       }
     } catch (error) {
       console.error(error);
+      // After hosted-demo XTRIM, resume from new messages only.
+      lastId = "$";
     }
   }
 }

@@ -1,5 +1,9 @@
 import type { Candle, CandleInterval, GetCandlesQuery } from "@repo/sharedtypes";
-import { getTimescalePool } from "../config/timescaleClient";
+import {
+  getTimescalePool,
+  TimescaleNotConfiguredError,
+} from "../config/timescaleClient";
+import { buildFakeCandles } from "./fake-candles";
 
 const BUCKET_BY_INTERVAL: Record<CandleInterval, string> = {
   "1m": "1 minute",
@@ -21,20 +25,46 @@ type CandleRow = {
   close: number;
 };
 
+function useFakeCandles(): boolean {
+  return process.env.HOSTED_DEMO === "true" || !process.env.DB_URL;
+}
+
 export async function getCandles(
   market: string,
   query: GetCandlesQuery,
 ): Promise<{ market: string; interval: CandleInterval; candles: Candle[] }> {
-  const { interval, limit, from, to } = query;
+  const { interval } = query;
+
+  if (useFakeCandles()) {
+    return {
+      market,
+      interval,
+      candles: buildFakeCandles(market, query),
+    };
+  }
+
   const viewName = VIEW_BY_INTERVAL[interval];
   const bucket = BUCKET_BY_INTERVAL[interval];
+  const { limit, from, to } = query;
 
   const toDate = to ? new Date(to) : new Date();
   const fromDate = from
     ? new Date(from)
     : new Date(toDate.getTime() - DEFAULT_RANGE_MS);
 
-  const pool = getTimescalePool();
+  let pool;
+  try {
+    pool = getTimescalePool();
+  } catch (error) {
+    if (error instanceof TimescaleNotConfiguredError) {
+      return {
+        market,
+        interval,
+        candles: buildFakeCandles(market, query),
+      };
+    }
+    throw error;
+  }
 
   // Prefer continuous aggregates; fall back to bucketing raw trades when sparse.
   const aggregateResult = await pool.query<CandleRow>(

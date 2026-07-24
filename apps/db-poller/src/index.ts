@@ -2,9 +2,13 @@ import { QUEUES, responseQueueSchema } from "@repo/sharedtypes";
 import { createClient } from "redis";
 import { handleIncomingEvents } from "./handlers";
 
-const subscriber = await createClient().connect();
+const subscriber = await createClient(
+  process.env.REDIS_URL ? { url: process.env.REDIS_URL } : undefined,
+).connect();
 
-let lastId = "0";
+const hostedDemo = process.env.HOSTED_DEMO === "true";
+// Hosted demo: "$" avoids replaying / filling up after XTRIM. Local: "0" for catch-up.
+let lastId = hostedDemo ? "$" : "0";
 
 while (true) {
   try {
@@ -25,5 +29,8 @@ while (true) {
     await handleIncomingEvents(data);
   } catch (error) {
     console.error(error);
+    if (hostedDemo) {
+      lastId = "$";
+    }
   }
 }

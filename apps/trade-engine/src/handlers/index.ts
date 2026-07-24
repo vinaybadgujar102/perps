@@ -37,7 +37,9 @@ import { FundingRateService } from "../services/fundingRateService";
 import { snapShotService } from "../services/snapshotting.service";
 import { SNAPSHOTING_INTERVAL_MS } from "../constants";
 
-export const publisherRedis = await createClient().connect();
+export const publisherRedis = await createClient(
+  process.env.REDIS_URL ? { url: process.env.REDIS_URL } : undefined,
+).connect();
 
 for (const asset of Object.values(AssetConfig)) {
   const orderbook = GLOBAL_ORDERBOOK.ensureOrderbook(asset.symbol);
@@ -92,8 +94,12 @@ function runFundingSettlement() {
   }
 }
 
-// create snapshots
-setInterval(() => snapShotService.createSnapshot(), SNAPSHOTING_INTERVAL_MS);
+// create snapshots (hosted demo also XTRIMs Redis streams after write)
+setInterval(() => {
+  void snapShotService.createSnapshot(publisherRedis).catch((error) => {
+    console.error("[snapshot] failed:", error);
+  });
+}, SNAPSHOTING_INTERVAL_MS);
 
 // funding settlements interval
 setInterval(runFundingSettlement, FUNDING_INTERVAL_MS);

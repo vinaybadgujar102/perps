@@ -2,10 +2,13 @@ import { eventSchema, QUEUES, RESPONSE_KINDS } from "@repo/sharedtypes";
 import { createClient } from "redis";
 import { requestMap } from "./requestMap";
 
-const consumerRedis = await createClient().connect();
+const consumerRedis = await createClient(
+  process.env.REDIS_URL ? { url: process.env.REDIS_URL } : undefined,
+).connect();
 
 export async function listenForRequestId() {
-  let lastId = "0";
+  // Live matching only — "$" avoids replaying the full stream on restart.
+  let lastId = "$";
 
   while (true) {
     try {
@@ -116,6 +119,8 @@ export async function listenForRequestId() {
       }
     } catch (e) {
       console.error(e);
+      // After hosted-demo XTRIM, stale IDs can error — resume from new messages only.
+      lastId = "$";
       continue;
     }
   }

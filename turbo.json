@@ -1,7 +1,13 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
-  "globalEnv": ["DATABASE_URL", "DB_URL"],
+  "globalEnv": [
+    "DATABASE_URL",
+    "DB_URL",
+    "HOSTED_DEMO",
+    "REDIS_URL",
+    "SNAPSHOTING_INTERVAL_MS"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

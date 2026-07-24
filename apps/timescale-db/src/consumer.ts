@@ -3,7 +3,9 @@ import { createClient } from "redis";
 import { handleIncomingEvents } from "./handlers";
 
 export async function startConsumer() {
-  const subscriber = await createClient().connect();
+  const subscriber = await createClient(
+    process.env.REDIS_URL ? { url: process.env.REDIS_URL } : undefined,
+  ).connect();
   let lastId = "0";
 
   while (true) {

@@ -13,12 +13,13 @@
  *   DEMO_USER_EMAIL     default demo@perps.local (login account for the UI)
  *   DEMO_USER_PASSWORD  default demo1234
  *   DEMO_SEED_LOGIN_USER default true — credits a demo login user in engine + Postgres
+ *   HOSTED_DEMO       when true, uses low-volume defaults (slower ticks, fewer trades)
  *   REDIS_URL           default redis://localhost:6379
- *   SIM_INTERVAL_MS     default 1500 (base tick; actual delay is jittered)
+ *   SIM_INTERVAL_MS     default 1500 (hosted: 9000)
  *   SIM_USER_BASE       default 9001 (creates SIM_USER_COUNT users from here)
- *   SIM_USER_COUNT      default 12
- *   SIM_DEPTH_LEVELS    default 10 (matches engine snapshot limit)
- *   SIM_ORDERS_PER_LEVEL default 6 (stacked makers per price level)
+ *   SIM_USER_COUNT      default 12 (hosted: 5)
+ *   SIM_DEPTH_LEVELS    default 10 (hosted: 5; matches engine snapshot limit)
+ *   SIM_ORDERS_PER_LEVEL default 6 (hosted: 2; stacked makers per price level)
  *   SIM_MID_PRICE       default 6100000 ($61,000.00)
  *   SIM_SPREAD          default 1000 ($10.00 between best bid and best ask)
  *   SIM_PRICE_STEP      default 500  ($5.00 between levels — denser book)
@@ -26,9 +27,9 @@
  *   SIM_MAX_QTY         default 2500 (25.00 BTC)
  *   SIM_TOUCH_MIN_QTY   default 400  (4.00 BTC at best bid/ask)
  *   SIM_TOUCH_MAX_QTY   default 5000 (50.00 BTC at best bid/ask)
- *   SIM_TRADE_PROB      default 0.12 (chance each tick executes a cross)
+ *   SIM_TRADE_PROB      default 0.12 (hosted: 0.02; chance each tick executes a cross)
  *   SIM_TRADE_MAX_QTY   default 120 (1.20 BTC max per simulated cross)
- *   SIM_PULL_PROB       default 0.03 (chance to cancel a deep order)
+ *   SIM_PULL_PROB       default 0.03 (hosted: 0.01; chance to cancel a deep order)
  *   SIM_USER_BALANCE_DISPLAY_USD default 50000000 ($50M per sim user)
  *   SIM_LEVERAGE        default 20 (max for BTC)
  */
@@ -48,12 +49,22 @@ import {
   seedDemoDatabase,
 } from "./lib/demo-db-seed";
 
+const HOSTED_DEMO = process.env.HOSTED_DEMO === "true";
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
-const INTERVAL_MS = Number(process.env.SIM_INTERVAL_MS ?? 1500);
+// Hosted demo defaults keep Redis lean; any SIM_* env override still wins.
+const INTERVAL_MS = Number(
+  process.env.SIM_INTERVAL_MS ?? (HOSTED_DEMO ? 9000 : 1500),
+);
 const SIM_USER_BASE = Number(process.env.SIM_USER_BASE ?? 9001);
-const SIM_USER_COUNT = Number(process.env.SIM_USER_COUNT ?? 12);
-const DEPTH_LEVELS = Number(process.env.SIM_DEPTH_LEVELS ?? 10);
-const ORDERS_PER_LEVEL = Number(process.env.SIM_ORDERS_PER_LEVEL ?? 6);
+const SIM_USER_COUNT = Number(
+  process.env.SIM_USER_COUNT ?? (HOSTED_DEMO ? 5 : 12),
+);
+const DEPTH_LEVELS = Number(
+  process.env.SIM_DEPTH_LEVELS ?? (HOSTED_DEMO ? 5 : 10),
+);
+const ORDERS_PER_LEVEL = Number(
+  process.env.SIM_ORDERS_PER_LEVEL ?? (HOSTED_DEMO ? 2 : 6),
+);
 const MID_PRICE = Number(process.env.SIM_MID_PRICE ?? 6_100_000);
 const SPREAD = Number(process.env.SIM_SPREAD ?? 1_000);
 const PRICE_STEP = Number(process.env.SIM_PRICE_STEP ?? 500);
@@ -61,9 +72,13 @@ const MIN_QTY = Number(process.env.SIM_MIN_QTY ?? 150);
 const MAX_QTY = Number(process.env.SIM_MAX_QTY ?? 2_500);
 const TOUCH_MIN_QTY = Number(process.env.SIM_TOUCH_MIN_QTY ?? 400);
 const TOUCH_MAX_QTY = Number(process.env.SIM_TOUCH_MAX_QTY ?? 5_000);
-const TRADE_PROB = Number(process.env.SIM_TRADE_PROB ?? 0.12);
+const TRADE_PROB = Number(
+  process.env.SIM_TRADE_PROB ?? (HOSTED_DEMO ? 0.02 : 0.12),
+);
 const TRADE_MAX_QTY = Number(process.env.SIM_TRADE_MAX_QTY ?? 120);
-const PULL_PROB = Number(process.env.SIM_PULL_PROB ?? 0.03);
+const PULL_PROB = Number(
+  process.env.SIM_PULL_PROB ?? (HOSTED_DEMO ? 0.01 : 0.03),
+);
 const MARKET = "BTC";
 const SIM_USER_BALANCE_DISPLAY_USD = Number(
   process.env.SIM_USER_BALANCE_DISPLAY_USD ?? 50_000_000,
@@ -341,28 +356,36 @@ async function startResponseListener(consumer: RedisClientType) {
   let lastId = "$";
 
   while (true) {
-    const res = await consumer.xRead(
-      { key: QUEUES.RESPONSE_QUEUE, id: lastId },
-      { COUNT: 1, BLOCK: 0 },
-    );
-
-    if (!res?.[0]?.messages?.[0]) continue;
-
-    const message = res[0].messages[0];
-    lastId = message.id;
-
     try {
-      const parsed = eventSchema.parse(JSON.parse(message.message.data));
-      if (!("requestId" in parsed) || !parsed.requestId) continue;
+      const res = await consumer.xRead(
+        { key: QUEUES.RESPONSE_QUEUE, id: lastId },
+        { COUNT: 1, BLOCK: 0 },
+      );
 
-      const pendingRequest = pending.get(parsed.requestId);
-      if (!pendingRequest) continue;
+      if (!res?.[0]?.messages?.[0]) continue;
 
-      clearTimeout(pendingRequest.timeoutId);
-      pending.delete(parsed.requestId);
-      pendingRequest.resolve(parsed.data as EngineData<unknown>);
+      const message = res[0].messages[0];
+      lastId = message.id;
+
+      try {
+        const parsed = eventSchema.parse(JSON.parse(message.message.data));
+        if (!("requestId" in parsed) || !parsed.requestId) continue;
+
+        const pendingRequest = pending.get(parsed.requestId);
+        if (!pendingRequest) continue;
+
+        clearTimeout(pendingRequest.timeoutId);
+        pending.delete(parsed.requestId);
+        pendingRequest.resolve(parsed.data as EngineData<unknown>);
+      } catch (error) {
+        console.error("[simulate-orderbook] response parse error", error);
+      }
     } catch (error) {
-      console.error("[simulate-orderbook] response parse error", error);
+      console.error(
+        "[simulate-orderbook] redis consumer error, resetting cursor to $",
+        error,
+      );
+      lastId = "$";
     }
   }
 }
@@ -827,7 +850,11 @@ async function main() {
     );
   }
 
-  console.log("Orderbook + trade simulator started");
+  console.log(
+    HOSTED_DEMO
+      ? "Orderbook + trade simulator started (HOSTED_DEMO low-volume mode)"
+      : "Orderbook + trade simulator started",
+  );
   console.log(
     [
       `market=${MARKET}`,

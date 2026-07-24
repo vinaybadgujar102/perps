@@ -24,6 +24,7 @@ Required in `.env`:
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
 JWT_SECRET=dev-secret-change-me
 PORT=3003
+REDIS_URL=redis://localhost:6379
 ```
 
 ## 3. Migrate database
@@ -70,6 +71,41 @@ Demo login ready: demo@perps.local / demo1234 (userId …)
 
 ---
 
+## Hosted demo
+
+For a production-hosted demo **without** TimescaleDB / a second Postgres for candles:
+
+```bash
+HOSTED_DEMO=true
+DATABASE_URL=…          # Prisma app DB (still required)
+REDIS_URL=…             # shared Redis for all services
+JWT_SECRET=…
+PORT=3003
+# Do NOT set DB_URL — API serves static fake candles instead
+SNAPSHOTING_INTERVAL_MS=3600000   # optional; default is already 1h
+```
+
+Frontend (e.g. `apps/tanstack-frontend/.env`):
+
+```bash
+VITE_HOSTED_DEMO=true   # chart stays on static candles (no live WS bar updates)
+```
+
+**Services to run:** `trade-engine`, `api`, `wsserver`, `db-poller`, `tanstack-frontend`, and `bun run simulate:orderbook`.
+
+**Skip:** `timescale-db` and any Timescale Postgres instance.
+
+**What `HOSTED_DEMO` changes:**
+
+| Area | Behavior |
+|------|----------|
+| Candles | Static synthetic 1m/5m OHLC from the API (no Timescale) |
+| Simulator | Low-volume defaults (~9s ticks, ~2% trade probability, thinner book) |
+| Snapshots | Every 1 hour, then `XTRIM MAXLEN 0` on `send_queue` + `response_queue`, reset engine cursor to `"0"` |
+| Redis consumers | `REDIS_URL` wired everywhere; api/db-poller start at `"$"` in hosted mode |
+
+---
+
 ## Demo login
 
 
@@ -102,6 +138,7 @@ Still need `simulate:orderbook` or signup for trade-engine users.
 | Empty orderbook         | Keep `simulate:orderbook` running |
 | Orders don't save       | Start `db-poller`                 |
 | FK errors in db-poller  | Re-run `simulate:orderbook`       |
+| Redis connection fails  | Set `REDIS_URL` for all services  |
 
 
 ## Record a demo
@@ -114,5 +151,3 @@ Use these slots when capturing video or screenshots — see [`assets/demo/README
 | `overview.mp4`  | Full flow: login → market order → position updates |
 | `positions.png` | Positions / order history tabs                     |
 | `deposit.png`   | Deposit dialog (optional)                          |
-
-

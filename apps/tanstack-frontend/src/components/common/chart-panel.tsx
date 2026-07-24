@@ -122,12 +122,15 @@ export function ChartPanel() {
     chart.timeScale().fitContent();
   }, [historicalCandles]);
 
+  const hostedDemo = import.meta.env.VITE_HOSTED_DEMO === "true";
+
   useLiveCandleUpdates({
     seriesRef,
     market,
     interval,
     priceScale: config.priceScale,
     historicalCandles,
+    enabled: !hostedDemo,
   });
 
   const showEmptyState =
@@ -138,6 +141,7 @@ export function ChartPanel() {
 
   const showSparseHint =
     view === "chart" &&
+    !hostedDemo &&
     !candlesQuery.isLoading &&
     historicalCandles.length > 0 &&
     historicalCandles.length < 10;

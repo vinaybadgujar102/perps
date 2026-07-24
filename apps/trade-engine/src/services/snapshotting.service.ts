@@ -1,4 +1,5 @@
 import path from "node:path";
+import { QUEUES } from "@repo/sharedtypes";
 import { POSITIONS, USERMANAGER } from "../appState";
 import { GLOBAL_ORDERBOOK } from "../inMemoryStates";
 import {
@@ -9,12 +10,25 @@ import {
 
 export const SNAPSHOT_PATH = path.join(import.meta.dir, "../../snapshot.json");
 
+function isHostedDemo(): boolean {
+  return process.env.HOSTED_DEMO === "true";
+}
+
+type RedisStreamClient = {
+  xTrim(
+    key: string,
+    strategy: "MAXLEN" | "MINID",
+    threshold: number | string,
+  ): Promise<unknown>;
+};
+
 interface SnapshotService {
-  createSnapshot(): Promise<void>;
+  createSnapshot(redis?: RedisStreamClient): Promise<void>;
   loadSnapshotIfExists(): Promise<void>;
   applySnapshot(snapshotPath?: string): Promise<void>;
   getLatestSnapshot(): Snapshot;
   setLastProcessedId(lastId: string): void;
+  resetStreamCursor(): void;
 }
 
 export class SnapshottingService implements SnapshotService {
@@ -30,7 +44,11 @@ export class SnapshottingService implements SnapshotService {
     this.latestSnapshot.lastProcessedId = lastId;
   }
 
-  async createSnapshot() {
+  resetStreamCursor() {
+    this.latestSnapshot.lastProcessedId = "0";
+  }
+
+  async createSnapshot(redis?: RedisStreamClient) {
     const orders: SnapshotOrder[] = [];
     const seenOrderIds = new Set<string>();
 
@@ -69,7 +87,10 @@ export class SnapshottingService implements SnapshotService {
     });
 
     const users: Snapshot["users"] = USERMANAGER.getAllUsers().map(
-      ([userId, user]) => [userId, { balance: user.balance, lockedBalance: user.lockedBalance }],
+      ([userId, user]) => [
+        userId,
+        { balance: user.balance, lockedBalance: user.lockedBalance },
+      ],
     );
 
     const snapshot: Snapshot = {
@@ -82,6 +103,16 @@ export class SnapshottingService implements SnapshotService {
 
     this.latestSnapshot = snapshot;
     await Bun.write(SNAPSHOT_PATH, JSON.stringify(snapshot));
+
+    if (isHostedDemo() && redis) {
+      await redis.xTrim(QUEUES.SEND_QUEUE, "MAXLEN", 0);
+      await redis.xTrim(QUEUES.RESPONSE_QUEUE, "MAXLEN", 0);
+      this.resetStreamCursor();
+      await Bun.write(SNAPSHOT_PATH, JSON.stringify(this.latestSnapshot));
+      console.log(
+        "[snapshot] trimmed send_queue + response_queue; reset lastProcessedId to 0",
+      );
+    }
   }
 
   async loadSnapshotIfExists() {
