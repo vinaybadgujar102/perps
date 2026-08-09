@@ -158,8 +158,8 @@ export function LoginRightPanel() {
             {mutation.isPending ? "LOGGING IN..." : "LOGIN"}
             <MoveRight strokeWidth={4} size={5} />
           </Button>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-foreground-muted">
-            Demo: {DEMO_EMAIL} / {DEMO_PASSWORD}
+          <p className="font-mono text-[10px] tracking-widest text-foreground-muted lowercase">
+            demo: {DEMO_EMAIL} / {DEMO_PASSWORD}
           </p>
           <Link
             className="font-mono text-[10px] uppercase tracking-widest text-foreground-muted hover:text-foreground"
